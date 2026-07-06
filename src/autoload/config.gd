@@ -4,6 +4,12 @@ extends Node
 const GAME_CFG_PATH := "res://config/game.cfg"
 const DATA_DIR := "res://data"
 
+const MajorResourceScript := preload("res://src/resources/major_resource.gd")
+const CardResourceScript := preload("res://src/resources/card_resource.gd")
+const CardEffectScript := preload("res://src/resources/card_effect.gd")
+const EnemyResourceScript := preload("res://src/resources/enemy_resource.gd")
+const EventResourceScript := preload("res://src/resources/event_resource.gd")
+
 var _game_cfg: ConfigFile
 
 ## 专业 ID -> MajorResource
@@ -48,8 +54,8 @@ func _load_major_folder(folder_path: String) -> Dictionary:
 		var data := _load_json_file("%s/%s" % [folder_path, file_name])
 		if data.is_empty():
 			continue
-		var major := MajorResource.from_dict(data)
-		if not major.id.is_empty():
+		var major = MajorResourceScript.from_dict(data)
+		if major.id != "":
 			result[major.id] = major
 	return result
 
@@ -61,7 +67,6 @@ func _load_card_folder(folder_path: String) -> Dictionary:
 		if data.is_empty():
 			continue
 
-		# 支持两种格式：单卡对象 或 { "cards": [...] }
 		var card_list: Array = []
 		if data.has("cards"):
 			card_list = data["cards"]
@@ -70,8 +75,8 @@ func _load_card_folder(folder_path: String) -> Dictionary:
 
 		for card_dict in card_list:
 			if card_dict is Dictionary:
-				var card := CardResource.from_dict(card_dict)
-				if not card.id.is_empty():
+				var card = CardResourceScript.from_dict(card_dict)
+				if card.id != "":
 					result[card.id] = card
 	return result
 
@@ -91,8 +96,8 @@ func _load_enemy_folder(folder_path: String) -> Dictionary:
 
 		for enemy_dict in enemy_list:
 			if enemy_dict is Dictionary:
-				var enemy := EnemyResource.from_dict(enemy_dict)
-				if not enemy.id.is_empty():
+				var enemy = EnemyResourceScript.from_dict(enemy_dict)
+				if enemy.id != "":
 					result[enemy.id] = enemy
 	return result
 
@@ -112,8 +117,8 @@ func _load_event_folder(folder_path: String) -> Dictionary:
 
 		for event_dict in event_list:
 			if event_dict is Dictionary:
-				var event := EventResource.from_dict(event_dict)
-				if not event.id.is_empty():
+				var event = EventResourceScript.from_dict(event_dict)
+				if event.id != "":
 					result[event.id] = event
 	return result
 

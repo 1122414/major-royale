@@ -11,7 +11,7 @@ extends Resource
 @export var choices: Array[Dictionary] = []
 
 
-static func from_dict(data: Dictionary) -> EventResource:
+static func from_dict(data: Dictionary) -> Resource:
 	var event := EventResource.new()
 	event.id = data.get("id", "")
 	event.name = data.get("name", "")

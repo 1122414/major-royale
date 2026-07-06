@@ -12,7 +12,7 @@ extends Resource
 @export var ai_prompt_key: String = ""     ## AI Native 敌人使用的提示词键
 
 
-static func from_dict(data: Dictionary) -> EnemyResource:
+static func from_dict(data: Dictionary) -> Resource:
 	var enemy := EnemyResource.new()
 	enemy.id = data.get("id", "")
 	enemy.name = data.get("name", "")

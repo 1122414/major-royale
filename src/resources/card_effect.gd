@@ -11,7 +11,7 @@ extends Resource
 @export var params: Dictionary = {} ## 额外参数
 
 
-static func from_dict(data: Dictionary) -> CardEffect:
+static func from_dict(data: Dictionary) -> Resource:
 	var effect := CardEffect.new()
 	effect.type = data.get("type", "")
 	effect.value = data.get("value", 0)

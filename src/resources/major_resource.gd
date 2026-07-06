@@ -12,7 +12,7 @@ extends Resource
 @export var starter_deck: Array[String] = []
 
 
-static func from_dict(data: Dictionary) -> MajorResource:
+static func from_dict(data: Dictionary) -> Resource:
 	var major := MajorResource.new()
 	major.id = data.get("id", "")
 	major.name = data.get("name", "")

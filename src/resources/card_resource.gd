@@ -3,6 +3,8 @@ extends Resource
 
 ## 卡牌资源定义。
 
+const CardEffectScript := preload("res://src/resources/card_effect.gd")
+
 @export var id: String = ""
 @export var name: String = ""
 @export var type: String = "attack"  ## attack, defense, skill, control, heal, finisher
@@ -10,10 +12,10 @@ extends Resource
 @export var rarity: String = "common"  ## common, uncommon, rare
 @export var description: String = ""
 @export var major_id: String = ""    ## 空表示通用卡
-@export var effects: Array[CardEffect] = []
+@export var effects: Array[Resource] = []
 
 
-static func from_dict(data: Dictionary) -> CardResource:
+static func from_dict(data: Dictionary) -> Resource:
 	var card := CardResource.new()
 	card.id = data.get("id", "")
 	card.name = data.get("name", "")
@@ -26,5 +28,5 @@ static func from_dict(data: Dictionary) -> CardResource:
 	var effect_dicts: Array = data.get("effects", [])
 	for effect_dict in effect_dicts:
 		if effect_dict is Dictionary:
-			card.effects.append(CardEffect.from_dict(effect_dict))
+			card.effects.append(CardEffectScript.from_dict(effect_dict))
 	return card
