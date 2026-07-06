@@ -18,22 +18,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.15, 0.2, 0.15, 1)
+color = Color(0.08, 0.1, 0.12, 1)
+
+[node name="AreaLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 24
+text = "当前区域"
 
 [node name="InfoLabel" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -50.0
-offset_right = 200.0
-offset_bottom = 50.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 24
-text = "地图探索（占位）"
-horizontal_alignment = 1
-vertical_alignment = 1
+layout_mode = 0
+offset_left = 40.0
+offset_top = 640.0
+offset_right = 600.0
+offset_bottom = 680.0
+theme_override_font_sizes/font_size = 18
+text = "节点信息"
