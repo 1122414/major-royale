@@ -1,0 +1,17 @@
+{
+  "id": "dorm_events",
+  "events": [
+    {
+      "id": "sleep_well",
+      "name": "好好睡觉",
+      "description": "恢复 10 点生命。",
+      "effects": [{"type": "heal", "value": 10}]
+    },
+    {
+      "id": "stay_up",
+      "name": "熬夜刷题",
+      "description": "获得 1 点学识，但失去 5 点精神。",
+      "effects": [{"type": "stat_up", "stat": "学识", "value": 1}, {"type": "spirit_damage", "value": 5}]
+    }
+  ]
+}

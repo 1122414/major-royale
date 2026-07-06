@@ -1,0 +1,36 @@
+# Godot 4
+.import/
+export.cfg
+export_presets.cfg
+*.tmp
+*.translation
+.godot/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tools
+tools/Godot.app/
+tools/*.zip

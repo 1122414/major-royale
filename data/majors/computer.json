@@ -1,0 +1,26 @@
+{
+  "id": "computer",
+  "name": "计算机",
+  "description": "远程控制、异常状态、技术爆发。",
+  "stats": {
+    "学识": 8,
+    "体能": 4,
+    "专注": 7,
+    "表达": 5,
+    "创造": 6,
+    "社交": 3,
+    "抗压": 5,
+    "资源": 4
+  },
+  "active_skill": {
+    "id": "code_injection",
+    "name": "代码注入",
+    "description": "使敌人下一回合行动有概率失效，并附加 Bug。"
+  },
+  "passive_skill": {
+    "id": "debug_all_night",
+    "name": "熬夜 Debug",
+    "description": "生命低于 40% 时，每回合额外抽 1 张牌，但精神值下降。"
+  },
+  "starter_deck": ["bug_generate", "quick_script", "refactor", "code_review", "bsod_warning"]
+}

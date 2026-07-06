@@ -1,0 +1,26 @@
+{
+  "id": "law",
+  "name": "法学",
+  "description": "反制、控场、规则利用。",
+  "stats": {
+    "学识": 7,
+    "体能": 5,
+    "专注": 6,
+    "表达": 8,
+    "创造": 4,
+    "社交": 5,
+    "抗压": 6,
+    "资源": 5
+  },
+  "active_skill": {
+    "id": "objection",
+    "name": "异议！",
+    "description": "打断敌人一次强行动，并使其进入举证失败。"
+  },
+  "passive_skill": {
+    "id": "legal_protection",
+    "name": "条文护体",
+    "description": "每场战斗首次受到致命伤时保留 1 点生命，并获得护盾。"
+  },
+  "starter_deck": ["burden_of_proof", "not_guilty_defense", "law_search", "trial_delay", "judgment"]
+}

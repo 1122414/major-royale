@@ -1,0 +1,32 @@
+{
+  "id": "common_cards",
+  "cards": [
+    {
+      "id": "strike",
+      "name": "普通攻击",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "description": "造成 6 点伤害。",
+      "effects": [{"type": "damage", "value": 6}]
+    },
+    {
+      "id": "defend",
+      "name": "防御",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "description": "获得 5 点护盾。",
+      "effects": [{"type": "shield", "value": 5}]
+    },
+    {
+      "id": "draw_card",
+      "name": "抽牌",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "description": "抽 2 张牌。",
+      "effects": [{"type": "draw", "value": 2}]
+    }
+  ]
+}

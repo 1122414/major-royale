@@ -1,0 +1,25 @@
+{
+  "id": "normal_enemies",
+  "enemies": [
+    {
+      "id": "gpa_anxiety",
+      "name": "绩点焦虑者",
+      "type": "normal",
+      "hp": 30,
+      "actions": [
+        {"id": "pressure", "weight": 2, "description": "施加压力。"},
+        {"id": "attack", "weight": 3, "description": "造成 5 点伤害。"}
+      ]
+    },
+    {
+      "id": "seat_grabber",
+      "name": "抢座学霸",
+      "type": "normal",
+      "hp": 40,
+      "actions": [
+        {"id": "shield", "weight": 2, "description": "获得护盾。"},
+        {"id": "counter", "weight": 1, "description": "下回合反击。"}
+      ]
+    }
+  ]
+}
