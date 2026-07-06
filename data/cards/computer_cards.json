@@ -58,7 +58,7 @@
       "rarity": "uncommon",
       "major_id": "computer",
       "description": "若敌人有 3 层 Bug，造成 24 点伤害；否则造成 8 点。",
-      "effects": [{"type": "conditional_damage", "status_id": "bug", "threshold": 3, "value": 24, "fallback_value": 8}]
+      "effects": [{"type": "conditional_damage", "status_id": "bug", "threshold": 3, "value": 8, "real_value": 24}]
     }
   ]
 }

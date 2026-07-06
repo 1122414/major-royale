@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://j1qkvnu0jq2qm"]
+
+[ext_resource type="Script" path="res://src/ui/widgets/card_view.gd" id="1_card_view"]
+
+[node name="CardView" type="PanelContainer"]
+custom_minimum_size = Vector2(140, 200)
+script = ExtResource("1_card_view")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "卡牌名"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="CostLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "费用: 1"
+horizontal_alignment = 1
+
+[node name="TypeLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "攻击"
+horizontal_alignment = 1
+
+[node name="DescLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "卡牌效果描述"
+horizontal_alignment = 1
+autowrap_mode = 3
