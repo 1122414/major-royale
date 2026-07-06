@@ -3,7 +3,6 @@ extends Node
 
 const MajorResource := preload("res://src/resources/major_resource.gd")
 const CardResource := preload("res://src/resources/card_resource.gd")
-const EnemyResource := preload("res://src/resources/enemy_resource.gd")
 
 func _ready() -> void:
 	print("TEST: 开始 Godot 数据加载测试")
@@ -30,6 +29,10 @@ func _ready() -> void:
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
 	print("TEST: 所有战斗逻辑测试通过")
+
+	print("TEST: 开始自定义专业测试")
+	_test_custom_major()
+	print("TEST: 自定义专业测试通过")
 
 	get_tree().quit(0)
 
@@ -62,3 +65,18 @@ func _test_battle_core() -> void:
 
 	battle.end_player_turn()
 	assert(battle.state == Battle.BattleState.PLAYER_TURN, "敌人回合结束后应回到玩家回合")
+
+
+func _test_custom_major() -> void:
+	var custom := MajorResource.new()
+	custom.id = "custom_test"
+	custom.name = "测试专业"
+	custom.description = "测试"
+	custom.stats = {"学识": 10, "体能": 5, "专注": 5, "表达": 5, "创造": 5, "社交": 5, "抗压": 5, "资源": 5}
+	custom.active_skill = {"id": "emergency_suture", "name": "紧急缝合", "description": "治疗"}
+	custom.passive_skill = {"id": "anatomy_familiarity", "name": "人体结构熟悉", "description": "弱点"}
+	custom.starter_deck = ["strike", "defend"]
+
+	Config.majors[custom.id] = custom
+	assert(Config.majors.has("custom_test"), "自定义专业应被加入配置")
+	assert(Config.majors["custom_test"].name == "测试专业", "自定义专业名称错误")
