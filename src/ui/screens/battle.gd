@@ -2,14 +2,17 @@ extends Control
 ## 战斗场景。
 
 const CARD_VIEW_SCENE := preload("res://src/ui/widgets/card_view.tscn")
+const STATUS_ICON_SCENE := preload("res://src/ui/widgets/status_icon.tscn")
 const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 
 @onready var enemy_name_label: Label = $EnemyPanel/EnemyNameLabel
 @onready var enemy_hp_label: Label = $EnemyPanel/EnemyHPLabel
 @onready var enemy_intent_label: Label = $EnemyPanel/EnemyIntentLabel
+@onready var enemy_status_container: HBoxContainer = $EnemyPanel/EnemyStatusContainer
 @onready var player_hp_label: Label = $PlayerPanel/PlayerHPLabel
 @onready var player_spirit_label: Label = $PlayerPanel/PlayerSpiritLabel
 @onready var energy_label: Label = $PlayerPanel/EnergyLabel
+@onready var player_status_container: HBoxContainer = $PlayerPanel/PlayerStatusContainer
 @onready var hand_container: HBoxContainer = $HandContainer
 @onready var end_turn_button: Button = $EndTurnButton
 @onready var skill_button: Button = $SkillButton
@@ -51,6 +54,7 @@ func _ready() -> void:
 	add_child(settings_btn)
 
 	_update_ui()
+	AudioManager.play_sfx("click")
 
 
 func _create_player() -> Character:
@@ -85,6 +89,9 @@ func _update_ui() -> void:
 	player_spirit_label.text = "精神: %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
 	energy_label.text = "能量: %d/%d" % [_battle.energy, _battle.max_energy]
 
+	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
+	_update_status_icons(player_status_container, _battle.player.statuses)
+
 	# 更新手牌
 	for child in hand_container.get_children():
 		child.queue_free()
@@ -98,19 +105,36 @@ func _update_ui() -> void:
 	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
 
 
+func _update_status_icons(container: HBoxContainer, statuses: Dictionary) -> void:
+	for child in container.get_children():
+		child.queue_free()
+	for status_id in statuses:
+		var icon: Control = STATUS_ICON_SCENE.instantiate()
+		icon.setup(status_id, statuses[status_id])
+		container.add_child(icon)
+
+
 func _on_card_clicked(index: int) -> void:
+	var card: Resource = _battle.player.hand[index]
 	if _battle.play_card(index):
+		AudioManager.play_sfx("card_play")
+		match card.type:
+			"attack": AudioManager.play_sfx("attack")
+			"defense": AudioManager.play_sfx("shield")
+			"heal": AudioManager.play_sfx("heal")
 		message_label.text = ""
 	else:
 		message_label.text = "能量不足或无法出牌"
 
 
 func _on_end_turn() -> void:
+	AudioManager.play_sfx("click")
 	_battle.end_player_turn()
 
 
 func _on_skill() -> void:
 	if _battle.use_active_skill():
+		AudioManager.play_sfx("heal")
 		_update_ui()
 	else:
 		message_label.text = "本战斗已使用过技能"
@@ -146,6 +170,7 @@ func _on_boss_phase_changed(phase_name: String) -> void:
 
 func _on_battle_ended(victory: bool) -> void:
 	GameState.player_stats["last_battle_victory"] = victory
+	AudioManager.play_sfx("win" if victory else "lose")
 	GameState.change_screen(GameState.Screen.RESULT)
 
 
