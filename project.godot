@@ -15,6 +15,7 @@ Settings="*res://src/autoload/settings.gd"
 GameState="*res://src/autoload/game_state.gd"
 EventBus="*res://src/autoload/event_bus.gd"
 AudioManager="*res://src/autoload/audio_manager.gd"
+AIClient="*res://src/ai/client.gd"
 
 [display]
 window/size/viewport_width=1280

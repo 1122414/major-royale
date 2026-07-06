@@ -32,6 +32,11 @@ func _ready() -> void:
 	_battle.turn_changed.connect(_on_turn_changed)
 	_battle.battle_ended.connect(_on_battle_ended)
 	_battle.skill_used.connect(_on_skill_used)
+	_battle.ai_decision_requested.connect(_on_ai_decision_requested)
+	_battle.boss_phase_changed.connect(_on_boss_phase_changed)
+
+	AIClient.decision_received.connect(_on_ai_decision_received)
+	AIClient.decision_failed.connect(_on_ai_decision_failed)
 
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
@@ -120,6 +125,23 @@ func _on_turn_changed(is_player_turn: bool) -> void:
 
 func _on_skill_used(skill_name: String) -> void:
 	message_label.text = "使用了 %s" % skill_name
+
+
+func _on_ai_decision_requested(context: Dictionary) -> void:
+	AIClient.request_decision(context)
+
+
+func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String) -> void:
+	_battle.set_ai_decision(action_id, intent_text, ending_flag)
+	_update_ui()
+
+
+func _on_ai_decision_failed() -> void:
+	message_label.text = "AI 服务未响应，使用规则兜底"
+
+
+func _on_boss_phase_changed(phase_name: String) -> void:
+	message_label.text = "Boss 进入阶段：%s" % phase_name
 
 
 func _on_battle_ended(victory: bool) -> void:

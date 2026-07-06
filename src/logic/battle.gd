@@ -14,6 +14,7 @@ signal turn_changed(is_player_turn: bool)
 signal hand_updated
 signal energy_updated
 signal skill_used(skill_name: String)
+signal ai_decision_requested(context: Dictionary)
 signal boss_phase_changed(phase_name: String)
 
 const BASE_DRAW := 5
@@ -36,6 +37,7 @@ var _reveal_intent: bool = false
 var _skill_used_this_battle: bool = false
 var _law_passive_used: bool = false
 var _boss_current_phase: int = 0
+var _ai_decision_ready: bool = false
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -169,6 +171,33 @@ func _execute_enemy_turn() -> void:
 			enemy.heal(action.get("value", 5))
 		"stack_pressure":
 			player.add_status("pressure", action.get("value", 1))
+		"ask_algorithm":
+			player.add_status("pressure", 2)
+			_apply_damage_to_player(5)
+		"ask_ethics":
+			player.add_status("pressure", 1)
+		"resume_challenge":
+			player.lose_spirit(10)
+			_apply_damage_to_player(4)
+		"praise_then_pressure":
+			player.draw_cards(1)
+			player.add_status("pressure", 2)
+		"silent_observe":
+			enemy.gain_shield(8)
+		"reject_core_card":
+			player.add_status("pressure", 2)
+		"demand_revision":
+			player.discard_hand()
+			player.draw_cards(2)
+		"question_method":
+			player.add_status("pressure", 2)
+			_apply_damage_to_player(3)
+		"accept_minor":
+			enemy.gain_shield(8)
+			player.add_status("resistance", 1)
+		"desk_reject":
+			_apply_damage_to_player(12)
+			enemy.add_status("vulnerable", 1)
 
 	_check_end_conditions()
 	if state == BattleState.PLAYER_WON or state == BattleState.PLAYER_LOST:
@@ -222,6 +251,15 @@ func _start_player_turn() -> void:
 
 
 func _decide_enemy_intent() -> void:
+	if enemy_resource.is_ai_native and Settings.ai_enabled:
+		# 使用本地兜底作为默认意图，并触发 AI 请求
+		var context := _build_ai_context()
+		var fallback := FallbackAI.decide(context)
+		_enemy_intent = fallback
+		_enemy_intent["value"] = _map_ai_action_to_value(fallback["action_id"])
+		ai_decision_requested.emit(context)
+		return
+
 	var actions := _get_current_enemy_actions()
 	if actions.is_empty():
 		_enemy_intent = {"id": "attack", "value": 5}
@@ -230,6 +268,51 @@ func _decide_enemy_intent() -> void:
 	var action := actions[randi() % actions.size()] as Dictionary
 	_enemy_intent = action.duplicate()
 	_reveal_intent = false
+
+
+func set_ai_decision(action_id: String, intent_text: String, ending_flag: String) -> void:
+	if state != BattleState.PLAYER_TURN:
+		return
+	_enemy_intent = {
+		"id": action_id,
+		"description": intent_text,
+		"value": _map_ai_action_to_value(action_id),
+		"ending_flag": ending_flag,
+	}
+	_reveal_intent = true
+
+
+func _build_ai_context() -> Dictionary:
+	var visible_status: Array[String] = []
+	for status_id in player.statuses.keys():
+		visible_status.append(status_id)
+
+	var last_actions: Array[String] = []
+	for card in player.discard_pile.slice(-3, player.discard_pile.size()):
+		last_actions.append(card.name)
+
+	var allowed_actions: Array[String] = []
+	for action in enemy_resource.actions:
+		allowed_actions.append(action.get("id", ""))
+
+	return {
+		"enemy": enemy_resource.name,
+		"player_major": Config.majors[player.major_id].name if Config.majors.has(player.major_id) else player.major_id,
+		"player_hp": player.hp,
+		"player_spirit": player.spirit,
+		"visible_player_status": visible_status,
+		"last_player_actions": last_actions,
+		"allowed_actions": allowed_actions,
+		"prompt_key": enemy_resource.ai_prompt_key,
+	}
+
+
+func _map_ai_action_to_value(action_id: String) -> int:
+	match action_id:
+		"ask_algorithm", "resume_challenge", "heavy_attack", "desk_reject": return 10
+		"question_method", "reject_core_card": return 5
+		"ask_ethics", "praise_then_pressure", "silent_observe", "accept_minor", "demand_revision": return 0
+	return 5
 
 
 func _get_current_enemy_actions() -> Array:
