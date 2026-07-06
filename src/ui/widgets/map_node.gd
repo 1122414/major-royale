@@ -18,9 +18,13 @@ func setup(p_node_id: String, p_type: int, p_color: Color, p_visited: bool, p_av
 	area_color = p_color
 	is_visited = p_visited
 	is_available = p_available
+	if is_node_ready():
+		_update_appearance()
 
-	_update_appearance()
+
+func _ready() -> void:
 	pressed.connect(_on_pressed)
+	_update_appearance()
 
 
 func _update_appearance() -> void:

@@ -11,14 +11,17 @@ func _ready() -> void:
 	if victory:
 		title_label.text = "胜利"
 		desc_label.text = "你击败了敌人，获得了奖励。"
+		AudioManager.play_sfx("win")
 	else:
 		title_label.text = "失败"
 		desc_label.text = "你倒下了，但还能重新开始。"
+		AudioManager.play_sfx("lose")
 
 	continue_button.pressed.connect(_on_continue)
 
 
 func _on_continue() -> void:
+	AudioManager.play_sfx("click")
 	var victory: bool = GameState.player_stats.get("last_battle_victory", false)
 	if victory:
 		GameState.change_screen(GameState.Screen.REWARD)

@@ -4,9 +4,10 @@ extends Control
 const MAP_NODE_SCENE := preload("res://src/ui/widgets/map_node.tscn")
 const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 
-@onready var area_label: Label = $AreaLabel
-@onready var info_label: Label = $InfoLabel
-@onready var progress_label: Label = $ProgressLabel
+@onready var area_label: Label = $TopBar/AreaLabel
+@onready var progress_label: Label = $TopBar/ProgressLabel
+@onready var info_label: Label = $BottomBar/InfoLabel
+@onready var nodes_container: Control = $NodesContainer
 @onready var event_popup: PanelContainer = $EventPopup
 @onready var event_title: Label = $EventPopup/VBoxContainer/EventTitle
 @onready var event_desc: Label = $EventPopup/VBoxContainer/EventDesc
@@ -45,10 +46,10 @@ func _render_map() -> void:
 	for node_id in _game_map.nodes:
 		var node: GameMap.MapNode = _game_map.nodes[node_id]
 		var btn: Button = MAP_NODE_SCENE.instantiate()
+		nodes_container.add_child(btn)
 		btn.setup(node_id, node.type, _game_map.get_area_color(node.area_index), node.visited, node.available)
-		btn.position = node.position - Vector2(24, 24)
+		btn.position = node.position - Vector2(28, 28)
 		btn.node_selected.connect(_on_node_selected)
-		add_child(btn)
 
 
 func _draw_connection(from: Vector2, to: Vector2) -> void:
@@ -56,11 +57,12 @@ func _draw_connection(from: Vector2, to: Vector2) -> void:
 	line.add_point(from)
 	line.add_point(to)
 	line.width = 3
-	line.default_color = Color(0.4, 0.4, 0.4, 0.6)
-	add_child(line)
+	line.default_color = Color(0.25, 0.35, 0.4, 0.8)
+	nodes_container.add_child(line)
 
 
 func _on_node_selected(node_id: String) -> void:
+	AudioManager.play_sfx("click")
 	_game_map.move_to(node_id)
 	var node: GameMap.MapNode = _game_map.get_current_node()
 	_update_ui()
@@ -86,7 +88,6 @@ func _trigger_event(area_index: int) -> void:
 	event_title.text = _current_event.name
 	event_desc.text = _current_event.description
 
-	# 清除旧按钮
 	for child in event_buttons.get_children():
 		child.queue_free()
 
@@ -107,6 +108,7 @@ func _trigger_event(area_index: int) -> void:
 
 
 func _resolve_event(choice_index: int) -> void:
+	AudioManager.play_sfx("click")
 	if _current_event == null:
 		return
 	var handler := EventHandler.new(GameState.player_stats)
@@ -117,6 +119,7 @@ func _resolve_event(choice_index: int) -> void:
 
 
 func _trigger_rest() -> void:
+	AudioManager.play_sfx("heal")
 	var handler := EventHandler.new(GameState.player_stats)
 	info_label.text = handler.apply_rest()
 
@@ -127,8 +130,9 @@ func _update_ui() -> void:
 		return
 	area_label.text = "当前区域：%s" % _game_map.get_area_name(node.area_index)
 	info_label.text = "节点：%s | %s" % [node.id, GameMap.node_type_name(node.type)]
-	progress_label.text = "压力圈进度：%d" % GameState.run_progress
+	progress_label.text = "压力圈：%d" % GameState.run_progress
 
 
 func _on_settings_pressed() -> void:
+	AudioManager.play_sfx("click")
 	GameState.change_screen(GameState.Screen.SETTINGS)

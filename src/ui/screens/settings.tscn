@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://e1qkvnu0jq2qm"]
+[gd_scene load_steps=4 format=3 uid="uid://e1qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/settings.gd" id="1_settings"]
+[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
 
 [node name="SettingsScreen" type="Control"]
 layout_mode = 3
@@ -9,16 +11,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_settings")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="PixelBackground" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.12, 0.16, 1)
+script = ExtResource("3_bg")
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 1
@@ -30,7 +33,7 @@ offset_top = 40.0
 offset_right = 100.0
 offset_bottom = 90.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 40
 text = "设置"
 horizontal_alignment = 1
 
@@ -42,12 +45,12 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -250.0
-offset_top = -200.0
+offset_top = -240.0
 offset_right = 250.0
-offset_bottom = 200.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
 [node name="AIEnabledCheck" type="CheckBox" parent="VBoxContainer"]
 layout_mode = 2
@@ -97,8 +100,16 @@ text = "全屏显示"
 
 [node name="SaveButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 50)
 text = "保存设置"
 
 [node name="BackButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 50)
 text = "返回"
+
+[node name="MessageLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ""
+horizontal_alignment = 1

@@ -3,12 +3,12 @@
 [ext_resource type="Script" path="res://src/ui/widgets/major_card.gd" id="1_major_card"]
 
 [node name="MajorCard" type="PanelContainer"]
-custom_minimum_size = Vector2(280, 360)
+custom_minimum_size = Vector2(300, 420)
 script = ExtResource("1_major_card")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="NameLabel" type="Label" parent="VBoxContainer"]
@@ -16,20 +16,33 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "专业名"
 horizontal_alignment = 1
-vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "🎓"
+horizontal_alignment = 1
 
 [node name="DescLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
 text = "专业描述"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="StatsLabel" type="Label" parent="VBoxContainer"]
+[node name="StatsContainer" type="GridContainer" parent="VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "属性"
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 6
+
+[node name="SkillLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "技能"
 horizontal_alignment = 1
 
 [node name="SelectButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 50)
 text = "选择"

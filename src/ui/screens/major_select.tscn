@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8qkvnu0jq2qm"]
+[gd_scene load_steps=4 format=3 uid="uid://c8qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/major_select.gd" id="1_major_select"]
+[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
 
 [node name="MajorSelectScreen" type="Control"]
 layout_mode = 3
@@ -9,16 +11,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_major_select")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="PixelBackground" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.12, 0.16, 1)
+script = ExtResource("3_bg")
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 1
@@ -30,7 +33,7 @@ offset_top = 40.0
 offset_right = 150.0
 offset_bottom = 90.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 40
 text = "选择你的专业"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -42,9 +45,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -540.0
+offset_left = -560.0
 offset_top = -180.0
-offset_right = 540.0
+offset_right = 560.0
 offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -55,6 +58,65 @@ alignment = 1
 layout_mode = 0
 offset_left = 40.0
 offset_top = 40.0
-offset_right = 120.0
-offset_bottom = 80.0
-text = "返回"
+offset_right = 140.0
+offset_bottom = 90.0
+text = "◀ 返回"
+
+[node name="CustomButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 600.0
+offset_right = 740.0
+offset_bottom = 650.0
+text = "✎ 自定义专业"
+
+[node name="CustomPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -240.0
+offset_right = 320.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CustomPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CustomTitle" type="Label" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "自定义专业"
+horizontal_alignment = 1
+
+[node name="NameLabel" type="Label" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+text = "专业名称"
+
+[node name="NameEdit" type="LineEdit" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+text = "我的专业"
+
+[node name="PointsLabel" type="Label" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+text = "剩余点数：20"
+
+[node name="StatsContainer" type="GridContainer" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 8
+
+[node name="ConfirmButton" type="Button" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+text = "确认"
+
+[node name="CancelButton" type="Button" parent="CustomPanel/VBoxContainer"]
+layout_mode = 2
+text = "取消"

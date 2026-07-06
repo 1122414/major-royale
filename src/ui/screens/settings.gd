@@ -9,6 +9,7 @@ extends Control
 @onready var fullscreen_check: CheckBox = $VBoxContainer/FullscreenCheck
 @onready var save_button: Button = $VBoxContainer/SaveButton
 @onready var back_button: Button = $VBoxContainer/BackButton
+@onready var message_label: Label = $VBoxContainer/MessageLabel
 
 
 func _ready() -> void:
@@ -34,6 +35,8 @@ func _on_save() -> void:
 
 	AudioManager.set_master_volume(Settings.master_volume)
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if Settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
+
+	message_label.text = "设置已保存"
 
 
 func _on_back() -> void:

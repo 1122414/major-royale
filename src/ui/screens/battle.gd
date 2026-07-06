@@ -5,18 +5,19 @@ const CARD_VIEW_SCENE := preload("res://src/ui/widgets/card_view.tscn")
 const STATUS_ICON_SCENE := preload("res://src/ui/widgets/status_icon.tscn")
 const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 
-@onready var enemy_name_label: Label = $EnemyPanel/EnemyNameLabel
-@onready var enemy_hp_label: Label = $EnemyPanel/EnemyHPLabel
-@onready var enemy_intent_label: Label = $EnemyPanel/EnemyIntentLabel
-@onready var enemy_status_container: HBoxContainer = $EnemyPanel/EnemyStatusContainer
-@onready var player_hp_label: Label = $PlayerPanel/PlayerHPLabel
-@onready var player_spirit_label: Label = $PlayerPanel/PlayerSpiritLabel
-@onready var energy_label: Label = $PlayerPanel/EnergyLabel
-@onready var player_status_container: HBoxContainer = $PlayerPanel/PlayerStatusContainer
+@onready var enemy_name_label: Label = $EnemyPanel/VBoxContainer/EnemyNameLabel
+@onready var enemy_hp_label: Label = $EnemyPanel/VBoxContainer/EnemyHPLabel
+@onready var enemy_intent_label: Label = $EnemyPanel/VBoxContainer/EnemyIntentLabel
+@onready var enemy_status_container: HBoxContainer = $EnemyPanel/VBoxContainer/EnemyStatusContainer
+@onready var player_hp_label: Label = $PlayerPanel/VBoxContainer/PlayerHPLabel
+@onready var player_spirit_label: Label = $PlayerPanel/VBoxContainer/PlayerSpiritLabel
+@onready var energy_label: Label = $PlayerPanel/VBoxContainer/EnergyLabel
+@onready var player_status_container: HBoxContainer = $PlayerPanel/VBoxContainer/PlayerStatusContainer
 @onready var hand_container: HBoxContainer = $HandContainer
 @onready var end_turn_button: Button = $EndTurnButton
 @onready var skill_button: Button = $SkillButton
 @onready var message_label: Label = $MessageLabel
+@onready var turn_label: Label = $TurnLabel
 
 var _battle: Battle
 
@@ -88,6 +89,7 @@ func _update_ui() -> void:
 	player_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
 	player_spirit_label.text = "精神: %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
 	energy_label.text = "能量: %d/%d" % [_battle.energy, _battle.max_energy]
+	turn_label.text = "回合 %d" % _battle.turn_count
 
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
 	_update_status_icons(player_status_container, _battle.player.statuses)

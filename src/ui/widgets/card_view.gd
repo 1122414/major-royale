@@ -10,27 +10,35 @@ var card_index: int = -1
 @onready var type_label: Label = $VBoxContainer/TypeLabel
 @onready var desc_label: Label = $VBoxContainer/DescLabel
 
+const TYPE_COLORS := {
+	"attack": Color(0.95, 0.35, 0.35),
+	"defense": Color(0.35, 0.65, 0.95),
+	"skill": Color(0.95, 0.85, 0.35),
+	"control": Color(0.75, 0.45, 0.95),
+	"heal": Color(0.35, 0.95, 0.45),
+	"finisher": Color(0.95, 0.65, 0.25),
+}
+
 
 func setup(card: Resource, index: int) -> void:
 	card_index = index
 	name_label.text = card.name
-	cost_label.text = "费用: %d" % card.cost
+	cost_label.text = "%d" % card.cost
 	type_label.text = _type_name(card.type)
 	desc_label.text = card.description
-	_update_color(card.type)
+	modulate = TYPE_COLORS.get(card.type, Color.WHITE)
 
 	gui_input.connect(_on_gui_input)
+	mouse_entered.connect(_on_hover)
+	mouse_exited.connect(_on_unhover)
 
 
-func _update_color(card_type: String) -> void:
-	match card_type:
-		"attack": modulate = Color(0.9, 0.5, 0.5)
-		"defense": modulate = Color(0.5, 0.7, 0.9)
-		"skill": modulate = Color(0.9, 0.9, 0.5)
-		"control": modulate = Color(0.7, 0.5, 0.9)
-		"heal": modulate = Color(0.5, 0.9, 0.5)
-		"finisher": modulate = Color(0.9, 0.7, 0.3)
-		_: modulate = Color.WHITE
+func _on_hover() -> void:
+	scale = Vector2(1.08, 1.08)
+
+
+func _on_unhover() -> void:
+	scale = Vector2(1, 1)
 
 
 func _type_name(card_type: String) -> String:

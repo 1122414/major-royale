@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://f1qkvnu0jq2qm"]
+[gd_scene load_steps=4 format=3 uid="uid://f1qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/map_explore.gd" id="1_map_explore"]
+[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
 
 [node name="MapExploreScreen" type="Control"]
 layout_mode = 3
@@ -9,41 +11,62 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_map_explore")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="PixelBackground" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.1, 0.12, 1)
+script = ExtResource("3_bg")
 
-[node name="AreaLabel" type="Label" parent="."]
+[node name="TopBar" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 40.0
+offset_left = 20.0
 offset_top = 20.0
-offset_right = 300.0
-offset_bottom = 60.0
-theme_override_font_sizes/font_size = 24
+offset_right = 620.0
+offset_bottom = 70.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="AreaLabel" type="Label" parent="TopBar/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
 text = "当前区域"
 
-[node name="ProgressLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 640.0
-offset_right = 300.0
-offset_bottom = 680.0
-theme_override_font_sizes/font_size = 18
-text = "压力圈进度：0"
+[node name="ProgressLabel" type="Label" parent="TopBar/HBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "压力圈：0"
 
-[node name="InfoLabel" type="Label" parent="."]
+[node name="NodesContainer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -640.0
+offset_top = -360.0
+offset_right = 640.0
+offset_bottom = 360.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BottomBar" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 680.0
-offset_right = 600.0
-offset_bottom = 720.0
+offset_left = 20.0
+offset_top = 660.0
+offset_right = 800.0
+offset_bottom = 700.0
+
+[node name="InfoLabel" type="Label" parent="BottomBar"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "节点信息"
 
@@ -55,10 +78,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -150.0
-offset_right = 250.0
-offset_bottom = 150.0
+offset_left = -280.0
+offset_top = -160.0
+offset_right = 280.0
+offset_bottom = 160.0
 grow_horizontal = 2
 grow_vertical = 2
 

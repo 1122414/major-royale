@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://i1qkvnu0jq2qm"]
+[gd_scene load_steps=4 format=3 uid="uid://i1qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/battle.gd" id="1_battle"]
+[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
 
 [node name="BattleScreen" type="Control"]
 layout_mode = 3
@@ -9,106 +11,126 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_battle")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="PixelBackground" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.08, 0.08, 1)
+script = ExtResource("3_bg")
 
 [node name="EnemyPanel" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 440.0
-offset_top = 60.0
-offset_right = 840.0
-offset_bottom = 220.0
+offset_left = 420.0
+offset_top = 40.0
+offset_right = 860.0
+offset_bottom = 180.0
 
-[node name="EnemyNameLabel" type="Label" parent="EnemyPanel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="EnemyPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="EnemyNameLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "敌人名"
 horizontal_alignment = 1
 
-[node name="EnemyHPLabel" type="Label" parent="EnemyPanel"]
+[node name="EnemyHPLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "HP: 30/30"
 horizontal_alignment = 1
 
-[node name="EnemyIntentLabel" type="Label" parent="EnemyPanel"]
+[node name="EnemyIntentLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "意图"
 horizontal_alignment = 1
 
-[node name="EnemyStatusContainer" type="HBoxContainer" parent="EnemyPanel"]
+[node name="EnemyStatusContainer" type="HBoxContainer" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
 [node name="PlayerPanel" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 500.0
-offset_right = 320.0
-offset_bottom = 660.0
+offset_left = 20.0
+offset_top = 480.0
+offset_right = 340.0
+offset_bottom = 640.0
 
-[node name="PlayerHPLabel" type="Label" parent="PlayerPanel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PlayerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PlayerHPLabel" type="Label" parent="PlayerPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "HP: 60/60"
 
-[node name="PlayerSpiritLabel" type="Label" parent="PlayerPanel"]
+[node name="PlayerSpiritLabel" type="Label" parent="PlayerPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "精神: 100/100"
 
-[node name="EnergyLabel" type="Label" parent="PlayerPanel"]
+[node name="EnergyLabel" type="Label" parent="PlayerPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "能量: 3/3"
 
-[node name="PlayerStatusContainer" type="HBoxContainer" parent="PlayerPanel"]
+[node name="PlayerStatusContainer" type="HBoxContainer" parent="PlayerPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="HandContainer" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 360.0
-offset_top = 520.0
+offset_top = 500.0
 offset_right = 1240.0
-offset_bottom = 760.0
+offset_bottom = 720.0
 theme_override_constants/separation = 16
 alignment = 1
 
 [node name="EndTurnButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1100.0
+offset_left = 1080.0
 offset_top = 420.0
-offset_right = 1220.0
-offset_bottom = 470.0
+offset_right = 1240.0
+offset_bottom = 480.0
 theme_override_font_sizes/font_size = 20
 text = "结束回合"
 
 [node name="SkillButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1100.0
+offset_left = 1080.0
 offset_top = 340.0
-offset_right = 1220.0
-offset_bottom = 390.0
+offset_right = 1240.0
+offset_bottom = 400.0
 theme_override_font_sizes/font_size = 20
 text = "技能"
 
 [node name="MessageLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 440.0
-offset_top = 460.0
+offset_top = 440.0
 offset_right = 840.0
-offset_bottom = 500.0
+offset_bottom = 480.0
 theme_override_font_sizes/font_size = 18
 text = ""
+horizontal_alignment = 1
+
+[node name="TurnLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 1080.0
+offset_top = 300.0
+offset_right = 1240.0
+offset_bottom = 330.0
+theme_override_font_sizes/font_size = 16
+text = "回合 1"
 horizontal_alignment = 1

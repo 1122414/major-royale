@@ -27,7 +27,7 @@ func _render_rewards() -> void:
 	for i in _rewards.size():
 		var reward := _rewards[i]
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(240, 200)
+		btn.custom_minimum_size = Vector2(260, 240)
 		btn.text = _format_reward(reward)
 		btn.pressed.connect(_on_reward_selected.bind(i))
 		rewards_container.add_child(btn)
@@ -50,6 +50,7 @@ func _format_reward(reward: Dictionary) -> String:
 
 
 func _on_reward_selected(index: int) -> void:
+	AudioManager.play_sfx("click")
 	var reward := _rewards[index]
 	_apply_reward(reward)
 	info_label.text = "已选择奖励，按 ESC 返回地图"
@@ -58,7 +59,6 @@ func _on_reward_selected(index: int) -> void:
 func _apply_reward(reward: Dictionary) -> void:
 	match reward.type:
 		RewardGenerator.RewardType.CARD:
-			# 简单选择第一张候选卡
 			var options: Array = reward.options
 			if not options.is_empty():
 				var selected_card = options[0]
@@ -79,4 +79,5 @@ func _on_settings() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		AudioManager.play_sfx("click")
 		GameState.change_screen(GameState.Screen.MAP_EXPLORE)
