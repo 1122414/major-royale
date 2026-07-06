@@ -7,8 +7,8 @@
       "type": "normal",
       "hp": 30,
       "actions": [
-        {"id": "pressure", "weight": 2, "description": "施加压力。"},
-        {"id": "attack", "weight": 3, "description": "造成 5 点伤害。"}
+        {"id": "stack_pressure", "weight": 2, "value": 1, "description": "施加压力。"},
+        {"id": "attack", "weight": 3, "value": 5, "description": "造成 5 点伤害。"}
       ]
     },
     {
@@ -17,8 +17,38 @@
       "type": "normal",
       "hp": 40,
       "actions": [
-        {"id": "shield", "weight": 2, "description": "获得护盾。"},
-        {"id": "counter", "weight": 1, "description": "下回合反击。"}
+        {"id": "shield", "weight": 2, "value": 6, "description": "获得护盾。"},
+        {"id": "counter", "weight": 1, "value": 2, "description": "下回合反击。"}
+      ]
+    },
+    {
+      "id": "all_nighter",
+      "name": "熬夜卷王",
+      "type": "normal",
+      "hp": 35,
+      "actions": [
+        {"id": "stack_pressure", "weight": 3, "value": 1, "description": "叠加压力。"},
+        {"id": "attack", "weight": 2, "value": 4, "description": "造成 4 点伤害。"}
+      ]
+    },
+    {
+      "id": "sports_student",
+      "name": "体育特长生",
+      "type": "normal",
+      "hp": 45,
+      "actions": [
+        {"id": "charge", "weight": 1, "value": 1, "description": "蓄力重击。"},
+        {"id": "heavy_attack", "weight": 2, "value": 10, "description": "造成 10 点伤害。"}
+      ]
+    },
+    {
+      "id": "client_phantom",
+      "name": "甲方幻影",
+      "type": "normal",
+      "hp": 38,
+      "actions": [
+        {"id": "attack", "weight": 2, "value": 4, "description": "造成 4 点伤害。"},
+        {"id": "stack_pressure", "weight": 2, "value": 1, "description": "提出修改意见，增加压力。"}
       ]
     }
   ]

@@ -14,6 +14,7 @@ signal turn_changed(is_player_turn: bool)
 signal hand_updated
 signal energy_updated
 signal skill_used(skill_name: String)
+signal boss_phase_changed(phase_name: String)
 
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
@@ -34,6 +35,7 @@ var _enemy_delay: int = 0
 var _reveal_intent: bool = false
 var _skill_used_this_battle: bool = false
 var _law_passive_used: bool = false
+var _boss_current_phase: int = 0
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -60,10 +62,16 @@ func play_card(card_index: int) -> bool:
 	player.discard_pile.append(card)
 
 	_effect_processor.process_card(card, player, enemy)
+
+	# 医学被动：攻击有概率弱点打击
+	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
+		enemy.take_damage(3)
+
 	energy_updated.emit()
 	hand_updated.emit()
 
 	_check_end_conditions()
+	_update_boss_phase()
 	return true
 
 
@@ -161,10 +169,6 @@ func _execute_enemy_turn() -> void:
 			enemy.heal(action.get("value", 5))
 		"stack_pressure":
 			player.add_status("pressure", action.get("value", 1))
-		"counter":
-			enemy.add_status("counter", action.get("value", 1))
-		"charge":
-			enemy.add_status("charged", 1)
 
 	_check_end_conditions()
 	if state == BattleState.PLAYER_WON or state == BattleState.PLAYER_LOST:
@@ -211,13 +215,14 @@ func _start_player_turn() -> void:
 
 	player.draw_cards(draw_amount, MAX_HAND_SIZE)
 	_decide_enemy_intent()
+	_update_boss_phase()
 	turn_changed.emit(true)
 	energy_updated.emit()
 	hand_updated.emit()
 
 
 func _decide_enemy_intent() -> void:
-	var actions: Array = enemy_resource.actions
+	var actions := _get_current_enemy_actions()
 	if actions.is_empty():
 		_enemy_intent = {"id": "attack", "value": 5}
 		return
@@ -225,6 +230,33 @@ func _decide_enemy_intent() -> void:
 	var action := actions[randi() % actions.size()] as Dictionary
 	_enemy_intent = action.duplicate()
 	_reveal_intent = false
+
+
+func _get_current_enemy_actions() -> Array:
+	if enemy_resource.enemy_type != "boss":
+		return enemy_resource.actions
+
+	var phases: Array = enemy_resource.phases
+	if phases.is_empty():
+		return enemy_resource.actions
+
+	var hp_ratio := float(enemy.hp) / float(enemy.max_hp)
+	for i in phases.size():
+		var phase := phases[i] as Dictionary
+		var threshold: float = phase.get("threshold", 0.0)
+		if hp_ratio >= threshold and i >= _boss_current_phase:
+			if i != _boss_current_phase:
+				_boss_current_phase = i
+				boss_phase_changed.emit(phase.get("name", "阶段 %d" % (i + 1)))
+			return phase.get("actions", [])
+	var last_phase := phases[phases.size() - 1] as Dictionary
+	return last_phase.get("actions", [])
+
+
+func _update_boss_phase() -> void:
+	if enemy_resource.enemy_type != "boss":
+		return
+	_get_current_enemy_actions()
 
 
 func get_enemy_intent_text() -> String:

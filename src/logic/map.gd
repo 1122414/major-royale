@@ -59,7 +59,6 @@ func generate(seed_value: int = 0) -> void:
 		var previous_ids: Array[String] = []
 
 		if area_idx > 0:
-			# 继承上一区域最后一个节点作为连接
 			for prev in nodes.values():
 				if prev.area_index == area_idx - 1:
 					previous_ids.append(prev.id)
@@ -92,12 +91,13 @@ func generate(seed_value: int = 0) -> void:
 
 
 func _pick_node_type(area_idx: int, node_idx: int, node_count: int, rng: RandomNumberGenerator) -> NodeType:
-	# 每个区域最后一个节点固定为过渡到下一区域的节点
-	if node_idx == node_count - 1 and area_idx < AREAS.size() - 1:
-		return NodeType.EVENT
-
+	# 最后一区域最后一个节点固定为 Boss
 	if area_idx == AREAS.size() - 1 and node_idx == node_count - 1:
 		return NodeType.BOSS
+
+	# 每个区域最后一个节点固定为过渡到下一区域的节点
+	if node_idx == node_count - 1:
+		return NodeType.EVENT
 
 	var roll := rng.randf()
 	if roll < 0.45:
@@ -113,7 +113,7 @@ func _pick_node_type(area_idx: int, node_idx: int, node_count: int, rng: RandomN
 func _assign_data_id(node_type: NodeType, area_id: String, rng: RandomNumberGenerator) -> String:
 	match node_type:
 		NodeType.BATTLE:
-			var normal_ids := ["gpa_anxiety", "seat_grabber"]
+			var normal_ids := ["gpa_anxiety", "seat_grabber", "all_nighter", "sports_student", "client_phantom"]
 			return normal_ids[rng.randi() % normal_ids.size()]
 		NodeType.ELITE:
 			var elite_ids := ["all_nighter_king", "sports_ace"]

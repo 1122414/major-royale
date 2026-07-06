@@ -10,6 +10,7 @@ extends Resource
 @export var actions: Array[Dictionary] = []
 @export var is_ai_native: bool = false
 @export var ai_prompt_key: String = ""     ## AI Native 敌人使用的提示词键
+@export var phases: Array[Dictionary] = []  ## Boss 阶段配置
 
 
 static func from_dict(data: Dictionary) -> Resource:
@@ -21,6 +22,7 @@ static func from_dict(data: Dictionary) -> Resource:
 	enemy.actions = _to_dict_array(data.get("actions", []))
 	enemy.is_ai_native = enemy.enemy_type == "ai_native"
 	enemy.ai_prompt_key = data.get("ai_prompt_key", "")
+	enemy.phases = _to_dict_array(data.get("phases", []))
 	return enemy
 
 
