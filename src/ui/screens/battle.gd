@@ -12,6 +12,7 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var energy_label: Label = $PlayerPanel/EnergyLabel
 @onready var hand_container: HBoxContainer = $HandContainer
 @onready var end_turn_button: Button = $EndTurnButton
+@onready var skill_button: Button = $SkillButton
 @onready var message_label: Label = $MessageLabel
 
 var _battle: Battle
@@ -29,8 +30,13 @@ func _ready() -> void:
 	_battle.energy_updated.connect(_update_ui)
 	_battle.turn_changed.connect(_on_turn_changed)
 	_battle.battle_ended.connect(_on_battle_ended)
+	_battle.skill_used.connect(_on_skill_used)
 
 	end_turn_button.pressed.connect(_on_end_turn)
+	skill_button.pressed.connect(_on_skill)
+
+	var major: MajorResource = Config.majors[GameState.player_major_id]
+	skill_button.text = major.active_skill.get("name", "技能")
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
@@ -83,6 +89,7 @@ func _update_ui() -> void:
 		hand_container.add_child(card_view)
 
 	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
+	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
 
 
 func _on_card_clicked(index: int) -> void:
@@ -96,11 +103,22 @@ func _on_end_turn() -> void:
 	_battle.end_player_turn()
 
 
+func _on_skill() -> void:
+	if _battle.use_active_skill():
+		_update_ui()
+	else:
+		message_label.text = "本战斗已使用过技能"
+
+
 func _on_turn_changed(is_player_turn: bool) -> void:
 	if is_player_turn:
 		message_label.text = "第 %d 回合" % _battle.turn_count
 	else:
 		message_label.text = "敌人回合"
+
+
+func _on_skill_used(skill_name: String) -> void:
+	message_label.text = "使用了 %s" % skill_name
 
 
 func _on_battle_ended(victory: bool) -> void:

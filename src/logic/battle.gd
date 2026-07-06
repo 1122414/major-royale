@@ -13,6 +13,7 @@ signal battle_ended(victory: bool)
 signal turn_changed(is_player_turn: bool)
 signal hand_updated
 signal energy_updated
+signal skill_used(skill_name: String)
 
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
@@ -31,6 +32,8 @@ var _effect_processor: CardEffectProcessor
 var _enemy_intent: Dictionary = {}
 var _enemy_delay: int = 0
 var _reveal_intent: bool = false
+var _skill_used_this_battle: bool = false
+var _law_passive_used: bool = false
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -38,6 +41,7 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	enemy_resource = p_enemy_resource
 	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, p_enemy_resource.hp)
 	_effect_processor = CardEffectProcessor.new(self)
+	_effect_processor.intent_revealed.connect(reveal_intent)
 	_start_player_turn()
 
 
@@ -63,6 +67,43 @@ func play_card(card_index: int) -> bool:
 	return true
 
 
+func use_active_skill() -> bool:
+	if state != BattleState.PLAYER_TURN or _skill_used_this_battle:
+		return false
+
+	var major: MajorResource = Config.majors.get(player.major_id)
+	if major == null:
+		return false
+
+	var skill_id: String = major.active_skill.get("id", "")
+	match skill_id:
+		"code_injection":
+			enemy.add_status("bug", 2)
+			enemy.add_status("pressure", 1)
+			skill_used.emit("代码注入")
+		"objection":
+			_enemy_intent = {"id": "stunned", "description": "被异议打断，本回合无法行动。", "value": 0}
+			enemy.add_status("举证失败", 1)
+			skill_used.emit("异议！")
+		"emergency_suture":
+			player.heal(12)
+			_remove_body_debuffs(player)
+			skill_used.emit("紧急缝合")
+		_:
+			return false
+
+	_skill_used_this_battle = true
+	energy_updated.emit()
+	_check_end_conditions()
+	return true
+
+
+func _remove_body_debuffs(character: Character) -> void:
+	var body_debuffs := ["bleed", "pressure"]
+	for status_id in body_debuffs:
+		character.remove_status(status_id)
+
+
 func end_player_turn() -> void:
 	if state != BattleState.PLAYER_TURN:
 		return
@@ -83,9 +124,18 @@ func _execute_enemy_turn() -> void:
 		_end_enemy_turn()
 		return
 
+	# 被眩晕或 Bug 导致行动失败
+	if _enemy_intent.get("id", "") == "stunned" or (enemy.has_status("bug") and randf() < 0.25):
+		_enemy_intent = {}
+		_end_enemy_turn()
+		return
+
 	# 结算流血等持续伤害
 	if enemy.has_status("bleed"):
 		enemy.take_damage(enemy.get_status_stacks("bleed") * Status.STATUS_DATABASE["bleed"].get("tick_damage", 3))
+		_check_end_conditions()
+		if state != BattleState.ENEMY_TURN:
+			return
 
 	# 执行意图
 	var action := _enemy_intent
@@ -95,7 +145,16 @@ func _execute_enemy_turn() -> void:
 			if enemy.has_status("charged"):
 				damage *= 2
 				enemy.remove_status("charged")
-			player.take_damage(damage)
+			if enemy.has_status("举证失败"):
+				damage = maxi(1, damage / 2)
+				enemy.remove_status("举证失败")
+			_apply_damage_to_player(damage)
+		"heavy_attack":
+			var damage: int = action.get("value", 10)
+			if enemy.has_status("举证失败"):
+				damage = maxi(1, damage / 2)
+				enemy.remove_status("举证失败")
+			_apply_damage_to_player(damage)
 		"shield":
 			enemy.gain_shield(action.get("value", 5))
 		"heal":
@@ -114,6 +173,22 @@ func _execute_enemy_turn() -> void:
 	_end_enemy_turn()
 
 
+func _apply_damage_to_player(damage: int) -> void:
+	var previous_hp := player.hp
+	player.take_damage(damage)
+
+	# 法学被动：首次致命伤保留 1 点生命
+	if player.major_id == "law" and not _law_passive_used and player.hp <= 0:
+		player.hp = 1
+		player.gain_shield(10)
+		_law_passive_used = true
+
+	# 敌人反击
+	if player.has_status("counter"):
+		enemy.take_damage(player.get_status_stacks("counter") * 3)
+		player.remove_status("counter")
+
+
 func _end_enemy_turn() -> void:
 	turn_count += 1
 	_start_player_turn()
@@ -123,7 +198,18 @@ func _start_player_turn() -> void:
 	state = BattleState.PLAYER_TURN
 	energy = max_energy
 	player.reset_shield()
-	player.draw_cards(BASE_DRAW, MAX_HAND_SIZE)
+
+	# 计算机被动：生命低于 40% 时额外抽 1 张牌
+	var draw_amount := BASE_DRAW
+	if player.major_id == "computer" and player.hp < player.max_hp * 0.4:
+		draw_amount += 1
+		player.lose_spirit(5)
+
+	# 压力影响：每 4 层压力少抽 1 张
+	var pressure := player.get_status_stacks("pressure")
+	draw_amount = maxi(1, draw_amount - pressure / 4)
+
+	player.draw_cards(draw_amount, MAX_HAND_SIZE)
 	_decide_enemy_intent()
 	turn_changed.emit(true)
 	energy_updated.emit()
@@ -142,8 +228,6 @@ func _decide_enemy_intent() -> void:
 
 
 func get_enemy_intent_text() -> String:
-	if not _reveal_intent:
-		return _enemy_intent.get("description", "敌人正在准备行动...")
 	return _enemy_intent.get("description", "敌人正在准备行动...")
 
 
