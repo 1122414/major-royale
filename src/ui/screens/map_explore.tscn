@@ -29,11 +29,57 @@ offset_bottom = 60.0
 theme_override_font_sizes/font_size = 24
 text = "当前区域"
 
-[node name="InfoLabel" type="Label" parent="."]
+[node name="ProgressLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 40.0
 offset_top = 640.0
-offset_right = 600.0
+offset_right = 300.0
 offset_bottom = 680.0
 theme_override_font_sizes/font_size = 18
+text = "压力圈进度：0"
+
+[node name="InfoLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 680.0
+offset_right = 600.0
+offset_bottom = 720.0
+theme_override_font_sizes/font_size = 18
 text = "节点信息"
+
+[node name="EventPopup" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -150.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EventPopup"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="EventTitle" type="Label" parent="EventPopup/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "事件标题"
+horizontal_alignment = 1
+
+[node name="EventDesc" type="Label" parent="EventPopup/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "事件描述"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="EventButtons" type="VBoxContainer" parent="EventPopup/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8

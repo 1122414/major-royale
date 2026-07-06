@@ -6,13 +6,21 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 
 @onready var area_label: Label = $AreaLabel
 @onready var info_label: Label = $InfoLabel
+@onready var progress_label: Label = $ProgressLabel
+@onready var event_popup: PanelContainer = $EventPopup
+@onready var event_title: Label = $EventPopup/VBoxContainer/EventTitle
+@onready var event_desc: Label = $EventPopup/VBoxContainer/EventDesc
+@onready var event_buttons: VBoxContainer = $EventPopup/VBoxContainer/EventButtons
 
 var _game_map: GameMap
+var _rng := RandomNumberGenerator.new()
+var _current_event: EventResource = null
 
 
 func _ready() -> void:
 	_game_map = GameMap.new()
-	_game_map.generate(hash(GameState.player_major_id))
+	_rng.seed = hash(GameState.player_major_id) + Time.get_unix_time_from_system()
+	_game_map.generate(_rng.seed)
 	_render_map()
 	_update_ui()
 
@@ -21,6 +29,8 @@ func _ready() -> void:
 	settings_btn.position = Vector2(1180, 20)
 	settings_btn.pressed.connect(_on_settings_pressed)
 	add_child(settings_btn)
+
+	event_popup.visible = false
 
 
 func _render_map() -> void:
@@ -58,11 +68,57 @@ func _on_node_selected(node_id: String) -> void:
 	match node.type:
 		GameMap.NodeType.BATTLE, GameMap.NodeType.ELITE, GameMap.NodeType.BOSS:
 			GameState.player_stats["current_enemy_id"] = node.data_id
+			GameState.run_progress += 1
 			GameState.change_screen(GameState.Screen.BATTLE)
 		GameMap.NodeType.EVENT:
-			EventBus.event_triggered.emit(node.data_id)
+			_trigger_event(node.area_index)
 		GameMap.NodeType.REST:
-			EventBus.event_triggered.emit("rest_site")
+			_trigger_rest()
+
+
+func _trigger_event(area_index: int) -> void:
+	var area_id: String = GameMap.AREAS[area_index].id
+	_current_event = EventHandler.pick_random_event(area_id, _rng)
+	if _current_event == null:
+		info_label.text = "这里什么都没有。"
+		return
+
+	event_title.text = _current_event.name
+	event_desc.text = _current_event.description
+
+	# 清除旧按钮
+	for child in event_buttons.get_children():
+		child.queue_free()
+
+	if _current_event.choices.is_empty():
+		var btn := Button.new()
+		btn.text = "确定"
+		btn.pressed.connect(_resolve_event.bind(-1))
+		event_buttons.add_child(btn)
+	else:
+		for i in _current_event.choices.size():
+			var choice := _current_event.choices[i]
+			var btn := Button.new()
+			btn.text = choice.get("text", "选择")
+			btn.pressed.connect(_resolve_event.bind(i))
+			event_buttons.add_child(btn)
+
+	event_popup.visible = true
+
+
+func _resolve_event(choice_index: int) -> void:
+	if _current_event == null:
+		return
+	var handler := EventHandler.new(GameState.player_stats)
+	var message := handler.apply_event(_current_event, choice_index)
+	info_label.text = message
+	event_popup.visible = false
+	_current_event = null
+
+
+func _trigger_rest() -> void:
+	var handler := EventHandler.new(GameState.player_stats)
+	info_label.text = handler.apply_rest()
 
 
 func _update_ui() -> void:
@@ -71,6 +127,7 @@ func _update_ui() -> void:
 		return
 	area_label.text = "当前区域：%s" % _game_map.get_area_name(node.area_index)
 	info_label.text = "节点：%s | %s" % [node.id, GameMap.node_type_name(node.type)]
+	progress_label.text = "压力圈进度：%d" % GameState.run_progress
 
 
 func _on_settings_pressed() -> void:

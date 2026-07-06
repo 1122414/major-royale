@@ -26,6 +26,7 @@ func _ready() -> void:
 
 	var player := _create_player()
 	_battle = Battle.new(player, enemy_res)
+	GameState.player_stats["battle_player"] = player
 	_battle.hand_updated.connect(_update_ui)
 	_battle.energy_updated.connect(_update_ui)
 	_battle.turn_changed.connect(_on_turn_changed)
