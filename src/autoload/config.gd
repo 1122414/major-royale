@@ -1,13 +1,18 @@
 extends Node
-## 全局配置加载器：读取 JSON 数据与游戏常量。
+## 全局配置加载器：读取 JSON 数据并解析为自定义 Resource。
 
 const GAME_CFG_PATH := "res://config/game.cfg"
 const DATA_DIR := "res://data"
 
 var _game_cfg: ConfigFile
+
+## 专业 ID -> MajorResource
 var majors: Dictionary = {}
+## 卡牌 ID -> CardResource
 var cards: Dictionary = {}
+## 敌人 ID -> EnemyResource
 var enemies: Dictionary = {}
+## 事件 ID -> EventResource
 var events: Dictionary = {}
 
 
@@ -31,14 +36,90 @@ func get_game_value(section: String, key: String, default_value: Variant = null)
 
 
 func _load_all_json_data() -> void:
-	majors = _load_json_folder("%s/majors" % DATA_DIR)
-	cards = _load_json_folder("%s/cards" % DATA_DIR)
-	enemies = _load_json_folder("%s/enemies" % DATA_DIR)
-	events = _load_json_folder("%s/events" % DATA_DIR)
+	majors = _load_major_folder("%s/majors" % DATA_DIR)
+	cards = _load_card_folder("%s/cards" % DATA_DIR)
+	enemies = _load_enemy_folder("%s/enemies" % DATA_DIR)
+	events = _load_event_folder("%s/events" % DATA_DIR)
 
 
-func _load_json_folder(folder_path: String) -> Dictionary:
+func _load_major_folder(folder_path: String) -> Dictionary:
 	var result := {}
+	for file_name in _list_json_files(folder_path):
+		var data := _load_json_file("%s/%s" % [folder_path, file_name])
+		if data.is_empty():
+			continue
+		var major := MajorResource.from_dict(data)
+		if not major.id.is_empty():
+			result[major.id] = major
+	return result
+
+
+func _load_card_folder(folder_path: String) -> Dictionary:
+	var result := {}
+	for file_name in _list_json_files(folder_path):
+		var data := _load_json_file("%s/%s" % [folder_path, file_name])
+		if data.is_empty():
+			continue
+
+		# 支持两种格式：单卡对象 或 { "cards": [...] }
+		var card_list: Array = []
+		if data.has("cards"):
+			card_list = data["cards"]
+		else:
+			card_list.append(data)
+
+		for card_dict in card_list:
+			if card_dict is Dictionary:
+				var card := CardResource.from_dict(card_dict)
+				if not card.id.is_empty():
+					result[card.id] = card
+	return result
+
+
+func _load_enemy_folder(folder_path: String) -> Dictionary:
+	var result := {}
+	for file_name in _list_json_files(folder_path):
+		var data := _load_json_file("%s/%s" % [folder_path, file_name])
+		if data.is_empty():
+			continue
+
+		var enemy_list: Array = []
+		if data.has("enemies"):
+			enemy_list = data["enemies"]
+		else:
+			enemy_list.append(data)
+
+		for enemy_dict in enemy_list:
+			if enemy_dict is Dictionary:
+				var enemy := EnemyResource.from_dict(enemy_dict)
+				if not enemy.id.is_empty():
+					result[enemy.id] = enemy
+	return result
+
+
+func _load_event_folder(folder_path: String) -> Dictionary:
+	var result := {}
+	for file_name in _list_json_files(folder_path):
+		var data := _load_json_file("%s/%s" % [folder_path, file_name])
+		if data.is_empty():
+			continue
+
+		var event_list: Array = []
+		if data.has("events"):
+			event_list = data["events"]
+		else:
+			event_list.append(data)
+
+		for event_dict in event_list:
+			if event_dict is Dictionary:
+				var event := EventResource.from_dict(event_dict)
+				if not event.id.is_empty():
+					result[event.id] = event
+	return result
+
+
+func _list_json_files(folder_path: String) -> Array[String]:
+	var result: Array[String] = []
 	var dir := DirAccess.open(folder_path)
 	if dir == null:
 		push_error("无法打开数据目录: %s" % folder_path)
@@ -48,12 +129,7 @@ func _load_json_folder(folder_path: String) -> Dictionary:
 	var file_name := dir.get_next()
 	while file_name != "":
 		if not dir.current_is_dir() and file_name.ends_with(".json"):
-			var full_path := "%s/%s" % [folder_path, file_name]
-			var data := _load_json_file(full_path)
-			if data.has("id"):
-				result[data.id] = data
-			else:
-				push_warning("JSON 缺少 id 字段: %s" % full_path)
+			result.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	return result

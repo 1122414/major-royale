@@ -1,0 +1,33 @@
+{
+  "id": "ai_native_enemies",
+  "enemies": [
+    {
+      "id": "ai_interviewer",
+      "name": "AI 面试官",
+      "type": "ai_native",
+      "hp": 70,
+      "ai_prompt_key": "ai_interviewer",
+      "actions": [
+        {"id": "ask_algorithm", "description": "算法追问：对计算机专业施加额外压力。"},
+        {"id": "ask_ethics", "description": "职业伦理：降低玩家下一张攻击牌效果。"},
+        {"id": "resume_challenge", "description": "简历质疑：造成精神伤害。"},
+        {"id": "praise_then_pressure", "description": "先夸后压：玩家抽牌 +1，但获得压力。"},
+        {"id": "silent_observe", "description": "沉默观察：本回合防御，下回合强化。"}
+      ]
+    },
+    {
+      "id": "paper_reviewer",
+      "name": "论文审稿人",
+      "type": "ai_native",
+      "hp": 65,
+      "ai_prompt_key": "paper_reviewer",
+      "actions": [
+        {"id": "reject_core_card", "description": "拒绝核心卡：玩家下回合某类卡费用 +1。"},
+        {"id": "demand_revision", "description": "要求大修：玩家弃 1 张牌，抽 2 张牌。"},
+        {"id": "question_method", "description": "质疑方法：附加压力。"},
+        {"id": "accept_minor", "description": "小修接收：敌人获得护盾，但玩家获得奖励标记。"},
+        {"id": "desk_reject", "description": "直接拒稿：造成伤害，但敌人下回合虚弱。"}
+      ]
+    }
+  ]
+}

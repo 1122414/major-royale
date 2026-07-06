@@ -1,0 +1,22 @@
+{
+  "id": "playground_events",
+  "events": [
+    {
+      "id": "run_laps",
+      "name": "跑圈",
+      "area": "playground",
+      "description": "体能提升，恢复少量生命。",
+      "effects": [
+        {"type": "stat_up", "stat": "体能", "value": 1},
+        {"type": "heal", "value": 3, "target": "self"}
+      ]
+    },
+    {
+      "id": "pressure_zone",
+      "name": "压力圈缩小",
+      "area": "playground",
+      "description": "赛场压力增加，所有敌人变强。",
+      "effects": [{"type": "advance_pressure", "value": 1}]
+    }
+  ]
+}

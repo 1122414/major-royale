@@ -1,0 +1,22 @@
+{
+  "id": "classroom_events",
+  "events": [
+    {
+      "id": "pop_quiz",
+      "name": "随堂测验",
+      "area": "classroom",
+      "description": "回答正确获得 1 点学识，错误受到 5 点精神伤害。",
+      "choices": [
+        {"text": "认真作答", "effects": [{"type": "stat_up", "stat": "学识", "value": 1}]},
+        {"text": "蒙混过关", "effects": [{"type": "spirit_damage", "value": 5}]}
+      ]
+    },
+    {
+      "id": "roll_call",
+      "name": "课堂点名",
+      "area": "classroom",
+      "description": "被点到名了，精神受到冲击。",
+      "effects": [{"type": "spirit_damage", "value": 3}]
+    }
+  ]
+}

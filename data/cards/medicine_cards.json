@@ -1,0 +1,64 @@
+{
+  "id": "medicine_cards",
+  "cards": [
+    {
+      "id": "first_aid",
+      "name": "急救包扎",
+      "type": "heal",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "恢复 6 点生命。",
+      "effects": [{"type": "heal", "value": 6, "target": "self"}]
+    },
+    {
+      "id": "anatomy_weakness",
+      "name": "解剖弱点",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "造成 5 点伤害，附加 1 层易伤。",
+      "effects": [
+        {"type": "damage", "value": 5},
+        {"type": "status", "status_id": "vulnerable", "status_stacks": 1}
+      ]
+    },
+    {
+      "id": "case_analysis",
+      "name": "病历分析",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "查看敌人意图，抽 1 张牌。",
+      "effects": [
+        {"type": "reveal_intent", "target": "enemy"},
+        {"type": "draw", "value": 1}
+      ]
+    },
+    {
+      "id": "adrenaline",
+      "name": "肾上腺素",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "本回合攻击牌伤害 +3。",
+      "effects": [{"type": "buff", "status_id": "adrenaline", "status_stacks": 3}]
+    },
+    {
+      "id": "night_shift",
+      "name": "夜班坚守",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "获得 5 点护盾和 1 层抗压。",
+      "effects": [
+        {"type": "shield", "value": 5, "target": "self"},
+        {"type": "status", "status_id": "resistance", "status_stacks": 1, "target": "self"}
+      ]
+    }
+  ]
+}

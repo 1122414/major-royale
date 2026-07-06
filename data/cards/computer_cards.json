@@ -1,0 +1,64 @@
+{
+  "id": "computer_cards",
+  "cards": [
+    {
+      "id": "bug_generate",
+      "name": "Bug 生成",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "造成 4 点伤害，附加 1 层 Bug。",
+      "effects": [
+        {"type": "damage", "value": 4},
+        {"type": "status", "status_id": "bug", "status_stacks": 1}
+      ]
+    },
+    {
+      "id": "quick_script",
+      "name": "快速脚本",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "抽 1 张牌。",
+      "effects": [{"type": "draw", "value": 1}]
+    },
+    {
+      "id": "refactor",
+      "name": "重构",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "获得 6 点护盾，移除 1 个负面状态。",
+      "effects": [
+        {"type": "shield", "value": 6, "target": "self"},
+        {"type": "purge", "value": 1, "target": "self"}
+      ]
+    },
+    {
+      "id": "code_review",
+      "name": "代码审查",
+      "type": "control",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "查看敌人下回合意图，抽 1 张牌。",
+      "effects": [
+        {"type": "reveal_intent", "target": "enemy"},
+        {"type": "draw", "value": 1}
+      ]
+    },
+    {
+      "id": "bsod_warning",
+      "name": "蓝屏警告",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "若敌人有 3 层 Bug，造成 24 点伤害；否则造成 8 点。",
+      "effects": [{"type": "conditional_damage", "status_id": "bug", "threshold": 3, "value": 24, "fallback_value": 8}]
+    }
+  ]
+}

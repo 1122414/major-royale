@@ -1,0 +1,19 @@
+{
+  "id": "cafeteria_events",
+  "events": [
+    {
+      "id": "grab_food",
+      "name": "抢饭成功",
+      "area": "cafeteria",
+      "description": "恢复 8 点生命。",
+      "effects": [{"type": "heal", "value": 8, "target": "self"}]
+    },
+    {
+      "id": "dark_cuisine",
+      "name": "黑暗料理",
+      "area": "cafeteria",
+      "description": "肚子不舒服，获得压力。",
+      "effects": [{"type": "status", "status_id": "pressure", "status_stacks": 2, "target": "self"}]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": "law_cards",
+  "cards": [
+    {
+      "id": "burden_of_proof",
+      "name": "举证责任",
+      "type": "control",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "降低敌人下回合 50% 伤害。",
+      "effects": [{"type": "debuff", "status_id": "举证失败", "status_stacks": 1}]
+    },
+    {
+      "id": "not_guilty_defense",
+      "name": "无罪辩护",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "获得 7 点护盾，清除 1 个负面状态。",
+      "effects": [
+        {"type": "shield", "value": 7, "target": "self"},
+        {"type": "purge", "value": 1, "target": "self"}
+      ]
+    },
+    {
+      "id": "law_search",
+      "name": "法条检索",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "抽 1 张牌，获得 1 点临时能量。",
+      "effects": [
+        {"type": "draw", "value": 1},
+        {"type": "energy", "value": 1, "target": "self"}
+      ]
+    },
+    {
+      "id": "trial_delay",
+      "name": "庭审拖延",
+      "type": "control",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "延后敌人行动 1 回合。",
+      "effects": [{"type": "delay", "value": 1}]
+    },
+    {
+      "id": "judgment",
+      "name": "判决书",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "law",
+      "description": "根据敌人负面状态数量，每层造成 6 点伤害。",
+      "effects": [{"type": "damage_per_debuff", "value": 6}]
+    }
+  ]
+}

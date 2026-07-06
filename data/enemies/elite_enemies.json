@@ -1,0 +1,27 @@
+{
+  "id": "elite_enemies",
+  "enemies": [
+    {
+      "id": "all_nighter_king",
+      "name": "熬夜卷王",
+      "type": "elite",
+      "hp": 60,
+      "actions": [
+        {"id": "stack_pressure", "weight": 2, "description": "给玩家叠加压力。"},
+        {"id": "heavy_attack", "weight": 2, "description": "造成 10 点伤害。"},
+        {"id": "heal", "weight": 1, "description": "恢复 8 点生命。"}
+      ]
+    },
+    {
+      "id": "sports_ace",
+      "name": "体育特长生",
+      "type": "elite",
+      "hp": 55,
+      "actions": [
+        {"id": "charge", "weight": 1, "description": "蓄力，下回合造成 20 点伤害。"},
+        {"id": "attack", "weight": 3, "description": "造成 8 点伤害。"},
+        {"id": "defend", "weight": 2, "description": "获得 10 点护盾。"}
+      ]
+    }
+  ]
+}
