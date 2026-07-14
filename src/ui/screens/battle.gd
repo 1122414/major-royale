@@ -60,21 +60,34 @@ func _ready() -> void:
 
 func _create_player() -> Character:
 	var major: MajorResource = Config.majors[GameState.player_major_id]
-	var player := Character.new("player", "玩家", 60, true)
+	# 体能永久加成可抬高上限
+	var stamina_bonus := GameState.get_effective_stat("体能") - int(major.stats.get("体能", 5))
+	var max_hp := GameState.run_max_hp + stamina_bonus * 3
+	if max_hp < GameState.run_hp:
+		max_hp = GameState.run_hp
+
+	var player := Character.new("player", "玩家", max_hp, true)
 	player.major_id = GameState.player_major_id
+	player.max_hp = max_hp
+	player.hp = clampi(GameState.run_hp, 1, max_hp)
 
-	# 属性影响
-	var stats := major.stats
-	player.max_hp += stats.get("体能", 5) * 3
-	player.hp = player.max_hp
-	player.max_spirit += stats.get("抗压", 5) * 5
-	player.spirit = player.max_spirit
+	var resist_bonus := GameState.get_effective_stat("抗压") - int(major.stats.get("抗压", 5))
+	player.max_spirit = GameState.run_max_spirit + resist_bonus * 5
+	player.spirit = clampi(GameState.run_spirit, 0, player.max_spirit)
 
-	# 初始牌组
-	for card_id in major.starter_deck:
-		var card = Config.cards.get(card_id)
+	# 持久牌组（含奖励卡）
+	var card_ids: Array = GameState.deck_card_ids
+	if card_ids.is_empty():
+		card_ids = major.starter_deck
+	for card_id in card_ids:
+		var card = Config.cards.get(str(card_id))
 		if card != null:
 			player.deck.append(card)
+
+	# 开战前挂上待生效 Buff
+	for buff in GameState.pending_buffs:
+		player.add_status(str(buff.get("status_id", "")), int(buff.get("stacks", 1)))
+	GameState.pending_buffs.clear()
 
 	player.draw_pile = player.deck.duplicate()
 	player.shuffle_draw_pile()
@@ -172,6 +185,8 @@ func _on_boss_phase_changed(phase_name: String) -> void:
 
 func _on_battle_ended(victory: bool) -> void:
 	GameState.player_stats["last_battle_victory"] = victory
+	if _battle != null and _battle.player != null:
+		GameState.sync_from_battle_character(_battle.player)
 	AudioManager.play_sfx("win" if victory else "lose")
 	GameState.change_screen(GameState.Screen.RESULT)
 

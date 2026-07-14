@@ -1,7 +1,7 @@
 class_name EventHandler
 extends RefCounted
 
-## 处理地图事件效果。
+## 处理地图事件效果（读写 GameState 一局持久化状态）。
 
 signal event_resolved(message: String)
 
@@ -27,41 +27,38 @@ func apply_event(event: EventResource, choice_index: int = -1) -> String:
 
 func apply_rest() -> String:
 	var heal_amount := 15
-	var player = GameState.player_stats.get("battle_player") as Character
-	if player != null:
-		player.heal(heal_amount)
-	return "在补给点休息，恢复了 %d 点生命。" % heal_amount
+	var healed := GameState.heal_run(heal_amount)
+	return "在补给点休息，恢复了 %d 点生命。（当前 %d/%d）" % [healed, GameState.run_hp, GameState.run_max_hp]
 
 
 func _apply_effect(effect: Dictionary) -> String:
 	var type: String = effect.get("type", "")
 	var value: int = effect.get("value", 0)
-	var player = GameState.player_stats.get("battle_player") as Character
 
 	if type == "heal":
-		if player != null:
-			player.heal(value)
-		return "恢复 %d 点生命。" % value
+		var healed := GameState.heal_run(value)
+		return "恢复 %d 点生命。（当前 %d/%d）" % [healed, GameState.run_hp, GameState.run_max_hp]
 	elif type == "damage":
-		if player != null:
-			player.take_damage(value)
-		return "受到 %d 点伤害。" % value
+		var dealt := GameState.damage_run(value)
+		return "受到 %d 点伤害。（当前 %d/%d）" % [dealt, GameState.run_hp, GameState.run_max_hp]
 	elif type == "spirit_damage":
-		if player != null:
-			player.lose_spirit(value)
-		return "失去 %d 点精神。" % value
+		GameState.lose_spirit_run(value)
+		return "失去 %d 点精神。（当前 %d/%d）" % [value, GameState.run_spirit, GameState.run_max_spirit]
 	elif type == "stat_up":
 		var stat_name: String = effect.get("stat", "")
-		var stats: Dictionary = player_stats.get("permanent_stats", {})
-		stats[stat_name] = stats.get(stat_name, 0) + value
-		player_stats["permanent_stats"] = stats
+		var stats: Dictionary = GameState.permanent_stats
+		stats[stat_name] = int(stats.get(stat_name, 0)) + value
+		GameState.permanent_stats = stats
+		if stat_name == "体能":
+			GameState.run_max_hp += 3 * value
+		elif stat_name == "抗压":
+			GameState.run_max_spirit += 5 * value
 		return "%s +%d" % [stat_name, value]
 	elif type == "status":
 		var status_id: String = effect.get("status_id", "")
 		var stacks: int = effect.get("status_stacks", 1)
-		if player != null:
-			player.add_status(status_id, stacks)
-		return "获得 %s x%d" % [Status.get_status_info(status_id).get("name", status_id), stacks]
+		GameState.add_pending_buff(status_id, stacks)
+		return "获得 %s x%d（下场战斗生效）" % [Status.get_status_info(status_id).get("name", status_id), stacks]
 	elif type == "advance_pressure":
 		GameState.run_progress += value
 		return "压力圈推进，当前进度 %d" % GameState.run_progress
