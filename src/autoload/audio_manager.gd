@@ -126,7 +126,8 @@ func _load_bgm_stream(res_path: String) -> AudioStream:
 		if loaded is AudioStream:
 			return loaded
 	var abs_path := ProjectSettings.globalize_path(res_path)
-	if FileAccess.file_exists(abs_path) and AudioStreamWAV.has_method("load_from_file"):
+	if FileAccess.file_exists(abs_path):
+		# Godot 4.4：从磁盘直接读 WAV（无需先 import）
 		return AudioStreamWAV.load_from_file(abs_path)
 	return null
 
@@ -173,7 +174,7 @@ func _generate_default_bgm(track_id: String) -> AudioStreamWAV:
 			+ sin(t * (f1 * 0.5) * TAU) * 0.05
 		) * beat
 		# 首尾淡入淡出便于循环
-		var edge := minf(t, duration - t, 0.4) / 0.4
+		var edge := minf(minf(t, duration - t), 0.4) / 0.4
 		sample *= clampf(edge, 0.0, 1.0)
 		var s16 := clampi(int(sample * 32767.0), -32768, 32767)
 		data.encode_s16(i * 2, s16)
