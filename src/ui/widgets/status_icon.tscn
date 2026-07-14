@@ -3,12 +3,13 @@
 [ext_resource type="Script" path="res://src/ui/widgets/status_icon.gd" id="1_status_icon"]
 
 [node name="StatusIcon" type="PanelContainer"]
-custom_minimum_size = Vector2(80, 32)
+custom_minimum_size = Vector2(96, 52)
 script = ExtResource("1_status_icon")
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "状态"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 3
