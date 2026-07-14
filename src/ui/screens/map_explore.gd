@@ -165,6 +165,8 @@ func _update_ui() -> void:
 	var node: GameMap.MapNode = _game_map.get_current_node()
 	if node == null:
 		return
+	_game_map.unlock_boss_if_pressure_ready(8)
+	_refresh_node_buttons()
 	area_label.text = "当前区域：%s" % _game_map.get_area_name(node.area_index)
 	day_label.text = "第 %d 天" % GameState.day_count
 	resource_label.text = "学分 %d　信用点 %d　压力 %d" % [

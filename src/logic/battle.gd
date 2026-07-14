@@ -207,6 +207,13 @@ func _execute_enemy_turn() -> void:
 
 
 func _apply_damage_to_player(damage: int) -> void:
+	# 压力圈：每点进度 +5% 敌伤，上限 +40%（Boss 不受此加成）
+	var enemy_id := str(GameState.player_stats.get("current_enemy_id", ""))
+	var is_boss := enemy_id == "employment_pressure"
+	if not is_boss:
+		var mult := 1.0 + mini(0.4, float(GameState.run_progress) * 0.05)
+		damage = int(round(float(damage) * mult))
+
 	var previous_hp := player.hp
 	player.take_damage(damage)
 

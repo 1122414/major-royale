@@ -88,6 +88,7 @@ func generate(seed_value: int = 0) -> void:
 	current_node_id = "area_0_node_0"
 	nodes[current_node_id].available = true
 	nodes[current_node_id].visited = true
+	ensure_ai_native_encounter()
 
 
 func _pick_node_type(area_idx: int, node_idx: int, node_count: int, rng: RandomNumberGenerator) -> NodeType:
@@ -100,12 +101,14 @@ func _pick_node_type(area_idx: int, node_idx: int, node_count: int, rng: RandomN
 		return NodeType.EVENT
 
 	var roll := rng.randf()
-	if roll < 0.45:
+	if roll < 0.40:
 		return NodeType.BATTLE
-	elif roll < 0.70:
+	elif roll < 0.62:
 		return NodeType.EVENT
-	elif roll < 0.85:
+	elif roll < 0.74:
 		return NodeType.REST
+	elif roll < 0.82:
+		return NodeType.REWARD
 	else:
 		return NodeType.ELITE
 
@@ -113,9 +116,19 @@ func _pick_node_type(area_idx: int, node_idx: int, node_count: int, rng: RandomN
 func _assign_data_id(node_type: NodeType, area_id: String, rng: RandomNumberGenerator) -> String:
 	match node_type:
 		NodeType.BATTLE:
+			# 教学楼 / 图书馆：一定概率刷 AI Native
+			if area_id == "classroom" and rng.randf() < 0.45:
+				return "ai_interviewer"
+			if area_id == "library" and rng.randf() < 0.45:
+				return "paper_reviewer"
 			var normal_ids := ["gpa_anxiety", "seat_grabber", "all_nighter", "sports_student", "client_phantom"]
 			return normal_ids[rng.randi() % normal_ids.size()]
 		NodeType.ELITE:
+			# 精英也可替换为 AI Native（保证每局更易遇见）
+			if area_id == "classroom" and rng.randf() < 0.55:
+				return "ai_interviewer"
+			if area_id == "library" and rng.randf() < 0.55:
+				return "paper_reviewer"
 			var elite_ids := ["all_nighter_king", "sports_ace"]
 			return elite_ids[rng.randi() % elite_ids.size()]
 		NodeType.BOSS:
@@ -124,8 +137,42 @@ func _assign_data_id(node_type: NodeType, area_id: String, rng: RandomNumberGene
 			return ""
 		NodeType.REST:
 			return ""
+		NodeType.REWARD:
+			return ""
 	return ""
 
+
+## 压力 ≥8 时强制解锁操场终局 Boss 节点。
+func unlock_boss_if_pressure_ready(threshold: int = 8) -> void:
+	if GameState.run_progress < threshold:
+		return
+	for node_id in nodes:
+		var node: MapNode = nodes[node_id]
+		if node.type == NodeType.BOSS:
+			node.available = true
+
+
+
+
+## 若生成后仍无 AI Native，则把教学楼/图书馆一个战斗节点强制替换。
+func ensure_ai_native_encounter() -> void:
+	var has_ai := false
+	for node_id in nodes:
+		var n: MapNode = nodes[node_id]
+		if n.data_id in ["ai_interviewer", "paper_reviewer"]:
+			has_ai = true
+			break
+	if has_ai:
+		return
+	for node_id in nodes:
+		var n: MapNode = nodes[node_id]
+		var area_id: String = AREAS[n.area_index].id
+		if area_id == "classroom" and n.type in [NodeType.BATTLE, NodeType.ELITE]:
+			n.data_id = "ai_interviewer"
+			return
+		if area_id == "library" and n.type in [NodeType.BATTLE, NodeType.ELITE]:
+			n.data_id = "paper_reviewer"
+			return
 
 func get_area_name(area_index: int) -> String:
 	if area_index < 0 or area_index >= AREAS.size():
