@@ -69,6 +69,11 @@ func play_card(card_index: int) -> bool:
 	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
 		enemy.take_damage(3)
 
+	# 敌人反击姿态
+	if card.type == "attack" and enemy.has_status("counter"):
+		_apply_damage_to_player(enemy.get_status_stacks("counter") * 3)
+		enemy.remove_status("counter")
+
 	energy_updated.emit()
 	hand_updated.emit()
 
@@ -198,6 +203,22 @@ func _execute_enemy_turn() -> void:
 		"desk_reject":
 			_apply_damage_to_player(12)
 			enemy.add_status("vulnerable", 1)
+		"charge":
+			enemy.add_status("charged", maxi(1, int(action.get("value", 1))))
+		"counter":
+			enemy.add_status("counter", maxi(1, int(action.get("value", 2))))
+		"defend":
+			enemy.gain_shield(action.get("value", 8))
+		"hand_limit":
+			# 群面混战：限制手牌，弃掉多余牌
+			var limit: int = int(action.get("value", 3))
+			while player.hand.size() > limit:
+				var card = player.hand.pop_back()
+				player.discard_pile.append(card)
+			player.add_status("pressure", 1)
+		"bleed_attack":
+			_apply_damage_to_player(action.get("value", 4))
+			player.add_status("bleed", 1)
 
 	_check_end_conditions()
 	if state == BattleState.PLAYER_WON or state == BattleState.PLAYER_LOST:

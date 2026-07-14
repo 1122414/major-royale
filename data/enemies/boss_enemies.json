@@ -23,8 +23,9 @@
           "threshold": 0.33,
           "name": "群面混战",
           "actions": [
-            {"id": "heavy_attack", "value": 14, "description": "群面混战：造成 14 点伤害。"},
-            {"id": "shield", "value": 10, "description": "组建壁垒：获得 10 点护盾。"}
+            {"id": "heavy_attack", "value": 12, "description": "群面混战：造成 12 点伤害。"},
+            {"id": "hand_limit", "value": 3, "description": "限制表达：手牌上限压至 3 张。"},
+            {"id": "shield", "value": 8, "description": "组建壁垒：获得 8 点护盾。"}
           ]
         },
         {
@@ -32,7 +33,8 @@
           "name": "终极答辩",
           "actions": [
             {"id": "heavy_attack", "value": 20, "description": "终极提问：造成 20 点伤害。"},
-            {"id": "stack_pressure", "value": 3, "description": "答辩高压：叠加 3 层压力。"}
+            {"id": "stack_pressure", "value": 3, "description": "答辩高压：叠加 3 层压力。"},
+            {"id": "bleed_attack", "value": 6, "description": "灵魂拷问：造成伤害并附加流血。"}
           ]
         }
       ]
