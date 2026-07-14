@@ -104,11 +104,24 @@ func use_active_skill() -> bool:
 			player.heal(12)
 			_remove_body_debuffs(player)
 			skill_used.emit("紧急缝合")
+		"leverage":
+			energy += 1
+			player.add_status("pressure", 1)
+			skill_used.emit("杠杆加仓")
+		"inspiration":
+			player.draw_cards(2)
+			if player.has_status("pressure"):
+				var stacks := player.get_status_stacks("pressure")
+				player.remove_status("pressure")
+				if stacks > 1:
+					player.add_status("pressure", stacks - 1)
+			skill_used.emit("灵感爆发")
 		_:
 			return false
 
 	_skill_used_this_battle = true
 	energy_updated.emit()
+	hand_updated.emit()
 	_check_end_conditions()
 	return true
 

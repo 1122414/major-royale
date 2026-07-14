@@ -1,0 +1,26 @@
+{
+  "id": "finance",
+  "name": "金融",
+  "description": "风险博弈、资源调度、收益爆发。",
+  "stats": {
+    "学识": 6,
+    "体能": 4,
+    "专注": 6,
+    "表达": 7,
+    "创造": 5,
+    "社交": 7,
+    "抗压": 5,
+    "资源": 8
+  },
+  "active_skill": {
+    "id": "leverage",
+    "name": "杠杆加仓",
+    "description": "本回合获得 1 点临时能量，但叠加 1 层压力。"
+  },
+  "passive_skill": {
+    "id": "risk_hedge",
+    "name": "对冲思维",
+    "description": "护盾收益提高：获得护盾时额外 +2。"
+  },
+  "starter_deck": ["strike", "defend", "draw_card", "strike", "defend"]
+}

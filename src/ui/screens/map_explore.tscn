@@ -28,95 +28,125 @@ texture_path = "res://assets/sprites/bg/map_campus.png"
 
 [node name="TopHud" type="HBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 16.0
+offset_left = 16.0
+offset_top = 12.0
 offset_right = 1260.0
-offset_bottom = 170.0
-theme_override_constants/separation = 16
+offset_bottom = 130.0
+theme_override_constants/separation = 12
 
 [node name="LeftStats" type="VBoxContainer" parent="TopHud"]
 layout_mode = 2
-custom_minimum_size = Vector2(320, 0)
-theme_override_constants/separation = 6
+custom_minimum_size = Vector2(280, 0)
+theme_override_constants/separation = 4
 
 [node name="AreaLabel" type="Label" parent="TopHud/LeftStats"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 text = "当前区域"
 
 [node name="Bars" type="VBoxContainer" parent="TopHud/LeftStats"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 
 [node name="MinimapSlot" type="Control" parent="TopHud/LeftStats"]
-custom_minimum_size = Vector2(140, 140)
+custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 
-[node name="CenterDay" type="PanelContainer" parent="TopHud"]
+[node name="DayBadge" type="PanelContainer" parent="TopHud"]
+custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 0
 
-[node name="DayLabel" type="Label" parent="TopHud/CenterDay"]
+[node name="DayLabel" type="Label" parent="TopHud/DayBadge"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
-text = "第 1 天"
+text = "第1天 · 进度 1/15"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RightStats" type="VBoxContainer" parent="TopHud"]
 layout_mode = 2
-custom_minimum_size = Vector2(280, 0)
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(240, 0)
 
 [node name="ResourceLabel" type="Label" parent="TopHud/RightStats"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 15
 text = "学分 120　信用点 560"
 horizontal_alignment = 2
+
+[node name="HowToPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 140.0
+offset_right = 420.0
+offset_bottom = 300.0
+
+[node name="HowToBody" type="Label" parent="HowToPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "怎么玩"
+autowrap_mode = 3
 
 [node name="ObjectivePanel" type="PanelContainer" parent="."]
 layout_mode = 0
 offset_left = 980.0
-offset_top = 190.0
-offset_right = 1260.0
-offset_bottom = 400.0
+offset_top = 140.0
+offset_right = 1264.0
+offset_bottom = 280.0
 
 [node name="VBox" type="VBoxContainer" parent="ObjectivePanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="ObjectiveTitle" type="Label" parent="ObjectivePanel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
-theme_override_font_sizes/font_size = 18
-text = "当前目标  [TAB]"
+theme_override_font_sizes/font_size = 16
+text = "当前目标"
 
 [node name="ObjectiveBody" type="Label" parent="ObjectivePanel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "主目标：探索校园"
+theme_override_font_sizes/font_size = 13
+text = "主线"
 autowrap_mode = 3
 
-[node name="NodesContainer" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -520.0
-offset_top = -200.0
-offset_right = 400.0
-offset_bottom = 280.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="PathPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 320.0
+offset_right = 1264.0
+offset_bottom = 560.0
+
+[node name="NodesContainer" type="Control" parent="PathPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(1200, 220)
+
+[node name="NextPreview" type="Label" parent="."]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 572.0
+offset_right = 700.0
+offset_bottom = 600.0
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+text = "下一站预告"
+
+[node name="AdvanceButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 720.0
+offset_top = 568.0
+offset_right = 1264.0
+offset_bottom = 640.0
+text = "▶ 前进"
 
 [node name="BottomBar" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 660.0
-offset_right = 960.0
-offset_bottom = 710.0
+offset_left = 16.0
+offset_top = 656.0
+offset_right = 1264.0
+offset_bottom = 704.0
 
 [node name="InfoLabel" type="Label" parent="BottomBar"]
 layout_mode = 2

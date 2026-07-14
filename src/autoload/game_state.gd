@@ -28,6 +28,8 @@ var pending_buffs: Array[Dictionary] = []  ## [{status_id, stacks}, ...]
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
+var map_seed: int = 0
+var map_path_index: int = 0  ## 当前所在线性节点序号
 
 
 func start_run(major_id: String) -> void:
@@ -40,6 +42,8 @@ func start_run(major_id: String) -> void:
 	credits = 120
 	credit_points = 560
 	day_count = 1
+	map_seed = 0
+	map_path_index = 0
 	_init_run_from_major(major_id)
 	current_screen = Screen.MAP_EXPLORE
 

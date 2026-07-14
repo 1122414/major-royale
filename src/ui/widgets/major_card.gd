@@ -18,6 +18,8 @@ const MAJOR_ICONS := {
 	"computer": "</>",
 	"law": "⚖",
 	"medicine": "+",
+	"finance": "$",
+	"arts": "✦",
 }
 
 
