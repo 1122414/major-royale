@@ -1,5 +1,5 @@
 extends Button
-## 地图节点控件。
+## 地图节点控件（建筑 marker 风格）。
 
 signal node_selected(node_id: String)
 
@@ -33,14 +33,29 @@ func _update_appearance() -> void:
 		GameMap.NodeType.EVENT: icon_label.text = "?"
 		GameMap.NodeType.REST: icon_label.text = "♥"
 		GameMap.NodeType.REWARD: icon_label.text = "★"
-		GameMap.NodeType.ELITE: icon_label.text = "👹"
-		GameMap.NodeType.BOSS: icon_label.text = "👑"
+		GameMap.NodeType.ELITE: icon_label.text = "※"
+		GameMap.NodeType.BOSS: icon_label.text = "♛"
 
-	modulate = area_color
+	var border := UIColors.ACCENT_GOLD if is_available and not is_visited else UIColors.BORDER_CYAN_DIM
+	if node_type == GameMap.NodeType.BOSS:
+		border = UIColors.DANGER_RED
+	var fill := UIColors.PANEL
+	fill.a = 0.95
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.set_border_width_all(2)
+	style.border_color = border
+	style.set_corner_radius_all(20)
+	add_theme_stylebox_override("normal", style)
+	add_theme_stylebox_override("hover", style)
+	add_theme_stylebox_override("pressed", style)
+	add_theme_stylebox_override("disabled", style)
+
+	modulate = area_color if is_available else area_color.darkened(0.45)
 	disabled = not is_available
-
 	if is_visited:
-		modulate = modulate.darkened(0.3)
+		modulate = modulate.darkened(0.35)
+		disabled = true
 
 
 func _on_pressed() -> void:
