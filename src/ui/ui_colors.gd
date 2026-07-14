@@ -1,6 +1,5 @@
-class_name UIColors
-extends RefCounted
-## 像素赛博校园色板（全程锁定，禁止另开紫渐变/奶油衬线风）。
+extends Node
+## 像素赛博校园色板（全程锁定）。作为 Autoload：UIColors
 
 const BG_DEEP := Color("#0B1014")
 const PANEL := Color(0.059, 0.102, 0.125, 0.9)  # #0F1A20 @ 90%
