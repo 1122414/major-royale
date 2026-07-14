@@ -78,7 +78,7 @@ func _ready() -> void:
 
 	_update_ui()
 	AudioManager.play_sfx("click")
-	if _enemy_res != null and (_enemy_res.is_boss or str(_enemy_res.id) == "employment_pressure"):
+	if _enemy_res != null and (str(_enemy_res.enemy_type) == "boss" or str(_enemy_res.id) == "employment_pressure"):
 		AudioManager.play_bgm_for_phase("boss")
 	else:
 		AudioManager.play_bgm_for_phase("battle")

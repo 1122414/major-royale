@@ -65,7 +65,7 @@ text = "第1天 第1回合"
 layout_mode = 0
 offset_left = 200.0
 offset_top = 110.0
-offset_right = 1080.0
+offset_right = 980.0
 offset_bottom = 420.0
 
 [node name="PlayerFigure" type="PanelContainer" parent="Arena"]
@@ -85,9 +85,9 @@ vertical_alignment = 1
 
 [node name="EnemyFigure" type="PanelContainer" parent="Arena"]
 layout_mode = 0
-offset_left = 620.0
+offset_left = 520.0
 offset_top = 40.0
-offset_right = 840.0
+offset_right = 740.0
 offset_bottom = 260.0
 
 [node name="EnemyFigLabel" type="Label" parent="Arena/EnemyFigure"]
@@ -100,30 +100,30 @@ vertical_alignment = 1
 
 [node name="EnemyPanel" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 860.0
-offset_top = 100.0
-offset_right = 1260.0
-offset_bottom = 280.0
+offset_left = 980.0
+offset_top = 96.0
+offset_right = 1264.0
+offset_bottom = 248.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="EnemyPanel"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="EnemyNameLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 18
 text = "敌人名"
 horizontal_alignment = 1
 
 [node name="EnemyHPLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 text = "HP: 30/30"
 horizontal_alignment = 1
 
 [node name="EnemyIntentLabel" type="Label" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
 text = "意图"
 horizontal_alignment = 1
@@ -131,7 +131,7 @@ autowrap_mode = 3
 
 [node name="EnemyStatusContainer" type="HBoxContainer" parent="EnemyPanel/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
 [node name="BuffPanel" type="PanelContainer" parent="."]
