@@ -302,15 +302,48 @@ func _flash_intent() -> void:
 func _play_attack_animation(from_player: bool) -> void:
 	var attacker: Control = $Arena/PlayerFigure if from_player else $Arena/EnemyFigure
 	var defender: Control = $Arena/EnemyFigure if from_player else $Arena/PlayerFigure
+	if not is_instance_valid(attacker) or not is_instance_valid(defender):
+		return
+	attacker.pivot_offset = attacker.size * 0.5
+	defender.pivot_offset = defender.size * 0.5
 	var base := attacker.position
-	var toward := defender.position - attacker.position
-	toward = toward.normalized() * 36.0
+	var def_base := defender.position
+	var toward := (defender.position - attacker.position)
+	if toward.length() < 1.0:
+		toward = Vector2(40, 0) if from_player else Vector2(-40, 0)
+	else:
+		toward = toward.normalized() * 48.0
+
+	# 冲刺 → 受击抖动 → 回位
 	var tw := create_tween()
-	tw.tween_property(attacker, "position", base + toward, 0.08)
-	tw.tween_property(attacker, "position", base, 0.12)
-	var flash := create_tween()
-	flash.tween_property(defender, "modulate", Color(1.4, 0.6, 0.6), 0.06)
-	flash.tween_property(defender, "modulate", Color.WHITE, 0.14)
+	tw.set_parallel(false)
+	tw.tween_property(attacker, "position", base + toward, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(attacker, "scale", Vector2(1.08, 0.92), 0.05)
+	tw.tween_callback(_spawn_slash_fx.bind(attacker, defender, from_player))
+	tw.tween_property(attacker, "scale", Vector2.ONE, 0.08)
+	tw.tween_property(attacker, "position", base, 0.14).set_trans(Tween.TRANS_SINE)
+
+	var hit := create_tween()
+	hit.tween_property(defender, "modulate", Color(1.5, 0.45, 0.45), 0.05)
+	hit.tween_property(defender, "position", def_base + Vector2(10 if from_player else -10, -4), 0.05)
+	hit.tween_property(defender, "position", def_base + Vector2(-6 if from_player else 6, 2), 0.05)
+	hit.tween_property(defender, "position", def_base, 0.08)
+	hit.tween_property(defender, "modulate", Color.WHITE, 0.12)
+
+
+func _spawn_slash_fx(attacker: Control, defender: Control, from_player: bool) -> void:
+	var slash := ColorRect.new()
+	slash.color = Color(1.0, 0.92, 0.55, 0.85) if from_player else Color(1.0, 0.4, 0.4, 0.85)
+	slash.size = Vector2(56, 8)
+	slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slash.z_index = 20
+	var mid := (attacker.global_position + defender.global_position) * 0.5 + Vector2(40, 60)
+	$Arena.add_child(slash)
+	slash.global_position = mid
+	slash.rotation = 0.6 if from_player else -0.6
+	var tw := create_tween()
+	tw.tween_property(slash, "modulate:a", 0.0, 0.18)
+	tw.tween_callback(slash.queue_free)
 
 
 func _on_end_turn() -> void:
