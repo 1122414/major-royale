@@ -1,6 +1,12 @@
-# 专业大逃杀（Major Royale）
+# 专业大逃杀（Major Royale）— 1.0.0-mvp
 
 一款像素 2.5D 半开放世界肉鸽卡牌游戏。玩家选择大学专业作为战斗流派，在校园异化赛场中探索、构筑卡组、遭遇 AI Native 敌人，并在终极答辩中争夺“唯一上岸者”。
+
+## 版本
+
+- **当前版本**：`1.0.0-mvp`
+- **引擎**：Godot 4.4
+- **平台**：Windows / macOS 桌面（导出预设已提供，需本机安装导出模板后打包）
 
 ## 技术栈
 
@@ -26,14 +32,6 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-编辑 `.env`：
-
-```env
-AI_API_KEY=your_api_key_here
-AI_BASE_URL=https://api.openai.com/v1
-AI_MODEL=gpt-4o-mini
-```
-
 > 若不填写 API Key，AI Native 敌人会自动使用规则兜底，不影响主流程。
 
 ## 项目结构
@@ -42,6 +40,7 @@ AI_MODEL=gpt-4o-mini
 major-royale/
 ├── assets/             # 字体、像素精灵、场景底图（见 assets/README.md）
 ├── data/               # JSON 数据：专业、卡牌、敌人、事件
+├── docs/               # 演示录制说明等交付文档
 ├── src/
 │   ├── autoload/       # 全局单例：Config、Settings、GameState 等
 │   ├── logic/          # 战斗、地图、奖励、事件逻辑
@@ -50,9 +49,11 @@ major-royale/
 │   ├── server/         # Python FastAPI AI 服务
 │   └── ui/             # Theme、色板、场景与控件
 ├── tests/              # 测试脚本
-├── tools/Godot.app     # Godot 编辑器（自动下载）
+├── tools/Godot.app     # Godot 编辑器
 └── project.godot       # Godot 项目文件
 ```
+
+美术与字体资源约定见 `assets/README.md`。色板见 `src/ui/ui_colors.gd`。
 
 ## 运行方式
 
@@ -78,56 +79,55 @@ tools/Godot.app/Contents/MacOS/Godot --path .
 ### 3. 游戏操作
 
 - **主菜单**：开始游戏、设置、退出
-- **专业选择**：点击专业卡片进入游戏
-- **地图探索**：点击可用节点移动，⚙ 图标打开设置
-- **战斗**：点击手牌出牌，点击“技能”使用专业主动技能，点击“结束回合”
-- **奖励/事件**：按提示选择
+- **专业选择**：点击专业卡片进入游戏（计算机 / 法学 / 医学）
+- **地图探索**：点击可用节点移动；顶栏查看 HP/精神/压力圈
+- **战斗**：点击手牌出牌；技能；结束回合
+- **AI Native 战**：左侧档案、右侧可选行动高亮
+- **奖励**：三选一；若选新卡可再点具体卡牌
 - **ESC**：返回或继续
 
-## 测试
+## 导出打包
 
-### 运行全部测试
+1. 在 Godot 编辑器：**编辑器 → 管理导出模板**，安装与引擎版本匹配的模板（4.4.x）。
+2. 打开 **项目 → 导出**，使用预设：
+   - `macOS` → `build/mac/MajorRoyale.app`
+   - `Windows Desktop` → `build/win/MajorRoyale.exe`
+3. 或命令行（需已安装模板）：
+
+```bash
+tools/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "macOS" build/mac/MajorRoyale.app
+tools/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "Windows Desktop" build/win/MajorRoyale.exe
+```
+
+导出预设见仓库根目录 `export_presets.cfg`（若被 gitignore，本地保留即可）。
+
+## 测试
 
 ```bash
 source .venv/bin/activate
 python test_game.py
-```
-
-### 单独运行 Python 测试
-
-```bash
-source .venv/bin/activate
+# 或
 pytest tests/ -v
-```
-
-### 单独运行 Godot 自动化测试
-
-```bash
 tools/Godot.app/Contents/MacOS/Godot --headless --path . --scene tests/test_runner.tscn
 ```
 
-## 调试
+## 演示材料
 
-- **Godot 调试**：在编辑器中设置断点，使用远程场景树和输出面板。
-- **AI 服务调试**：设置 `.env` 中 `AI_DEBUG=true` 查看请求日志。
-- **数据校验**：修改 `data/` 下 JSON 后，运行 `pytest tests/test_data.py -v` 自动校验。
+见 [docs/DEMO.md](docs/DEMO.md)。建议录制 60–90 秒：菜单 → 选专业 → 探索 → 战斗 →（可选 AI）→ 奖励。
 
-## 已知问题
+## 已知问题 / MVP 边界
 
-1. 音效为占位实现，使用程序生成简单波形。
-2. 像素美术为占位资源，使用 ColorRect 和 Label 表示。
-3. 2.5D 地图当前为节点地图，斜 45 度视角为简化实现。
-4. 部分卡牌效果（如费用修改）尚未完全实现。
-5. Godot headless 测试退出时可能有资源泄漏警告，不影响游戏运行。
+1. 像素美术为程序生成占位精灵，后续可替换 `assets/sprites/`。
+2. 音效仍为程序波形占位。
+3. 探索为节点图，非自由 2.5D 角色移动。
+4. 导出包需本机安装 Godot 导出模板后生成。
+5. AI 服务失败时规则兜底，不中断战斗。
 
-## 开发阶段 Commit 记录
+## 更新记录（1.0.0-mvp）
 
-每个阶段已完成一次本地中文 commit，未 push 到远程。可通过 `git log --oneline` 查看。
-
-## 后续扩展
-
-- 更多专业（土木、金融、艺术等）
-- 更多 AI Native 敌人
-- 转专业 / 辅修系统
-- 精致像素美术与动画
-- 多结局分支
+- 肉鸽牌组 / 属性 / 生命跨战斗持久化
+- 地图刷出 AI Native；压力圈伤害缩放与终局解锁
+- 主菜单 / 选专业 / 探索 / 战斗 UI 对齐赛博校园参考布局
+- AI Native 专属侧栏与行动展示
+- 敌人动作补全；Boss 群面限手；终局「唯一上岸者」文案
+- 像素场景底图与角色/卡面占位资源

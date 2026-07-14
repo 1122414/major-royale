@@ -1,0 +1,8 @@
+DEMO STORYBOARD 1.0.0-mvp (60-90s)
+00:00 Menu title 《专业大逃杀》 + Start
+00:08 Major select Computer gold border
+00:15 Map HUD + pressure minimap
+00:25 Enter battle vs GPA anxiety / AI interviewer
+00:45 Play cards + end turn
+01:00 Victory / reward card pick
+01:15 Boss or return map — title card 唯一上岸者 if boss clear
