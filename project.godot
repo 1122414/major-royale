@@ -52,3 +52,6 @@ move_down={"deadzone": 0.5, "events": [Object(InputEventKey,"resource_local_to_s
 [rendering]
 renderer/rendering_method="mobile"
 textures/canvas_textures/default_texture_filter=0
+
+[gui]
+theme/custom="res://src/ui/theme.tres"

@@ -40,6 +40,7 @@ AI_MODEL=gpt-4o-mini
 
 ```
 major-royale/
+├── assets/             # 字体、像素精灵、场景底图（见 assets/README.md）
 ├── data/               # JSON 数据：专业、卡牌、敌人、事件
 ├── src/
 │   ├── autoload/       # 全局单例：Config、Settings、GameState 等
@@ -47,7 +48,7 @@ major-royale/
 │   ├── ai/             # Godot AI 客户端与规则兜底
 │   ├── resources/      # 自定义 Resource 脚本
 │   ├── server/         # Python FastAPI AI 服务
-│   └── ui/             # UI 场景与控件
+│   └── ui/             # Theme、色板、场景与控件
 ├── tests/              # 测试脚本
 ├── tools/Godot.app     # Godot 编辑器（自动下载）
 └── project.godot       # Godot 项目文件
