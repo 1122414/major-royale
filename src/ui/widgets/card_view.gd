@@ -55,8 +55,33 @@ func _refresh() -> void:
 	cost_label.text = str(_card.cost)
 	type_label.text = _type_name(_card.type)
 	desc_label.text = _card.description
-	icon_label.text = TYPE_ICONS.get(_card.type, "●")
+	icon_label.text = ""
 	_apply_frame(TYPE_COLORS.get(_card.type, UIColors.BORDER_CYAN))
+	_apply_card_icon(str(_card.type))
+
+
+func _apply_card_icon(card_type: String) -> void:
+	var path := "res://assets/sprites/cards/%s.png" % card_type
+	if not ResourceLoader.exists(path):
+		path = "res://assets/sprites/cards/skill.png"
+	if ResourceLoader.exists(path):
+		# Replace label with texture if possible
+		var parent := icon_label.get_parent()
+		var existing := parent.get_node_or_null("IconTex")
+		if existing == null:
+			existing = TextureRect.new()
+			existing.name = "IconTex"
+			existing.custom_minimum_size = Vector2(64, 64)
+			existing.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			existing.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			existing.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			parent.add_child(existing)
+			parent.move_child(existing, icon_label.get_index())
+		existing.texture = load(path)
+		icon_label.visible = false
+	else:
+		icon_label.text = TYPE_ICONS.get(card_type, "●")
+		icon_label.visible = true
 
 
 func _apply_frame(accent: Color) -> void:

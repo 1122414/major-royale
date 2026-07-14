@@ -67,6 +67,7 @@ func _ready() -> void:
 	player_title.text = "%s新生" % major.name
 	battle_title.text = "战斗"
 	_setup_ai_native_ui(enemy_id, enemy_res)
+	_setup_battle_art(enemy_id)
 	enemy_fig_label.text = "AI" if _is_ai_battle else "敌"
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
@@ -124,6 +125,52 @@ func _refresh_ai_actions(selected_id: String) -> void:
 		else:
 			label.add_theme_color_override("font_color", UIColors.TEXT_MUTED)
 		ai_actions_list.add_child(label)
+
+func _setup_battle_art(enemy_id: String) -> void:
+	var bg: TextureRect = $PixelBackground
+	if bg and bg.has_method("_ready"):
+		if _is_ai_battle:
+			bg.texture_path = "res://assets/sprites/bg/battle_interview.png"
+			if ResourceLoader.exists(bg.texture_path):
+				bg.texture = load(bg.texture_path)
+		else:
+			bg.texture_path = "res://assets/sprites/bg/battle_classroom.png"
+			if ResourceLoader.exists(bg.texture_path):
+				bg.texture = load(bg.texture_path)
+
+	var player_path := "res://assets/sprites/chars/player_cs.png"
+	match GameState.player_major_id:
+		"law": player_path = "res://assets/sprites/chars/player_law.png"
+		"medicine": player_path = "res://assets/sprites/chars/player_med.png"
+	_set_figure_texture($Arena/PlayerFigure, player_path)
+
+	var enemy_path := "res://assets/sprites/chars/enemy_anxiety.png"
+	if enemy_id == "ai_interviewer":
+		enemy_path = "res://assets/sprites/chars/enemy_ai.png"
+	elif enemy_id == "paper_reviewer":
+		enemy_path = "res://assets/sprites/chars/enemy_reviewer.png"
+	elif enemy_id == "employment_pressure":
+		enemy_path = "res://assets/sprites/chars/enemy_boss.png"
+	_set_figure_texture($Arena/EnemyFigure, enemy_path)
+
+
+func _set_figure_texture(panel: PanelContainer, path: String) -> void:
+	if not ResourceLoader.exists(path):
+		return
+	var label := panel.get_child(0) as Label
+	if label:
+		label.visible = false
+	var tex := panel.get_node_or_null("Sprite") as TextureRect
+	if tex == null:
+		tex = TextureRect.new()
+		tex.name = "Sprite"
+		tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		panel.add_child(tex)
+	tex.texture = load(path)
+
 
 func _style_end_turn_button() -> void:
 	var style := StyleBoxFlat.new()
@@ -212,6 +259,7 @@ func _on_card_clicked(index: int) -> void:
 	var card: Resource = _battle.player.hand[index]
 	if _battle.play_card(index):
 		AudioManager.play_sfx("card_play")
+		_play_card_motion()
 		match card.type:
 			"attack": AudioManager.play_sfx("attack")
 			"defense": AudioManager.play_sfx("shield")
@@ -219,6 +267,16 @@ func _on_card_clicked(index: int) -> void:
 		message_label.text = ""
 	else:
 		message_label.text = "能量不足或无法出牌"
+
+
+func _play_card_motion() -> void:
+	# 轻动效：敌人意图闪一下 + 手牌区轻微上浮
+	var tw := create_tween()
+	tw.tween_property(enemy_intent_label, "modulate", UIColors.ACCENT_GOLD, 0.08)
+	tw.tween_property(enemy_intent_label, "modulate", Color.WHITE, 0.18)
+	var hand_tw := create_tween()
+	hand_tw.tween_property(hand_container, "position:y", hand_container.position.y - 8.0, 0.06)
+	hand_tw.tween_property(hand_container, "position:y", hand_container.position.y, 0.12)
 
 
 func _on_end_turn() -> void:

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/ui/screens/map_explore.gd" id="1_map_explore"]
 [ext_resource type="Theme" path="res://src/ui/theme.tres" id="2_theme"]
-[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
+[ext_resource type="Script" path="res://src/ui/scene_background.gd" id="3_bg"]
 
 [node name="MapExploreScreen" type="Control"]
 layout_mode = 3
@@ -14,7 +14,7 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_map_explore")
 
-[node name="PixelBackground" type="ColorRect" parent="."]
+[node name="PixelBackground" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +22,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+texture_filter = 1
 script = ExtResource("3_bg")
+texture_path = "res://assets/sprites/bg/map_campus.png"
 
 [node name="TopHud" type="HBoxContainer" parent="."]
 layout_mode = 0
