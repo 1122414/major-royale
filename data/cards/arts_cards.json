@@ -1,0 +1,343 @@
+{
+  "id": "arts_cards",
+  "cards": [
+    {
+      "id": "sketch",
+      "name": "速写",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "造成 5 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "color_block",
+      "name": "色块铺陈",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "获得 6 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 6,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "muse",
+      "name": "灵感闪现",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "critique",
+      "name": "锐评",
+      "type": "control",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "附加易伤。",
+      "effects": [
+        {
+          "type": "status",
+          "status_id": "vulnerable",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "collage",
+      "name": "拼贴",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "抽 1 张牌，获得 4 护盾。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "shield",
+          "value": 4,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "performance",
+      "name": "行为艺术",
+      "type": "attack",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "arts",
+      "description": "造成 12 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "id": "gallery",
+      "name": "画廊漫步",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "抽 1 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "brushstroke",
+      "name": "笔触",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "造成 7 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "id": "residency",
+      "name": "驻地创作",
+      "type": "heal",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "恢复 6 点生命。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 6,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "avant_garde",
+      "name": "先锋实验",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "arts",
+      "description": "获得 1 能量并抽 1 张。",
+      "effects": [
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "masterpiece",
+      "name": "代表作",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "arts",
+      "description": "造成 15 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "palette",
+      "name": "调色",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "获得 5 护盾，清除 1 负面。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 5,
+          "target": "self"
+        },
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "improv",
+      "name": "即兴",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "造成 3 伤害，抽 2 张。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 3
+        },
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "spotlight",
+      "name": "聚光灯",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "arts",
+      "description": "查看意图。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        }
+      ]
+    },
+    {
+      "id": "satire",
+      "name": "讽刺漫画",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "造成 4 点伤害，附加压力。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "status",
+          "status_id": "pressure",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "encore",
+      "name": "返场",
+      "type": "skill",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "arts",
+      "description": "抽 3 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "installation",
+      "name": "装置艺术",
+      "type": "defense",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "arts",
+      "description": "获得 12 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 12,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "storyboard",
+      "name": "分镜",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "arts",
+      "description": "抽 1 张，查看意图。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        }
+      ]
+    },
+    {
+      "id": "chaos_theory",
+      "name": "混沌美学",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "arts",
+      "description": "造成 9 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 9
+        }
+      ]
+    },
+    {
+      "id": "curtain_call",
+      "name": "谢幕",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "arts",
+      "description": "造成 8 点伤害并恢复 5 生命。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 8
+        },
+        {
+          "type": "heal",
+          "value": 5,
+          "target": "self"
+        }
+      ]
+    }
+  ]
+}

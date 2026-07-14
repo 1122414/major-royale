@@ -9,7 +9,13 @@
       "rarity": "common",
       "major_id": "medicine",
       "description": "恢复 6 点生命。",
-      "effects": [{"type": "heal", "value": 6, "target": "self"}]
+      "effects": [
+        {
+          "type": "heal",
+          "value": 6,
+          "target": "self"
+        }
+      ]
     },
     {
       "id": "anatomy_weakness",
@@ -20,8 +26,15 @@
       "major_id": "medicine",
       "description": "造成 5 点伤害，附加 1 层易伤。",
       "effects": [
-        {"type": "damage", "value": 5},
-        {"type": "status", "status_id": "vulnerable", "status_stacks": 1}
+        {
+          "type": "damage",
+          "value": 5
+        },
+        {
+          "type": "status",
+          "status_id": "vulnerable",
+          "status_stacks": 1
+        }
       ]
     },
     {
@@ -33,8 +46,14 @@
       "major_id": "medicine",
       "description": "查看敌人意图，抽 1 张牌。",
       "effects": [
-        {"type": "reveal_intent", "target": "enemy"},
-        {"type": "draw", "value": 1}
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
       ]
     },
     {
@@ -45,7 +64,13 @@
       "rarity": "common",
       "major_id": "medicine",
       "description": "本回合攻击牌伤害 +3。",
-      "effects": [{"type": "buff", "status_id": "adrenaline", "status_stacks": 3}]
+      "effects": [
+        {
+          "type": "buff",
+          "status_id": "adrenaline",
+          "status_stacks": 3
+        }
+      ]
     },
     {
       "id": "night_shift",
@@ -56,8 +81,282 @@
       "major_id": "medicine",
       "description": "获得 5 点护盾和 1 层抗压。",
       "effects": [
-        {"type": "shield", "value": 5, "target": "self"},
-        {"type": "status", "status_id": "resistance", "status_stacks": 1, "target": "self"}
+        {
+          "type": "shield",
+          "value": 5,
+          "target": "self"
+        },
+        {
+          "type": "status",
+          "status_id": "resistance",
+          "status_stacks": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "triage",
+      "name": "分诊",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "抽 1 张牌，恢复 3 生命。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "heal",
+          "value": 3,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "scalpel",
+      "name": "手术刀",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "造成 7 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "id": "bandage",
+      "name": "包扎",
+      "type": "heal",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "恢复 8 点生命。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 8,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "antibiotic",
+      "name": "抗生素",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "清除 1 负面，获得 4 护盾。",
+      "effects": [
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        },
+        {
+          "type": "shield",
+          "value": 4,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "vital_check",
+      "name": "生命体征",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "syringe",
+      "name": "注射液",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "造成 5 点伤害，附加流血。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 5
+        },
+        {
+          "type": "status",
+          "status_id": "bleed",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "defibrillate",
+      "name": "除颤",
+      "type": "heal",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "medicine",
+      "description": "恢复 14 点生命。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 14,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "anesthesia",
+      "name": "麻醉",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "medicine",
+      "description": "延后敌人 1 回合。",
+      "effects": [
+        {
+          "type": "delay",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "lab_report",
+      "name": "化验单",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "查看意图并抽 1 张。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "quarantine",
+      "name": "隔离",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "获得 8 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 8,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "vaccine",
+      "name": "疫苗",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "medicine",
+      "description": "获得 抗压状态。",
+      "effects": [
+        {
+          "type": "status",
+          "status_id": "resistance",
+          "status_stacks": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "crisis_or",
+      "name": "急诊开刀",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "medicine",
+      "description": "造成 15 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "rounds",
+      "name": "查房",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "恢复 4 生命，抽 1 张。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 4,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "side_effect",
+      "name": "副作用",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "medicine",
+      "description": "造成 6 点伤害，自身失 2 精神。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 6
+        },
+        {
+          "type": "spirit_damage",
+          "value": 2,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "miracle",
+      "name": "起死回生",
+      "type": "heal",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "medicine",
+      "description": "恢复 10 生命并抽 2 张。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 10,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 2
+        }
       ]
     }
   ]

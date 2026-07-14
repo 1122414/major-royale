@@ -15,12 +15,25 @@
   "active_skill": {
     "id": "code_injection",
     "name": "代码注入",
-    "description": "使敌人下一回合行动有概率失效，并附加 Bug。"
+    "description": "给敌人附加 2 层 Bug，抽 1 张牌，并揭示其意图。"
   },
   "passive_skill": {
     "id": "debug_all_night",
     "name": "熬夜 Debug",
-    "description": "生命低于 40% 时，每回合额外抽 1 张牌，但精神值下降。"
+    "description": "生命低于 40% 时，每回合额外抽 1 张牌。"
   },
-  "starter_deck": ["bug_generate", "quick_script", "refactor", "code_review", "bsod_warning"]
+  "starter_deck": [
+    "bug_generate",
+    "quick_script",
+    "refactor",
+    "code_review",
+    "strike",
+    "defend",
+    "unit_test",
+    "null_pointer",
+    "git_revert",
+    "deep_breath",
+    "pair_programming",
+    "hot_reload"
+  ]
 }

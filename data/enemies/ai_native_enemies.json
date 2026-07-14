@@ -7,12 +7,16 @@
       "type": "ai_native",
       "hp": 70,
       "ai_prompt_key": "ai_interviewer",
+      "specialty": "多维评估：会根据专业切换追问，擅打精神与压力。",
+      "traits": ["AI", "心理施压", "行为学习"],
+      "weakness": "稳定节奏与护盾续航",
+      "spirit_weak": false,
       "actions": [
-        {"id": "ask_algorithm", "description": "算法追问：对计算机专业施加额外压力。"},
-        {"id": "ask_ethics", "description": "职业伦理：降低玩家下一张攻击牌效果。"},
-        {"id": "resume_challenge", "description": "简历质疑：造成精神伤害。"},
-        {"id": "praise_then_pressure", "description": "先夸后压：玩家抽牌 +1，但获得压力。"},
-        {"id": "silent_observe", "description": "沉默观察：本回合防御，下回合强化。"}
+        {"id": "ask_algorithm", "description": "算法追问：叠加压力并造成伤害。"},
+        {"id": "ask_ethics", "description": "职业伦理：叠加压力。"},
+        {"id": "resume_challenge", "description": "简历质疑：精神伤害 + 普攻。"},
+        {"id": "praise_then_pressure", "description": "先夸后压：抽1牌但叠加压力。"},
+        {"id": "silent_observe", "description": "沉默观察：获得护盾。"}
       ]
     },
     {
@@ -21,12 +25,16 @@
       "type": "ai_native",
       "hp": 65,
       "ai_prompt_key": "paper_reviewer",
+      "specialty": "拒稿逻辑：打乱手牌节奏，用修订与质疑消耗你。",
+      "traits": ["AI", "方法质疑", "修订压迫"],
+      "weakness": "快速清场，避免被拖入修稿循环",
+      "spirit_weak": false,
       "actions": [
-        {"id": "reject_core_card", "description": "拒绝核心卡：玩家下回合某类卡费用 +1。"},
-        {"id": "demand_revision", "description": "要求大修：玩家弃 1 张牌，抽 2 张牌。"},
-        {"id": "question_method", "description": "质疑方法：附加压力。"},
-        {"id": "accept_minor", "description": "小修接收：敌人获得护盾，但玩家获得奖励标记。"},
-        {"id": "desk_reject", "description": "直接拒稿：造成伤害，但敌人下回合虚弱。"}
+        {"id": "reject_core_card", "description": "拒绝核心：叠加压力。"},
+        {"id": "demand_revision", "description": "要求大修：弃手并重抽。"},
+        {"id": "question_method", "description": "质疑方法：压力 + 伤害。"},
+        {"id": "accept_minor", "description": "小修接收：敌护盾，你获抗压。"},
+        {"id": "desk_reject", "description": "直接拒稿：高伤，敌易伤。"}
       ]
     }
   ]

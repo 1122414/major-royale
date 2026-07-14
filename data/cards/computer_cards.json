@@ -10,8 +10,15 @@
       "major_id": "computer",
       "description": "造成 4 点伤害，附加 1 层 Bug。",
       "effects": [
-        {"type": "damage", "value": 4},
-        {"type": "status", "status_id": "bug", "status_stacks": 1}
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "status",
+          "status_id": "bug",
+          "status_stacks": 1
+        }
       ]
     },
     {
@@ -22,7 +29,12 @@
       "rarity": "common",
       "major_id": "computer",
       "description": "抽 1 张牌。",
-      "effects": [{"type": "draw", "value": 1}]
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
     },
     {
       "id": "refactor",
@@ -33,8 +45,16 @@
       "major_id": "computer",
       "description": "获得 6 点护盾，移除 1 个负面状态。",
       "effects": [
-        {"type": "shield", "value": 6, "target": "self"},
-        {"type": "purge", "value": 1, "target": "self"}
+        {
+          "type": "shield",
+          "value": 6,
+          "target": "self"
+        },
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        }
       ]
     },
     {
@@ -46,8 +66,14 @@
       "major_id": "computer",
       "description": "查看敌人下回合意图，抽 1 张牌。",
       "effects": [
-        {"type": "reveal_intent", "target": "enemy"},
-        {"type": "draw", "value": 1}
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
       ]
     },
     {
@@ -58,7 +84,276 @@
       "rarity": "uncommon",
       "major_id": "computer",
       "description": "若敌人有 3 层 Bug，造成 24 点伤害；否则造成 8 点。",
-      "effects": [{"type": "conditional_damage", "status_id": "bug", "threshold": 3, "value": 8, "real_value": 24}]
+      "effects": [
+        {
+          "type": "conditional_damage",
+          "status_id": "bug",
+          "threshold": 3,
+          "value": 8,
+          "real_value": 24
+        }
+      ]
+    },
+    {
+      "id": "unit_test",
+      "name": "单元测试",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "造成 3 点伤害，抽 1 张牌。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 3
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "null_pointer",
+      "name": "空指针",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "造成 7 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "id": "cache_hit",
+      "name": "缓存命中",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "获得 1 点能量。",
+      "effects": [
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "stack_overflow",
+      "name": "栈溢出",
+      "type": "attack",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "造成 12 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "id": "git_revert",
+      "name": "回滚提交",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "获得 8 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 8,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "pair_programming",
+      "name": "结对编程",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "segfault",
+      "name": "段错误",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "造成 5 点伤害，附加 2 层 Bug。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 5
+        },
+        {
+          "type": "status",
+          "status_id": "bug",
+          "status_stacks": 2
+        }
+      ]
+    },
+    {
+      "id": "hot_reload",
+      "name": "热更新",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "抽 1 张牌，获得 3 点护盾。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "shield",
+          "value": 3,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "memory_leak",
+      "name": "内存泄漏",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "附加 1 层易伤。",
+      "effects": [
+        {
+          "type": "status",
+          "status_id": "vulnerable",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "ci_pipeline",
+      "name": "CI 流水线",
+      "type": "skill",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "抽 3 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "kernel_panic",
+      "name": "内核恐慌",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "computer",
+      "description": "造成 16 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 16
+        }
+      ]
+    },
+    {
+      "id": "firewall",
+      "name": "防火墙",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "获得 5 点护盾，清除 1 负面。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 5,
+          "target": "self"
+        },
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "open_source",
+      "name": "开源贡献",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "computer",
+      "description": "造成 4 点伤害，抽 1 张牌。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "regex_trap",
+      "name": "正则陷阱",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "computer",
+      "description": "查看意图并附加 1 Bug。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        },
+        {
+          "type": "status",
+          "status_id": "bug",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "ddos",
+      "name": "流量洪峰",
+      "type": "attack",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "computer",
+      "description": "造成 9 点伤害两次。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 9
+        },
+        {
+          "type": "damage",
+          "value": 9
+        }
+      ]
     }
   ]
 }

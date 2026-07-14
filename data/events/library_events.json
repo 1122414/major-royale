@@ -5,14 +5,14 @@
       "id": "study_hard",
       "name": "沉浸学习",
       "area": "library",
-      "description": "专注提升，抽牌能力增强。",
+      "description": "沉浸阅读：专注 +1（专注≥8 时每回合能量+1）。",
       "effects": [{"type": "stat_up", "stat": "专注", "value": 1}]
     },
     {
       "id": "seat_fight",
       "name": "抢座大战",
       "area": "library",
-      "description": "与其他学生发生争执。",
+      "description": "座位冲突：立刻受到 5 点伤害。",
       "effects": [{"type": "damage", "value": 5}]
     }
   ]

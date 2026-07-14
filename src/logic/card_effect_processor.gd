@@ -31,17 +31,31 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			var damage := value
 			if caster.has_status("adrenaline"):
 				damage += caster.get_status_stacks("adrenaline")
+			if caster.is_player:
+				damage += int(GameState.get_effective_stat("学识") / 3)
+			if actual_target != null and not actual_target.is_player:
+				var eid := str(GameState.player_stats.get("current_enemy_id", ""))
+				var er = Config.enemies.get(eid)
+				if er is EnemyResource and (er as EnemyResource).spirit_weak:
+					damage = int(round(float(damage) * 1.3))
 			actual_target.take_damage(damage)
+			if caster.is_player:
+				GameState.run_damage_dealt += damage
 		"shield":
 			actual_target.gain_shield(value)
+			if caster.is_player and caster.major_id == "finance":
+				actual_target.gain_shield(2)
 		"heal":
 			actual_target.heal(value)
+		"spirit_damage":
+			actual_target.lose_spirit(value)
 		"draw":
-			if actual_target.is_player:
-				actual_target.draw_cards(value)
+			# 抽牌默认作用在施法者；JSON 常省略 target，不能落到敌人上
+			if caster.is_player:
+				caster.draw_cards(value)
 				card_drawn.emit(value)
 		"energy":
-			if actual_target.is_player:
+			if caster.is_player:
 				_battle.energy += value
 				energy_gained.emit(value)
 		"status":
@@ -56,14 +70,21 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 		"reveal_intent":
 			intent_revealed.emit()
 		"conditional_damage":
-			var threshold: int = _get_effect_param(effect, "threshold", 0)
+			var threshold: int = int(_get_effect_param(effect, "threshold", 0))
 			var real_value := value
 			if actual_target.has_status(effect.status_id) and actual_target.get_status_stacks(effect.status_id) >= threshold:
-				real_value = _get_effect_param(effect, "real_value", value * 2)
+				real_value = int(_get_effect_param(effect, "real_value", value * 2))
+			if caster.is_player:
+				real_value += int(GameState.get_effective_stat("学识") / 3)
 			actual_target.take_damage(real_value)
+			if caster.is_player:
+				GameState.run_damage_dealt += real_value
 		"damage_per_debuff":
 			var debuff_count := _count_debuffs(actual_target)
-			actual_target.take_damage(debuff_count * value)
+			var total := debuff_count * value
+			actual_target.take_damage(total)
+			if caster.is_player:
+				GameState.run_damage_dealt += total
 		"delay":
 			_battle.delay_enemy(value)
 

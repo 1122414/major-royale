@@ -5,40 +5,58 @@
       "id": "gpa_anxiety",
       "name": "绩点焦虑者",
       "type": "normal",
-      "hp": 30,
+      "hp": 28,
+      "specialty": "精神施压：擅用压力叠层拖垮心态。",
+      "traits": ["低压血", "高压精神"],
+      "weakness": "爆发伤害可快速解决",
+      "spirit_weak": false,
       "actions": [
-        {"id": "stack_pressure", "weight": 2, "value": 1, "description": "施加压力。"},
-        {"id": "attack", "weight": 3, "value": 5, "description": "造成 5 点伤害。"}
+        {"id": "stack_pressure", "weight": 3, "value": 1, "description": "叠加 1 层压力。"},
+        {"id": "attack", "weight": 2, "value": 4, "description": "造成 4 点伤害。"}
       ]
     },
     {
       "id": "seat_grabber",
       "name": "抢座学霸",
       "type": "normal",
-      "hp": 40,
+      "hp": 42,
+      "specialty": "占位防守：护盾厚、反击阴。",
+      "traits": ["高防", "反击"],
+      "weakness": "破盾与延后",
+      "spirit_weak": false,
       "actions": [
-        {"id": "shield", "weight": 2, "value": 6, "description": "获得护盾。"},
-        {"id": "counter", "weight": 1, "value": 2, "description": "下回合反击。"}
+        {"id": "shield", "weight": 3, "value": 8, "description": "获得 8 点护盾。"},
+        {"id": "counter", "weight": 2, "value": 2, "description": "获得反击姿态。"},
+        {"id": "attack", "weight": 1, "value": 5, "description": "造成 5 点伤害。"}
       ]
     },
     {
       "id": "all_nighter",
       "name": "熬夜卷王",
       "type": "normal",
-      "hp": 35,
+      "hp": 36,
+      "specialty": "疲劳输出：中等血量，持续压力+普攻。",
+      "traits": ["中血", "压力"],
+      "weakness": "清除压力后更好打",
+      "spirit_weak": false,
       "actions": [
-        {"id": "stack_pressure", "weight": 3, "value": 1, "description": "叠加压力。"},
-        {"id": "attack", "weight": 2, "value": 4, "description": "造成 4 点伤害。"}
+        {"id": "stack_pressure", "weight": 3, "value": 1, "description": "叠加 1 层压力。"},
+        {"id": "attack", "weight": 3, "value": 5, "description": "造成 5 点伤害。"}
       ]
     },
     {
       "id": "sports_student",
       "name": "体育特长生",
       "type": "normal",
-      "hp": 45,
+      "hp": 55,
+      "specialty": "体能爆棚：血厚攻高，但精神脆弱（受伤+30%）。",
+      "traits": ["高血", "重击", "精神弱"],
+      "weakness": "精神/技巧打击更有效",
+      "spirit_weak": true,
       "actions": [
-        {"id": "charge", "weight": 1, "value": 1, "description": "蓄力重击。"},
-        {"id": "heavy_attack", "weight": 2, "value": 10, "description": "造成 10 点伤害。"}
+        {"id": "charge", "weight": 1, "value": 1, "description": "蓄力，下回合重击翻倍。"},
+        {"id": "heavy_attack", "weight": 3, "value": 12, "description": "造成 12 点伤害。"},
+        {"id": "attack", "weight": 2, "value": 7, "description": "造成 7 点伤害。"}
       ]
     },
     {
@@ -46,9 +64,13 @@
       "name": "甲方幻影",
       "type": "normal",
       "hp": 38,
+      "specialty": "需求反复：攻击与压力交替施压。",
+      "traits": ["多变", "压力"],
+      "weakness": "稳定输出",
+      "spirit_weak": false,
       "actions": [
-        {"id": "attack", "weight": 2, "value": 4, "description": "造成 4 点伤害。"},
-        {"id": "stack_pressure", "weight": 2, "value": 1, "description": "提出修改意见，增加压力。"}
+        {"id": "attack", "weight": 2, "value": 5, "description": "造成 5 点伤害。"},
+        {"id": "stack_pressure", "weight": 3, "value": 2, "description": "叠加 2 层压力。"}
       ]
     }
   ]

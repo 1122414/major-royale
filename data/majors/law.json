@@ -15,12 +15,25 @@
   "active_skill": {
     "id": "objection",
     "name": "异议！",
-    "description": "打断敌人一次强行动，并使其进入举证失败。"
+    "description": "打断敌人本回合行动，附加举证失败，并获得 6 点护盾。"
   },
   "passive_skill": {
     "id": "legal_protection",
     "name": "条文护体",
     "description": "每场战斗首次受到致命伤时保留 1 点生命，并获得护盾。"
   },
-  "starter_deck": ["burden_of_proof", "not_guilty_defense", "law_search", "trial_delay", "judgment"]
+  "starter_deck": [
+    "burden_of_proof",
+    "not_guilty_defense",
+    "law_search",
+    "trial_delay",
+    "judgment",
+    "strike",
+    "defend",
+    "cross_exam",
+    "objection",
+    "evidence",
+    "deep_breath",
+    "recess"
+  ]
 }

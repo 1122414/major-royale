@@ -18,5 +18,9 @@ static func from_dict(data: Dictionary) -> Resource:
 	effect.target = data.get("target", "enemy")
 	effect.status_id = data.get("status_id", "")
 	effect.status_stacks = data.get("status_stacks", 1)
-	effect.params = data.get("params", {})
+	effect.params = data.get("params", {}).duplicate()
+	# JSON 顶层扩展字段并入 params
+	for key in ["threshold", "real_value"]:
+		if data.has(key):
+			effect.params[key] = data[key]
 	return effect

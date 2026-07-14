@@ -15,12 +15,25 @@
   "active_skill": {
     "id": "emergency_suture",
     "name": "紧急缝合",
-    "description": "恢复生命并移除流血、中毒等身体负面状态。"
+    "description": "恢复 15 点生命，清除身体负面，并获得 1 层抗压。"
   },
   "passive_skill": {
     "id": "anatomy_familiarity",
     "name": "人体结构熟悉",
     "description": "攻击有概率命中弱点，造成额外伤害。"
   },
-  "starter_deck": ["first_aid", "anatomy_weakness", "case_analysis", "adrenaline", "night_shift"]
+  "starter_deck": [
+    "first_aid",
+    "anatomy_weakness",
+    "case_analysis",
+    "adrenaline",
+    "night_shift",
+    "strike",
+    "defend",
+    "triage",
+    "bandage",
+    "scalpel",
+    "deep_breath",
+    "vital_check"
+  ]
 }

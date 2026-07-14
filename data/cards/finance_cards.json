@@ -1,0 +1,341 @@
+{
+  "id": "finance_cards",
+  "cards": [
+    {
+      "id": "bull_run",
+      "name": "牛市冲锋",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "造成 6 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "id": "hedge",
+      "name": "对冲",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "获得 6 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 6,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "dividend",
+      "name": "分红分红",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "抽 1 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "short_sell",
+      "name": "做空",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "造成 5 点伤害，附加易伤。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 5
+        },
+        {
+          "type": "status",
+          "status_id": "vulnerable",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "compound",
+      "name": "复利",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "leverage",
+      "name": "杠杆",
+      "type": "attack",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "finance",
+      "description": "造成 13 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "id": "cash_flow",
+      "name": "现金流",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "获得 1 点能量。",
+      "effects": [
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "audit",
+      "name": "审计",
+      "type": "control",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "查看意图。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        }
+      ]
+    },
+    {
+      "id": "bailout",
+      "name": "注资",
+      "type": "heal",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "恢复 7 点生命。",
+      "effects": [
+        {
+          "type": "heal",
+          "value": 7,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "margin_call",
+      "name": "追加保证金",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "finance",
+      "description": "附加 2 层压力。",
+      "effects": [
+        {
+          "type": "status",
+          "status_id": "pressure",
+          "status_stacks": 2
+        }
+      ]
+    },
+    {
+      "id": "ipo",
+      "name": "上市敲钟",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "finance",
+      "description": "造成 16 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 16
+        }
+      ]
+    },
+    {
+      "id": "portfolio",
+      "name": "资产配置",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "获得 5 护盾，抽 1 张。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 5,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "arbitrage",
+      "name": "套利",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "finance",
+      "description": "造成 4 伤害，获得 1 能量。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "bear_trap",
+      "name": "空头陷阱",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "造成 8 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 8
+        }
+      ]
+    },
+    {
+      "id": "risk_off",
+      "name": "避险",
+      "type": "defense",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "获得 3 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 3,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "quant",
+      "name": "量化模型",
+      "type": "skill",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "finance",
+      "description": "抽 3 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "insider",
+      "name": "内幕消息",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "finance",
+      "description": "查看意图并抽 1 张。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "debt_collect",
+      "name": "催收",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "造成 4 点伤害，附加流血。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "status",
+          "status_id": "bleed",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "gold_rush",
+      "name": "淘金热",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "finance",
+      "description": "获得 肾上腺素。",
+      "effects": [
+        {
+          "type": "status",
+          "status_id": "adrenaline",
+          "status_stacks": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "bankrupt",
+      "name": "破产清算",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "finance",
+      "description": "造成 10 点伤害并清除自身负面。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 10
+        },
+        {
+          "type": "purge",
+          "value": 2,
+          "target": "self"
+        }
+      ]
+    }
+  ]
+}

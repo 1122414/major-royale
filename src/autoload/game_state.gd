@@ -9,6 +9,8 @@ enum Screen {
 	REWARD,
 	SETTINGS,
 	RESULT,
+	ACHIEVEMENTS,
+	RUN_SUMMARY,
 }
 
 var current_screen: Screen = Screen.MENU
@@ -25,11 +27,21 @@ var run_max_spirit: int = 100
 var deck_card_ids: Array[String] = []
 var permanent_stats: Dictionary = {}
 var pending_buffs: Array[Dictionary] = []  ## [{status_id, stacks}, ...]
+var run_relic_ids: Array[String] = []
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
 var map_seed: int = 0
 var map_path_index: int = 0  ## 当前所在线性节点序号
+var last_reward_is_elite: bool = false
+
+## 通关总结统计
+var run_enemies_defeated: Array[Dictionary] = []  ## [{id, name, type}]
+var run_battles_won: int = 0
+var run_damage_dealt: int = 0
+var run_cards_played: int = 0
+var run_events_resolved: int = 0
+var run_started_at: int = 0
 
 
 func start_run(major_id: String) -> void:
@@ -39,13 +51,60 @@ func start_run(major_id: String) -> void:
 	run_progress = 0
 	permanent_stats = {}
 	pending_buffs = []
+	run_relic_ids.clear()
+	last_reward_is_elite = false
 	credits = 120
 	credit_points = 560
 	day_count = 1
 	map_seed = 0
 	map_path_index = 0
+	run_enemies_defeated.clear()
+	run_battles_won = 0
+	run_damage_dealt = 0
+	run_cards_played = 0
+	run_events_resolved = 0
+	run_started_at = int(Time.get_unix_time_from_system())
 	_init_run_from_major(major_id)
 	current_screen = Screen.MAP_EXPLORE
+
+
+func add_relic(relic_id: String) -> void:
+	if relic_id.is_empty() or relic_id in run_relic_ids:
+		return
+	run_relic_ids.append(relic_id)
+	# 即时生效类
+	if relic_id == "gym_bracelet":
+		run_max_hp += 8
+		heal_run(8)
+
+
+func has_relic(relic_id: String) -> bool:
+	return relic_id in run_relic_ids
+
+
+func record_enemy_defeat(enemy_id: String, enemy_name: String, enemy_type: String) -> void:
+	run_battles_won += 1
+	run_enemies_defeated.append({
+		"id": enemy_id,
+		"name": enemy_name,
+		"type": enemy_type,
+	})
+	last_reward_is_elite = enemy_type in ["elite", "ai_native", "boss"]
+	# 资源收益
+	var resource_bonus := get_effective_stat("资源")
+	var social_bonus := get_effective_stat("社交")
+	var credit_gain := 8 + resource_bonus
+	var point_gain := 12 + social_bonus
+	if last_reward_is_elite:
+		credit_gain *= 2
+		point_gain *= 2
+	if has_relic("mentor_letter"):
+		credit_gain = int(credit_gain * 1.5)
+		point_gain = int(point_gain * 1.5)
+	credits += credit_gain
+	credit_points += point_gain
+	var was_elite := last_reward_is_elite
+	Achievements.try_after_battle_win(enemy_id, was_elite)
 
 
 func _init_run_from_major(major_id: String) -> void:
@@ -121,4 +180,6 @@ func _screen_to_path(screen: Screen) -> String:
 		Screen.REWARD: return "res://src/ui/screens/reward.tscn"
 		Screen.SETTINGS: return "res://src/ui/screens/settings.tscn"
 		Screen.RESULT: return "res://src/ui/screens/result.tscn"
+		Screen.ACHIEVEMENTS: return "res://src/ui/screens/achievements.tscn"
+		Screen.RUN_SUMMARY: return "res://src/ui/screens/run_summary.tscn"
 	return "res://src/ui/screens/menu.tscn"

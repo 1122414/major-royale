@@ -1,0 +1,75 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/achievements.gd" id="1"]
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="2"]
+
+[node name="AchievementsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Bg" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.07, 0.1, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = 400.0
+offset_bottom = 80.0
+theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+text = "成就"
+
+[node name="Tabs" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 96.0
+offset_right = 700.0
+offset_bottom = 144.0
+theme_override_constants/separation = 12
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 160.0
+offset_right = 700.0
+offset_bottom = 620.0
+
+[node name="List" type="VBoxContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DetailPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 740.0
+offset_top = 160.0
+offset_right = 1240.0
+offset_bottom = 420.0
+
+[node name="DetailLabel" type="Label" parent="DetailPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "点击成就查看详情"
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 640.0
+offset_right = 220.0
+offset_bottom = 700.0
+theme_override_font_sizes/font_size = 20
+text = "返回主页"

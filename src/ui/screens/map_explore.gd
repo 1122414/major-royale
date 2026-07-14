@@ -5,6 +5,7 @@ const MAP_NODE_SCENE := preload("res://src/ui/widgets/map_node.tscn")
 const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 const STAT_BAR_SCENE := preload("res://src/ui/widgets/stat_bar.tscn")
 const MINIMAP_SCENE := preload("res://src/ui/widgets/pressure_minimap.tscn")
+const StatLex := preload("res://src/logic/stat_lexicon.gd")
 
 @onready var area_label: Label = $TopHud/LeftStats/AreaLabel
 @onready var day_label: Label = $TopHud/DayBadge/DayLabel
@@ -48,7 +49,7 @@ func _ready() -> void:
 	$TopHud/LeftStats/Bars.add_child(_spirit_bar)
 
 	_minimap = MINIMAP_SCENE.instantiate()
-	_minimap.custom_minimum_size = Vector2(100, 100)
+	_minimap.custom_minimum_size = Vector2(72, 72)
 	minimap_slot.add_child(_minimap)
 
 	advance_button.pressed.connect(_on_advance_pressed)
@@ -60,9 +61,11 @@ func _ready() -> void:
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
-	settings_btn.position = Vector2(1210, 16)
+	settings_btn.custom_minimum_size = Vector2(48, 48)
+	settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	$TopHud.add_child(settings_btn)
 	settings_btn.pressed.connect(_on_settings_pressed)
-	add_child(settings_btn)
 
 	event_popup.visible = false
 
@@ -207,6 +210,7 @@ func _resolve_event(choice_index: int) -> void:
 	var handler := EventHandler.new(GameState.player_stats)
 	var message := handler.apply_event(_current_event, choice_index)
 	info_label.text = message + "　→ 可继续点「前进」。"
+	GameState.run_events_resolved += 1
 	event_popup.visible = false
 	_current_event = null
 	_update_ui()
@@ -229,8 +233,9 @@ func _update_ui() -> void:
 	resource_label.text = "学分 %d　信用点 %d　压力 %d" % [
 		GameState.credits, GameState.credit_points, GameState.run_progress
 	]
-
-	howto_label.text = "怎么玩：路线是固定的，从左到右一站接一站。\n1) 点金色「前进」进入下一站\n2) ⚔战斗 ※精英　?事件　♥补给　★奖励　♛终局\n3) 打赢拿卡构筑，压力越高敌人越狠\n4) 走到操场挑战「就业压力」通关"
+	howto_label.text = "怎么玩：固定路线从左到右前进。\n1) 点金色「前进」进入下一站\n2) ⚔战斗 ※精英 ?事件 ♥补给 ★奖励 ♛终局\n3) 打赢拿卡构筑；压力越高敌人越狠\n4) 操场挑战「就业压力」通关\n（学分/信用/压力说明：鼠标悬停顶栏资源）"
+	howto_label.tooltip_text = StatLex.all_resources_block()
+	resource_label.tooltip_text = StatLex.all_resources_block()
 
 	var next_n := _game_map.get_next_node()
 	if next_n == null:

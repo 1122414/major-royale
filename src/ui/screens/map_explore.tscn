@@ -30,9 +30,10 @@ texture_path = "res://assets/sprites/bg/map_campus.png"
 layout_mode = 0
 offset_left = 16.0
 offset_top = 12.0
-offset_right = 1260.0
-offset_bottom = 130.0
+offset_right = 1264.0
+offset_bottom = 120.0
 theme_override_constants/separation = 12
+alignment = 1
 
 [node name="LeftStats" type="VBoxContainer" parent="TopHud"]
 layout_mode = 2
@@ -49,8 +50,9 @@ layout_mode = 2
 theme_override_constants/separation = 2
 
 [node name="MinimapSlot" type="Control" parent="TopHud/LeftStats"]
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
+size_flags_vertical = 0
 
 [node name="DayBadge" type="PanelContainer" parent="TopHud"]
 custom_minimum_size = Vector2(200, 48)
@@ -81,11 +83,11 @@ layout_mode = 0
 offset_left = 16.0
 offset_top = 140.0
 offset_right = 420.0
-offset_bottom = 300.0
+offset_bottom = 310.0
 
 [node name="HowToBody" type="Label" parent="HowToPanel"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "怎么玩"
 autowrap_mode = 3
 
@@ -115,7 +117,7 @@ autowrap_mode = 3
 [node name="PathPanel" type="PanelContainer" parent="."]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 320.0
+offset_top = 324.0
 offset_right = 1264.0
 offset_bottom = 560.0
 

@@ -9,6 +9,7 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var settings_button: Button = $LeftPanel/ButtonColumn/SettingsButton
 @onready var quit_button: Button = $LeftPanel/ButtonColumn/QuitButton
 @onready var bgm_button: Button = $LeftPanel/ButtonColumn/BgmButton
+@onready var achievements_button: Button = $LeftPanel/ButtonColumn/AchievementsButton
 
 
 func _ready() -> void:
@@ -17,17 +18,20 @@ func _ready() -> void:
 	settings_button.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
 	bgm_button.pressed.connect(_on_bgm_pressed)
+	achievements_button.pressed.connect(_on_achievements_pressed)
 	_style_primary_button(start_button)
 	_style_secondary_button(major_button)
 	_style_secondary_button(settings_button)
 	_style_secondary_button(quit_button)
 	_style_secondary_button(bgm_button)
+	_style_secondary_button(achievements_button)
 	_refresh_bgm_button()
 	AudioManager.play_bgm_for_phase("menu")
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
-	settings_btn.position = Vector2(1180, 20)
+	settings_btn.custom_minimum_size = Vector2(40, 40)
+	settings_btn.position = Vector2(1228, 12)
 	settings_btn.pressed.connect(_on_settings_pressed)
 	add_child(settings_btn)
 
@@ -83,6 +87,11 @@ func _on_bgm_pressed() -> void:
 	AudioManager.play_sfx("click")
 	var name_str: String = AudioManager.cycle_menu_bgm()
 	_refresh_bgm_button(name_str)
+
+
+func _on_achievements_pressed() -> void:
+	AudioManager.play_sfx("click")
+	GameState.change_screen(GameState.Screen.ACHIEVEMENTS)
 
 
 func _refresh_bgm_button(name_str: String = "") -> void:

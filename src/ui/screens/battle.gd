@@ -22,6 +22,8 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var player_title: Label = $TopBar/TopRow/PlayerTitle
 @onready var draw_pile_label: Label = $DrawDiscard/DrawPileLabel
 @onready var discard_pile_label: Label = $DrawDiscard/DiscardPileLabel
+@onready var deck_total_label: Label = $DrawDiscard/DeckTotalLabel
+@onready var relic_label: Label = $DrawDiscard/RelicLabel
 @onready var enemy_fig_label: Label = $Arena/EnemyFigure/EnemyFigLabel
 @onready var ai_banner: PanelContainer = $AIBanner
 @onready var ai_profile_panel: PanelContainer = $AIProfilePanel
@@ -64,6 +66,7 @@ func _ready() -> void:
 
 	var major: MajorResource = Config.majors[GameState.player_major_id]
 	skill_button.text = major.active_skill.get("name", "技能")
+	skill_button.tooltip_text = str(major.active_skill.get("description", ""))
 	player_title.text = "%s新生" % major.name
 	battle_title.text = "战斗"
 	_setup_ai_native_ui(enemy_id, enemy_res)
@@ -72,9 +75,11 @@ func _ready() -> void:
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
-	settings_btn.position = Vector2(1210, 20)
+	settings_btn.custom_minimum_size = Vector2(48, 48)
+	settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	$TopBar/TopRow.add_child(settings_btn)
 	settings_btn.pressed.connect(_on_settings)
-	add_child(settings_btn)
 
 	_update_ui()
 	AudioManager.play_sfx("click")
@@ -89,17 +94,40 @@ func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
 	ai_profile_panel.visible = _is_ai_battle
 	ai_actions_panel.visible = _is_ai_battle
 	buff_panel.visible = not _is_ai_battle
+	# 精英战隐藏右侧标准敌人面板，避免与「可选行动」重叠
+	$EnemyPanel.visible = not _is_ai_battle
 	if not _is_ai_battle:
 		return
 	battle_title.text = "精英遭遇"
 	battle_title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
 	var banner: Label = ai_banner.get_node("BannerLabel")
-	banner.text = "精英遭遇: %s" % enemy_res.name
-	var traits := "行为学习 / 多维评估 / 心理施压" if enemy_id == "ai_interviewer" else "拒稿逻辑 / 方法质疑 / 修订压迫"
-	ai_profile_body.text = "%s\n危险等级：精英\n特质：%s\nHP %d" % [enemy_res.name, traits, enemy_res.hp]
-	ai_loot_preview.text = "掉落预览：稀有卡 / 事件称号 / ending_flag 分支"
+	banner.text = "精英：%s　HP %d　| %s" % [
+		enemy_res.name,
+		enemy_res.hp,
+		enemy_res.specialty if enemy_res.specialty != "" else "AI Native",
+	]
+	var trait_str := " / ".join(PackedStringArray(enemy_res.traits)) if enemy_res.traits.size() > 0 else "AI Native"
+	ai_profile_body.text = "%s\n%s\n弱点：%s" % [
+		enemy_res.specialty if enemy_res.specialty != "" else "行为多变",
+		trait_str,
+		enemy_res.weakness if enemy_res.weakness != "" else "未知",
+	]
+	ai_loot_preview.text = "掉落：稀有卡 / 称号"
 	_refresh_ai_actions("")
-
+	# 左档案窄栏，右行动贴顶不挡立绘
+	ai_profile_panel.offset_left = 16.0
+	ai_profile_panel.offset_top = 100.0
+	ai_profile_panel.offset_right = 200.0
+	ai_profile_panel.offset_bottom = 250.0
+	ai_actions_panel.offset_left = 1080.0
+	ai_actions_panel.offset_top = 100.0
+	ai_actions_panel.offset_right = 1264.0
+	ai_actions_panel.offset_bottom = 320.0
+	$Arena.offset_left = 240.0
+	$Arena.offset_right = 1040.0
+	# 把敌人状态/意图写到横幅下方短提示
+	enemy_name_label.text = enemy_res.name
+	enemy_hp_label.text = "HP: %d/%d" % [enemy_res.hp, enemy_res.hp]
 
 func _refresh_ai_actions(selected_id: String) -> void:
 	if not _is_ai_battle or _enemy_res == null:
@@ -223,16 +251,44 @@ func _create_player() -> Character:
 
 
 func _update_ui() -> void:
-	enemy_name_label.text = _battle.enemy.display_name
-	enemy_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.enemy.hp, _battle.enemy.max_hp, _battle.enemy.shield]
-	enemy_intent_label.text = "意图: %s" % _battle.get_enemy_intent_text()
+	if not _is_ai_battle:
+		enemy_name_label.text = _battle.enemy.display_name
+		var specialty := ""
+		if _enemy_res != null:
+			specialty = str(_enemy_res.specialty)
+		enemy_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.enemy.hp, _battle.enemy.max_hp, _battle.enemy.shield]
+		if specialty != "":
+			enemy_intent_label.text = "特长：%s\n意图: %s" % [specialty, _battle.get_enemy_intent_text()]
+		else:
+			enemy_intent_label.text = "意图: %s" % _battle.get_enemy_intent_text()
+		if _enemy_res != null and _enemy_res.weakness != "":
+			enemy_intent_label.tooltip_text = "弱点：%s" % _enemy_res.weakness
+	else:
+		var banner: Label = ai_banner.get_node("BannerLabel")
+		banner.text = "精英：%s　HP %d/%d 护盾 %d　| %s" % [
+			_battle.enemy.display_name,
+			_battle.enemy.hp,
+			_battle.enemy.max_hp,
+			_battle.enemy.shield,
+			_battle.get_enemy_intent_text(),
+		]
+		_refresh_ai_actions(_battle.get_enemy_intent_id())
 
 	player_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
 	player_spirit_label.text = "精神: %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
 	energy_label.text = "能量 %d/%d" % [_battle.energy, _battle.max_energy]
 	turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
+	var deck_total := _battle.player.deck.size()
 	draw_pile_label.text = "抽牌堆 %d" % _battle.player.draw_pile.size()
+	deck_total_label.text = "牌库 %d" % deck_total
+	draw_pile_label.tooltip_text = "开局会先抽到手牌；抽完后从弃牌堆洗回。"
 	discard_pile_label.text = "弃牌堆 %d" % _battle.player.discard_pile.size()
+	var RelicCat = preload("res://src/logic/relic.gd")
+	relic_label.text = RelicCat.format_list(GameState.run_relic_ids)
+	relic_label.tooltip_text = relic_label.text
+	for rid in GameState.run_relic_ids:
+		var info: Dictionary = RelicCat.get_info(str(rid))
+		relic_label.tooltip_text += "\n【%s】%s" % [info.get("name", rid), info.get("desc", "")]
 
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
 	_update_status_icons(player_status_container, _battle.player.statuses)
@@ -244,20 +300,35 @@ func _update_ui() -> void:
 
 
 func _rebuild_hand() -> void:
-	## 始终重建并保持手牌区几何居中，避免出牌/抽牌后偏移。
-	hand_container.position = Vector2(160, 500)
-	hand_container.size = Vector2(960, 200)
-	hand_container.offset_left = 160.0
-	hand_container.offset_top = 500.0
-	hand_container.offset_right = 1120.0
-	hand_container.offset_bottom = 700.0
-	hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	## 手牌始终相对底部居中；牌多时自动缩宽，避免挤向右侧。
 	while hand_container.get_child_count() > 0:
 		var child: Node = hand_container.get_child(0)
 		hand_container.remove_child(child)
 		child.free()
-	for i in _battle.player.hand.size():
+
+	var n: int = _battle.player.hand.size()
+	var area_left := 168.0
+	var area_right := 1120.0
+	var area_w := area_right - area_left
+	var sep := 8.0
+	var base_w := 148.0
+	var card_w := base_w
+	if n > 1:
+		card_w = mini(base_w, (area_w - sep * float(n - 1)) / float(n))
+	var total_w := float(n) * card_w + float(maxi(0, n - 1)) * sep
+	var start_x := area_left + (area_w - total_w) * 0.5
+
+	hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	hand_container.offset_left = start_x
+	hand_container.offset_top = 500.0
+	hand_container.offset_right = start_x + maxf(total_w, 1.0)
+	hand_container.offset_bottom = 700.0
+
+	hand_container.add_theme_constant_override("separation", int(sep))
+	for i in n:
 		var card_view: Control = CARD_VIEW_SCENE.instantiate()
+		card_view.custom_minimum_size = Vector2(card_w, 200)
+		card_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		card_view.setup(_battle.player.hand[i], i)
 		card_view.card_clicked.connect(_on_card_clicked)
 		hand_container.add_child(card_view)
@@ -403,6 +474,10 @@ func _on_battle_ended(victory: bool) -> void:
 	AudioManager.play_sfx("win" if victory else "lose")
 	if victory:
 		AudioManager.play_bgm_for_phase("victory")
+		var etype := str(_enemy_res.enemy_type) if _enemy_res else "normal"
+		var ename := str(_enemy_res.name) if _enemy_res else _battle.enemy.display_name
+		var eid := str(_enemy_res.id) if _enemy_res else _battle.enemy.id
+		GameState.record_enemy_defeat(eid, ename, etype)
 	GameState.change_screen(GameState.Screen.RESULT)
 
 

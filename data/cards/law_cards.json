@@ -9,7 +9,13 @@
       "rarity": "common",
       "major_id": "law",
       "description": "降低敌人下回合 50% 伤害。",
-      "effects": [{"type": "debuff", "status_id": "举证失败", "status_stacks": 1}]
+      "effects": [
+        {
+          "type": "debuff",
+          "status_id": "举证失败",
+          "status_stacks": 1
+        }
+      ]
     },
     {
       "id": "not_guilty_defense",
@@ -20,8 +26,16 @@
       "major_id": "law",
       "description": "获得 7 点护盾，清除 1 个负面状态。",
       "effects": [
-        {"type": "shield", "value": 7, "target": "self"},
-        {"type": "purge", "value": 1, "target": "self"}
+        {
+          "type": "shield",
+          "value": 7,
+          "target": "self"
+        },
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        }
       ]
     },
     {
@@ -33,8 +47,15 @@
       "major_id": "law",
       "description": "抽 1 张牌，获得 1 点临时能量。",
       "effects": [
-        {"type": "draw", "value": 1},
-        {"type": "energy", "value": 1, "target": "self"}
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
       ]
     },
     {
@@ -45,7 +66,12 @@
       "rarity": "common",
       "major_id": "law",
       "description": "延后敌人行动 1 回合。",
-      "effects": [{"type": "delay", "value": 1}]
+      "effects": [
+        {
+          "type": "delay",
+          "value": 1
+        }
+      ]
     },
     {
       "id": "judgment",
@@ -55,7 +81,273 @@
       "rarity": "uncommon",
       "major_id": "law",
       "description": "根据敌人负面状态数量，每层造成 6 点伤害。",
-      "effects": [{"type": "damage_per_debuff", "value": 6}]
+      "effects": [
+        {
+          "type": "damage_per_debuff",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "id": "cross_exam",
+      "name": "交叉询问",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "造成 6 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "id": "objection",
+      "name": "异议",
+      "type": "control",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "获得 4 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 4,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "name": "呈堂证供",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "抽 1 张牌，造成 3 点伤害。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "damage",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "injunction",
+      "name": "禁令",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "law",
+      "description": "延后敌人 1 回合。",
+      "effects": [
+        {
+          "type": "delay",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "plea_bargain",
+      "name": "辩诉交易",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "获得 6 点护盾，抽 1 张牌。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 6,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "case_file",
+      "name": "卷宗翻阅",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "subpoena",
+      "name": "传票",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "造成 5 点伤害，附加举证失败。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 5
+        },
+        {
+          "type": "debuff",
+          "status_id": "举证失败",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "precedent",
+      "name": "判例引用",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "law",
+      "description": "抽 1 张牌，获得 1 能量。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "gavel",
+      "name": "法槌敲击",
+      "type": "attack",
+      "cost": 2,
+      "rarity": "uncommon",
+      "major_id": "law",
+      "description": "造成 11 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "id": "recess",
+      "name": "休庭",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "获得 9 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 9,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "amicus",
+      "name": "法庭之友",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "清除 1 负面并抽 1 张。",
+      "effects": [
+        {
+          "type": "purge",
+          "value": 1,
+          "target": "self"
+        },
+        {
+          "type": "draw",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "name": "结案陈词",
+      "type": "finisher",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "law",
+      "description": "造成 14 点伤害。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 14
+        }
+      ]
+    },
+    {
+      "id": "voir_dire",
+      "name": "陪审筛选",
+      "type": "control",
+      "cost": 1,
+      "rarity": "uncommon",
+      "major_id": "law",
+      "description": "查看意图。",
+      "effects": [
+        {
+          "type": "reveal_intent",
+          "target": "enemy"
+        }
+      ]
+    },
+    {
+      "id": "contempt",
+      "name": "藐视法庭",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "major_id": "law",
+      "description": "造成 4 点伤害，附加易伤。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 4
+        },
+        {
+          "type": "status",
+          "status_id": "vulnerable",
+          "status_stacks": 1
+        }
+      ]
+    },
+    {
+      "id": "appeal",
+      "name": "上诉",
+      "type": "skill",
+      "cost": 2,
+      "rarity": "rare",
+      "major_id": "law",
+      "description": "抽 3 张牌，获得 5 护盾。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 3
+        },
+        {
+          "type": "shield",
+          "value": 5,
+          "target": "self"
+        }
+      ]
     }
   ]
 }

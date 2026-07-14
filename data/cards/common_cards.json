@@ -8,7 +8,12 @@
       "cost": 1,
       "rarity": "common",
       "description": "造成 6 点伤害。",
-      "effects": [{"type": "damage", "value": 6}]
+      "effects": [
+        {
+          "type": "damage",
+          "value": 6
+        }
+      ]
     },
     {
       "id": "defend",
@@ -17,7 +22,12 @@
       "cost": 1,
       "rarity": "common",
       "description": "获得 5 点护盾。",
-      "effects": [{"type": "shield", "value": 5}]
+      "effects": [
+        {
+          "type": "shield",
+          "value": 5
+        }
+      ]
     },
     {
       "id": "draw_card",
@@ -26,7 +36,94 @@
       "cost": 0,
       "rarity": "common",
       "description": "抽 2 张牌。",
-      "effects": [{"type": "draw", "value": 2}]
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "deep_breath",
+      "name": "深呼吸",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "description": "抽 1 张牌，获得 2 点护盾。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 1
+        },
+        {
+          "type": "shield",
+          "value": 2,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "all_nighter_study",
+      "name": "通宵刷题",
+      "type": "attack",
+      "cost": 1,
+      "rarity": "common",
+      "description": "造成 8 点伤害，失去 3 点精神。",
+      "effects": [
+        {
+          "type": "damage",
+          "value": 8
+        },
+        {
+          "type": "spirit_damage",
+          "value": 3,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "group_project",
+      "name": "小组合作",
+      "type": "skill",
+      "cost": 1,
+      "rarity": "common",
+      "description": "抽 2 张牌。",
+      "effects": [
+        {
+          "type": "draw",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "coffee_boost",
+      "name": "咖啡续命",
+      "type": "skill",
+      "cost": 0,
+      "rarity": "common",
+      "description": "获得 1 点能量。",
+      "effects": [
+        {
+          "type": "energy",
+          "value": 1,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "stretch",
+      "name": "伸个懒腰",
+      "type": "defense",
+      "cost": 1,
+      "rarity": "common",
+      "description": "获得 7 点护盾。",
+      "effects": [
+        {
+          "type": "shield",
+          "value": 7,
+          "target": "self"
+        }
+      ]
     }
   ]
 }

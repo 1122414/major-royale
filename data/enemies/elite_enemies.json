@@ -3,24 +3,33 @@
   "enemies": [
     {
       "id": "all_nighter_king",
-      "name": "熬夜卷王",
+      "name": "熬夜卷王·精英",
       "type": "elite",
-      "hp": 60,
+      "hp": 70,
+      "specialty": "永久在线：高血续航，压力与重击齐飞。",
+      "traits": ["精英", "续航", "高压"],
+      "weakness": "爆发斩杀",
+      "spirit_weak": false,
       "actions": [
-        {"id": "stack_pressure", "weight": 2, "description": "给玩家叠加压力。"},
-        {"id": "heavy_attack", "weight": 2, "description": "造成 10 点伤害。"},
-        {"id": "heal", "weight": 1, "description": "恢复 8 点生命。"}
+        {"id": "stack_pressure", "weight": 2, "value": 2, "description": "叠加 2 层压力。"},
+        {"id": "heavy_attack", "weight": 2, "value": 12, "description": "造成 12 点伤害。"},
+        {"id": "heal", "weight": 1, "value": 10, "description": "恢复 10 点生命。"}
       ]
     },
     {
       "id": "sports_ace",
-      "name": "体育特长生",
+      "name": "体育特长生·精英",
       "type": "elite",
-      "hp": 55,
+      "hp": 80,
+      "specialty": "赛场怪物：极高生命与重击，精神极弱（受伤+30%）。",
+      "traits": ["精英", "高血", "重击", "精神弱"],
+      "weakness": "精神/技巧类伤害克制",
+      "spirit_weak": true,
       "actions": [
-        {"id": "charge", "weight": 1, "description": "蓄力，下回合造成 20 点伤害。"},
-        {"id": "attack", "weight": 3, "description": "造成 8 点伤害。"},
-        {"id": "defend", "weight": 2, "description": "获得 10 点护盾。"}
+        {"id": "charge", "weight": 1, "value": 1, "description": "蓄力，下回合攻击翻倍。"},
+        {"id": "heavy_attack", "weight": 2, "value": 16, "description": "造成 16 点伤害。"},
+        {"id": "attack", "weight": 2, "value": 10, "description": "造成 10 点伤害。"},
+        {"id": "defend", "weight": 1, "value": 12, "description": "获得 12 点护盾。"}
       ]
     }
   ]

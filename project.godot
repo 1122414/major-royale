@@ -16,6 +16,7 @@ GameState="*res://src/autoload/game_state.gd"
 EventBus="*res://src/autoload/event_bus.gd"
 AudioManager="*res://src/autoload/audio_manager.gd"
 AIClient="*res://src/ai/client.gd"
+Achievements="*res://src/autoload/achievements.gd"
 UIColors="*res://src/ui/ui_colors.gd"
 
 [display]

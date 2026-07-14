@@ -38,6 +38,7 @@ var _skill_used_this_battle: bool = false
 var _law_passive_used: bool = false
 var _boss_current_phase: int = 0
 var _ai_decision_ready: bool = false
+var _thesis_clip_ready: bool = true
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -46,7 +47,27 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, p_enemy_resource.hp)
 	_effect_processor = CardEffectProcessor.new(self)
 	_effect_processor.intent_revealed.connect(reveal_intent)
+	# 专注≥8：最大能量 +1；精英徽章再 +1
+	max_energy = BASE_ENERGY + (1 if GameState.get_effective_stat("专注") >= 8 else 0)
+	if GameState.has_relic("elite_badge"):
+		max_energy += 1
+	energy = max_energy
+	_apply_battle_start_relics()
 	_start_player_turn()
+	# 表达≥7：开局揭示意图
+	if GameState.get_effective_stat("表达") >= 7:
+		reveal_intent()
+
+
+func _apply_battle_start_relics() -> void:
+	if GameState.has_relic("flash_drive"):
+		player.draw_cards(1, MAX_HAND_SIZE)
+	if GameState.has_relic("lucky_eraser"):
+		_remove_body_debuffs(player)
+		for status_id in player.statuses.keys():
+			if Status.is_debuff(status_id):
+				player.remove_status(status_id)
+				break
 
 
 func play_card(card_index: int) -> bool:
@@ -56,18 +77,33 @@ func play_card(card_index: int) -> bool:
 		return false
 
 	var card: Resource = player.hand[card_index]
-	if card.cost > energy:
+	var cost: int = card.cost
+	if GameState.has_relic("thesis_clip") and _thesis_clip_ready:
+		cost = maxi(0, cost - 1)
+	if cost > energy:
 		return false
 
-	energy -= card.cost
+	energy -= cost
+	if GameState.has_relic("thesis_clip") and _thesis_clip_ready and card.cost > 0:
+		_thesis_clip_ready = false
 	player.hand.remove_at(card_index)
 	player.discard_pile.append(card)
+	GameState.run_cards_played += 1
 
 	_effect_processor.process_card(card, player, enemy)
+
+	# 科学计算器：攻击额外伤害
+	if GameState.has_relic("scientific_calculator") and str(card.type) == "attack":
+		enemy.take_damage(2)
+		GameState.run_damage_dealt += 2
 
 	# 医学被动：攻击有概率弱点打击
 	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
 		enemy.take_damage(3)
+
+	# 艺术被动：控制牌概率额外抽牌
+	if player.major_id == "arts" and str(card.type) == "control" and randf() < 0.3:
+		player.draw_cards(1, MAX_HAND_SIZE)
 
 	# 敌人反击姿态
 	if card.type == "attack" and enemy.has_status("counter"):
@@ -93,28 +129,38 @@ func use_active_skill() -> bool:
 	var skill_id: String = major.active_skill.get("id", "")
 	match skill_id:
 		"code_injection":
+			# 计算机：注入 Bug + 抽牌 + 揭示意图（纯增益向控场）
 			enemy.add_status("bug", 2)
-			enemy.add_status("pressure", 1)
+			player.draw_cards(1, MAX_HAND_SIZE)
+			reveal_intent()
 			skill_used.emit("代码注入")
 		"objection":
+			# 法学：打断行动 + 护盾 + 举证失败
 			_enemy_intent = {"id": "stunned", "description": "被异议打断，本回合无法行动。", "value": 0}
 			enemy.add_status("举证失败", 1)
+			player.gain_shield(6)
 			skill_used.emit("异议！")
 		"emergency_suture":
-			player.heal(12)
+			# 医学：强力治疗 + 清负面 + 抗压
+			player.heal(15)
 			_remove_body_debuffs(player)
+			player.add_status("resistance", 1)
 			skill_used.emit("紧急缝合")
 		"leverage":
+			# 金融：临时能量 + 肾上腺素（不再上压力）
 			energy += 1
-			player.add_status("pressure", 1)
+			player.add_status("adrenaline", 1)
+			player.gain_shield(3)
 			skill_used.emit("杠杆加仓")
 		"inspiration":
-			player.draw_cards(2)
+			# 艺术：抽牌 + 清压力 + 小护盾
+			player.draw_cards(2, MAX_HAND_SIZE)
 			if player.has_status("pressure"):
 				var stacks := player.get_status_stacks("pressure")
 				player.remove_status("pressure")
 				if stacks > 1:
 					player.add_status("pressure", stacks - 1)
+			player.gain_shield(4)
 			skill_used.emit("灵感爆发")
 		_:
 			return false
@@ -246,9 +292,10 @@ func _apply_damage_to_player(damage: int) -> void:
 	var is_boss := enemy_id == "employment_pressure"
 	if not is_boss:
 		var mult := 1.0 + mini(0.4, float(GameState.run_progress) * 0.05)
+		if GameState.has_relic("noise_cancelling"):
+			mult = 1.0 + (mult - 1.0) * 0.5
 		damage = int(round(float(damage) * mult))
 
-	var previous_hp := player.hp
 	player.take_damage(damage)
 
 	# 法学被动：首次致命伤保留 1 点生命
@@ -272,16 +319,26 @@ func _start_player_turn() -> void:
 	state = BattleState.PLAYER_TURN
 	energy = max_energy
 	player.reset_shield()
+	_thesis_clip_ready = true
 
-	# 计算机被动：生命低于 40% 时额外抽 1 张牌
+	if GameState.has_relic("coffee_thermos"):
+		player.gain_shield(2)
+	if turn_count == 1 and GameState.has_relic("sticky_notes"):
+		player.gain_shield(5)
+
+	# 计算机被动：生命低于 40% 时额外抽 1 张（不再扣精神）
 	var draw_amount := BASE_DRAW
 	if player.major_id == "computer" and player.hp < player.max_hp * 0.4:
 		draw_amount += 1
-		player.lose_spirit(5)
 
 	# 压力影响：每 4 层压力少抽 1 张
 	var pressure := player.get_status_stacks("pressure")
 	draw_amount = maxi(1, draw_amount - pressure / 4)
+
+	# 创造：额外抽牌概率
+	var create_stat := GameState.get_effective_stat("创造")
+	if randf() < float(create_stat) * 0.03:
+		draw_amount += 1
 
 	player.draw_cards(draw_amount, MAX_HAND_SIZE)
 	_decide_enemy_intent()

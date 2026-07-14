@@ -6,6 +6,10 @@
       "name": "就业压力",
       "type": "boss",
       "hp": 120,
+      "specialty": "终极答辩：三阶段升压，伤害与手牌压制并存。",
+      "traits": ["Boss", "多阶段", "高压"],
+      "weakness": "前期尽快压血量跳阶段",
+      "spirit_weak": false,
       "actions": [
         {"id": "attack", "weight": 2, "value": 8, "description": "简历筛选：造成 8 点伤害。"},
         {"id": "stack_pressure", "weight": 2, "value": 2, "description": "高压提问：叠加 2 层压力。"}

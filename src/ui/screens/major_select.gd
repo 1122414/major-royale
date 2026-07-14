@@ -3,6 +3,7 @@ extends Control
 
 const MAJOR_CARD_SCENE := preload("res://src/ui/widgets/major_card.tscn")
 const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
+const StatLex := preload("res://src/logic/stat_lexicon.gd")
 
 const PRESET_ORDER := ["computer", "law", "medicine", "finance", "arts"]
 const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
@@ -46,7 +47,8 @@ func _ready() -> void:
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
-	settings_btn.position = Vector2(1180, 20)
+	settings_btn.custom_minimum_size = Vector2(36, 36)
+	settings_btn.position = Vector2(1228, 12)
 	settings_btn.pressed.connect(_on_settings)
 	add_child(settings_btn)
 
@@ -97,10 +99,16 @@ func _preview_major(major_id: String) -> void:
 	var major: MajorResource = Config.majors[major_id]
 	footer_name.text = major.name
 	footer_desc.text = major.description
-	footer_skill.text = "主动：%s　被动：%s" % [
+	var stat_bits: PackedStringArray = []
+	for s in STAT_NAMES:
+		var v: int = int(major.stats.get(s, 5))
+		stat_bits.append("%s%d" % [s.substr(0, 2), v])
+	footer_skill.text = "主动：%s　被动：%s\n属性：%s\n悬停说明见探索页「学分/信用/压力」与属性帮助" % [
 		str(major.active_skill.get("name", "")),
 		str(major.passive_skill.get("name", "")),
+		" ".join(stat_bits),
 	]
+	footer_skill.tooltip_text = StatLex.all_stats_block()
 
 
 func _on_major_hovered(major_id: String) -> void:
@@ -144,7 +152,11 @@ func _on_custom_confirm() -> void:
 	custom_major.stats = _custom_stats.duplicate()
 	custom_major.active_skill = {"id": "inspiration", "name": "灵感爆发", "description": "抽 2 张牌，并减少压力。"}
 	custom_major.passive_skill = {"id": "custom_grit", "name": "自学成才", "description": "开局精神略高。"}
-	custom_major.starter_deck = ["strike", "defend", "draw_card", "strike", "defend"]
+	custom_major.starter_deck = [
+		"strike", "defend", "draw_card", "deep_breath", "coffee_boost",
+		"stretch", "group_project", "strike", "defend", "all_nighter_study",
+		"deep_breath", "draw_card",
+	]
 
 	Config.majors[custom_major.id] = custom_major
 	GameState.start_run(custom_major.id)

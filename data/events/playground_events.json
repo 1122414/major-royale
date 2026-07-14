@@ -5,7 +5,7 @@
       "id": "run_laps",
       "name": "跑圈",
       "area": "playground",
-      "description": "体能提升，恢复少量生命。",
+      "description": "晨跑：体能 +1，恢复 3 点生命。",
       "effects": [
         {"type": "stat_up", "stat": "体能", "value": 1},
         {"type": "heal", "value": 3, "target": "self"}
@@ -15,7 +15,7 @@
       "id": "pressure_zone",
       "name": "压力圈缩小",
       "area": "playground",
-      "description": "赛场压力增加，所有敌人变强。",
+      "description": "压力圈推进 +1：非 Boss 敌人伤害提升（每点+5%，上限+40%）。",
       "effects": [{"type": "advance_pressure", "value": 1}]
     }
   ]

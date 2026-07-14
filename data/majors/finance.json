@@ -15,12 +15,25 @@
   "active_skill": {
     "id": "leverage",
     "name": "杠杆加仓",
-    "description": "本回合获得 1 点临时能量，但叠加 1 层压力。"
+    "description": "获得 1 点能量、1 层肾上腺素与 3 点护盾。"
   },
   "passive_skill": {
     "id": "risk_hedge",
     "name": "对冲思维",
     "description": "护盾收益提高：获得护盾时额外 +2。"
   },
-  "starter_deck": ["strike", "defend", "draw_card", "strike", "defend"]
+  "starter_deck": [
+    "bull_run",
+    "hedge",
+    "dividend",
+    "short_sell",
+    "compound",
+    "strike",
+    "defend",
+    "draw_card",
+    "cash_flow",
+    "portfolio",
+    "deep_breath",
+    "risk_off"
+  ]
 }

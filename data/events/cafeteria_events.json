@@ -5,14 +5,14 @@
       "id": "grab_food",
       "name": "抢饭成功",
       "area": "cafeteria",
-      "description": "恢复 8 点生命。",
+      "description": "抢到热乎饭菜：恢复 8 点生命。",
       "effects": [{"type": "heal", "value": 8, "target": "self"}]
     },
     {
       "id": "dark_cuisine",
       "name": "黑暗料理",
       "area": "cafeteria",
-      "description": "肚子不舒服，获得压力。",
+      "description": "吃坏肚子：下场战斗开始时获得「压力」×2。",
       "effects": [{"type": "status", "status_id": "pressure", "status_stacks": 2, "target": "self"}]
     }
   ]

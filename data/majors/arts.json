@@ -15,12 +15,25 @@
   "active_skill": {
     "id": "inspiration",
     "name": "灵感爆发",
-    "description": "抽 2 张牌，并清除 1 层压力。"
+    "description": "抽 2 张牌，清除 1 层压力，并获得 4 点护盾。"
   },
   "passive_skill": {
     "id": "aesthetic_pressure",
     "name": "审美压迫",
     "description": "出控制牌时，有 30% 概率额外抽 1 张。"
   },
-  "starter_deck": ["strike", "defend", "draw_card", "draw_card", "defend"]
+  "starter_deck": [
+    "sketch",
+    "color_block",
+    "muse",
+    "critique",
+    "collage",
+    "strike",
+    "defend",
+    "draw_card",
+    "brushstroke",
+    "palette",
+    "deep_breath",
+    "gallery"
+  ]
 }
