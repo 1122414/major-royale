@@ -6,12 +6,16 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var title_label: Label = $TitleLabel
 @onready var rewards_container: HBoxContainer = $RewardsContainer
 @onready var info_label: Label = $InfoLabel
+@onready var continue_button: Button = $ContinueButton
 
 var _rewards: Array[Dictionary] = []
 var _chosen: bool = false
 
 
 func _ready() -> void:
+	continue_button.visible = false
+	continue_button.pressed.connect(_return_to_map)
+
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(GameState.player_major_id) + GameState.run_progress
 	_rewards = RewardGenerator.generate_rewards(GameState.player_major_id, rng)
@@ -98,12 +102,21 @@ func _apply_reward(reward: Dictionary) -> void:
 			GameState.add_pending_buff(str(reward.status_id), int(reward.stacks))
 
 
-func _finish_choice(msg: String = "已选择奖励，按 ESC 返回地图") -> void:
+func _finish_choice(msg: String = "已选择奖励") -> void:
 	_chosen = true
-	info_label.text = msg
+	info_label.text = "%s\n点击下方按钮返回地图" % msg
 	for child in rewards_container.get_children():
 		if child is Button:
 			child.disabled = true
+	continue_button.visible = true
+	continue_button.disabled = false
+	continue_button.text = "返回地图 ▶"
+	continue_button.grab_focus()
+
+
+func _return_to_map() -> void:
+	AudioManager.play_sfx("click")
+	GameState.change_screen(GameState.Screen.MAP_EXPLORE)
 
 
 func _on_settings() -> void:
@@ -112,5 +125,4 @@ func _on_settings() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		AudioManager.play_sfx("click")
-		GameState.change_screen(GameState.Screen.MAP_EXPLORE)
+		_return_to_map()
