@@ -12,12 +12,17 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var player_hp_label: Label = $PlayerPanel/VBoxContainer/PlayerHPLabel
 @onready var player_spirit_label: Label = $PlayerPanel/VBoxContainer/PlayerSpiritLabel
 @onready var energy_label: Label = $PlayerPanel/VBoxContainer/EnergyLabel
-@onready var player_status_container: HBoxContainer = $PlayerPanel/VBoxContainer/PlayerStatusContainer
+@onready var player_status_container: VBoxContainer = $BuffPanel/BuffCol/PlayerStatusContainer
 @onready var hand_container: HBoxContainer = $HandContainer
 @onready var end_turn_button: Button = $EndTurnButton
 @onready var skill_button: Button = $SkillButton
 @onready var message_label: Label = $MessageLabel
-@onready var turn_label: Label = $TurnLabel
+@onready var turn_label: Label = $TopBar/TopRow/TurnLabel
+@onready var battle_title: Label = $TopBar/TopRow/BattleTitle
+@onready var player_title: Label = $TopBar/TopRow/PlayerTitle
+@onready var draw_pile_label: Label = $DrawDiscard/DrawPileLabel
+@onready var discard_pile_label: Label = $DrawDiscard/DiscardPileLabel
+@onready var enemy_fig_label: Label = $Arena/EnemyFigure/EnemyFigLabel
 
 var _battle: Battle
 
@@ -44,19 +49,36 @@ func _ready() -> void:
 
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
+	_style_end_turn_button()
 
 	var major: MajorResource = Config.majors[GameState.player_major_id]
 	skill_button.text = major.active_skill.get("name", "技能")
+	player_title.text = "%s新生" % major.name
+	battle_title.text = "战斗"
+	if enemy_id in ["ai_interviewer", "paper_reviewer"]:
+		battle_title.text = "精英遭遇"
+		battle_title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+	enemy_fig_label.text = "AI" if enemy_id.begins_with("ai_") or enemy_id == "paper_reviewer" else "敌"
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
-	settings_btn.position = Vector2(1180, 20)
+	settings_btn.position = Vector2(1210, 20)
 	settings_btn.pressed.connect(_on_settings)
 	add_child(settings_btn)
 
 	_update_ui()
 	AudioManager.play_sfx("click")
 
+
+func _style_end_turn_button() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.2, 0.14, 0.04, 0.95)
+	style.set_border_width_all(3)
+	style.border_color = UIColors.ACCENT_GOLD
+	style.set_corner_radius_all(2)
+	end_turn_button.add_theme_stylebox_override("normal", style)
+	end_turn_button.add_theme_stylebox_override("hover", style)
+	end_turn_button.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
 
 func _create_player() -> Character:
 	var major: MajorResource = Config.majors[GameState.player_major_id]
@@ -101,8 +123,10 @@ func _update_ui() -> void:
 
 	player_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
 	player_spirit_label.text = "精神: %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
-	energy_label.text = "能量: %d/%d" % [_battle.energy, _battle.max_energy]
-	turn_label.text = "回合 %d" % _battle.turn_count
+	energy_label.text = "能量 %d/%d" % [_battle.energy, _battle.max_energy]
+	turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
+	draw_pile_label.text = "抽牌堆 %d" % _battle.player.draw_pile.size()
+	discard_pile_label.text = "弃牌堆 %d" % _battle.player.discard_pile.size()
 
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
 	_update_status_icons(player_status_container, _battle.player.statuses)
@@ -120,7 +144,7 @@ func _update_ui() -> void:
 	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
 
 
-func _update_status_icons(container: HBoxContainer, statuses: Dictionary) -> void:
+func _update_status_icons(container: Control, statuses: Dictionary) -> void:
 	for child in container.get_children():
 		child.queue_free()
 	for status_id in statuses:

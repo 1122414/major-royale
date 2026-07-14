@@ -3,35 +3,62 @@
 [ext_resource type="Script" path="res://src/ui/widgets/card_view.gd" id="1_card_view"]
 
 [node name="CardView" type="PanelContainer"]
-custom_minimum_size = Vector2(150, 220)
+custom_minimum_size = Vector2(148, 210)
 script = ExtResource("1_card_view")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 
-[node name="NameLabel" type="Label" parent="VBoxContainer"]
+[node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 4
+
+[node name="TopRow" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="CostBadge" type="PanelContainer" parent="Margin/VBox/TopRow"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+
+[node name="CostLabel" type="Label" parent="Margin/VBox/TopRow/CostBadge"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 15
 text = "卡牌名"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="CostLabel" type="Label" parent="VBoxContainer"]
+[node name="IconLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "1"
+custom_minimum_size = Vector2(0, 48)
+theme_override_font_sizes/font_size = 36
+text = "⚔"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="TypeLabel" type="Label" parent="VBoxContainer"]
+[node name="TypeLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 text = "攻击"
 horizontal_alignment = 1
 
-[node name="DescLabel" type="Label" parent="VBoxContainer"]
+[node name="DescLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.54, 0.6, 0.66, 1)
 text = "卡牌效果描述"
 horizontal_alignment = 1
 autowrap_mode = 3
