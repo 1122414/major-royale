@@ -387,6 +387,10 @@ func get_enemy_intent_text() -> String:
 	return _enemy_intent.get("description", "敌人正在准备行动...")
 
 
+func get_enemy_intent_id() -> String:
+	return str(_enemy_intent.get("id", ""))
+
+
 func delay_enemy(turns: int) -> void:
 	_enemy_delay += turns
 

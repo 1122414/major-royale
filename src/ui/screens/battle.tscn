@@ -204,28 +204,28 @@ horizontal_alignment = 1
 
 [node name="HandContainer" type="HBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 300.0
-offset_top = 480.0
-offset_right = 1060.0
+offset_left = 160.0
+offset_top = 500.0
+offset_right = 1120.0
 offset_bottom = 700.0
 theme_override_constants/separation = 10
 alignment = 1
 
 [node name="SkillButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1080.0
-offset_top = 480.0
-offset_right = 1260.0
-offset_bottom = 536.0
+offset_left = 1140.0
+offset_top = 500.0
+offset_right = 1264.0
+offset_bottom = 556.0
 theme_override_font_sizes/font_size = 16
 text = "技能"
 
 [node name="EndTurnButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1080.0
-offset_top = 552.0
-offset_right = 1260.0
-offset_bottom = 620.0
+offset_left = 1140.0
+offset_top = 568.0
+offset_right = 1264.0
+offset_bottom = 636.0
 theme_override_font_sizes/font_size = 20
 text = "结束回合"
 

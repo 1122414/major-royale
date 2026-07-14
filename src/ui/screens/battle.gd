@@ -233,17 +233,30 @@ func _update_ui() -> void:
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
 	_update_status_icons(player_status_container, _battle.player.statuses)
 
-	# 更新手牌
-	for child in hand_container.get_children():
-		child.queue_free()
+	_rebuild_hand()
+
+	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
+	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
+
+
+func _rebuild_hand() -> void:
+	## 始终重建并保持手牌区几何居中，避免出牌/抽牌后偏移。
+	hand_container.position = Vector2(160, 500)
+	hand_container.size = Vector2(960, 200)
+	hand_container.offset_left = 160.0
+	hand_container.offset_top = 500.0
+	hand_container.offset_right = 1120.0
+	hand_container.offset_bottom = 700.0
+	hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	while hand_container.get_child_count() > 0:
+		var child: Node = hand_container.get_child(0)
+		hand_container.remove_child(child)
+		child.free()
 	for i in _battle.player.hand.size():
 		var card_view: Control = CARD_VIEW_SCENE.instantiate()
 		card_view.setup(_battle.player.hand[i], i)
 		card_view.card_clicked.connect(_on_card_clicked)
 		hand_container.add_child(card_view)
-
-	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
-	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
 
 
 func _update_status_icons(container: Control, statuses: Dictionary) -> void:
@@ -251,38 +264,58 @@ func _update_status_icons(container: Control, statuses: Dictionary) -> void:
 		child.queue_free()
 	for status_id in statuses:
 		var icon: Control = STATUS_ICON_SCENE.instantiate()
-		icon.setup(status_id, statuses[status_id])
 		container.add_child(icon)
+		icon.setup(status_id, statuses[status_id])
 
 
 func _on_card_clicked(index: int) -> void:
+	if index < 0 or index >= _battle.player.hand.size():
+		return
 	var card: Resource = _battle.player.hand[index]
+	var card_type: String = str(card.type)
 	if _battle.play_card(index):
 		AudioManager.play_sfx("card_play")
-		_play_card_motion()
-		match card.type:
-			"attack": AudioManager.play_sfx("attack")
-			"defense": AudioManager.play_sfx("shield")
-			"heal": AudioManager.play_sfx("heal")
+		if card_type == "attack":
+			_play_attack_animation(true)
+			AudioManager.play_sfx("attack")
+		elif card_type == "defense":
+			AudioManager.play_sfx("shield")
+		elif card_type == "heal":
+			AudioManager.play_sfx("heal")
+		else:
+			_flash_intent()
 		message_label.text = ""
 	else:
 		message_label.text = "能量不足或无法出牌"
 
 
-func _play_card_motion() -> void:
-	# 轻动效：敌人意图闪一下 + 手牌区轻微上浮
+func _flash_intent() -> void:
 	var tw := create_tween()
 	tw.tween_property(enemy_intent_label, "modulate", UIColors.ACCENT_GOLD, 0.08)
 	tw.tween_property(enemy_intent_label, "modulate", Color.WHITE, 0.18)
-	var hand_tw := create_tween()
-	hand_tw.tween_property(hand_container, "position:y", hand_container.position.y - 8.0, 0.06)
-	hand_tw.tween_property(hand_container, "position:y", hand_container.position.y, 0.12)
+
+
+func _play_attack_animation(from_player: bool) -> void:
+	var attacker: Control = $Arena/PlayerFigure if from_player else $Arena/EnemyFigure
+	var defender: Control = $Arena/EnemyFigure if from_player else $Arena/PlayerFigure
+	var base := attacker.position
+	var toward := defender.position - attacker.position
+	toward = toward.normalized() * 36.0
+	var tw := create_tween()
+	tw.tween_property(attacker, "position", base + toward, 0.08)
+	tw.tween_property(attacker, "position", base, 0.12)
+	var flash := create_tween()
+	flash.tween_property(defender, "modulate", Color(1.4, 0.6, 0.6), 0.06)
+	flash.tween_property(defender, "modulate", Color.WHITE, 0.14)
 
 
 func _on_end_turn() -> void:
 	AudioManager.play_sfx("click")
+	var intent_id: String = _battle.get_enemy_intent_id()
 	_battle.end_player_turn()
-
+	# 若本回合意图是攻击类，播敌人冲刺动画
+	if intent_id in ["attack", "multi_attack", "heavy_attack", "drain", "special_attack"]:
+		_play_attack_animation(false)
 
 func _on_skill() -> void:
 	if _battle.use_active_skill():
