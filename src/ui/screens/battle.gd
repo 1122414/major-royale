@@ -78,6 +78,10 @@ func _ready() -> void:
 
 	_update_ui()
 	AudioManager.play_sfx("click")
+	if _enemy_res != null and (_enemy_res.is_boss or str(_enemy_res.id) == "employment_pressure"):
+		AudioManager.play_bgm_for_phase("boss")
+	else:
+		AudioManager.play_bgm_for_phase("battle")
 
 
 func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
@@ -355,6 +359,7 @@ func _on_ai_decision_failed() -> void:
 
 func _on_boss_phase_changed(phase_name: String) -> void:
 	message_label.text = "Boss 进入阶段：%s" % phase_name
+	AudioManager.play_bgm_for_phase("boss")
 
 
 func _on_battle_ended(victory: bool) -> void:
@@ -363,6 +368,8 @@ func _on_battle_ended(victory: bool) -> void:
 	if _battle != null and _battle.player != null:
 		GameState.sync_from_battle_character(_battle.player)
 	AudioManager.play_sfx("win" if victory else "lose")
+	if victory:
+		AudioManager.play_bgm_for_phase("victory")
 	GameState.change_screen(GameState.Screen.RESULT)
 
 

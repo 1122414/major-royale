@@ -8,6 +8,7 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var major_button: Button = $LeftPanel/ButtonColumn/MajorButton
 @onready var settings_button: Button = $LeftPanel/ButtonColumn/SettingsButton
 @onready var quit_button: Button = $LeftPanel/ButtonColumn/QuitButton
+@onready var bgm_button: Button = $LeftPanel/ButtonColumn/BgmButton
 
 
 func _ready() -> void:
@@ -15,10 +16,14 @@ func _ready() -> void:
 	major_button.pressed.connect(_on_start_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
+	bgm_button.pressed.connect(_on_bgm_pressed)
 	_style_primary_button(start_button)
 	_style_secondary_button(major_button)
 	_style_secondary_button(settings_button)
 	_style_secondary_button(quit_button)
+	_style_secondary_button(bgm_button)
+	_refresh_bgm_button()
+	AudioManager.play_bgm_for_phase("menu")
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
@@ -72,3 +77,15 @@ func _on_settings_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+
+func _on_bgm_pressed() -> void:
+	AudioManager.play_sfx("click")
+	var name_str: String = AudioManager.cycle_menu_bgm()
+	_refresh_bgm_button(name_str)
+
+
+func _refresh_bgm_button(name_str: String = "") -> void:
+	if name_str == "":
+		name_str = AudioManager.get_current_bgm_name()
+	bgm_button.text = "♪  BGM：%s" % name_str

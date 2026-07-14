@@ -56,6 +56,7 @@ func _ready() -> void:
 
 	_render_map()
 	_update_ui()
+	AudioManager.play_bgm_for_phase("explore")
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"

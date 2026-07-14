@@ -103,19 +103,32 @@ func _generate_soft_noise(duration: float, amplitude: float) -> AudioStreamWAV:
 
 
 func _load_or_generate_bgm() -> void:
-	DirAccess.make_dir_recursive_absolute("res://assets/audio/bgm")
-	# 运行时用用户可替换的 res 路径；若无文件则生成默认循环并尝试落盘到项目目录
+	var abs_dir := ProjectSettings.globalize_path(BGM_DIR)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
 	for track in BGM_TRACKS:
 		var path: String = BGM_DIR + track.file
-		var stream: AudioStream = null
-		if ResourceLoader.exists(path):
-			stream = load(path)
+		var stream: AudioStream = _load_bgm_stream(path)
 		if stream == null:
 			stream = _generate_default_bgm(track.id)
 			_try_save_wav(path, stream)
 		if stream is AudioStreamWAV:
-			(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+			var wav := stream as AudioStreamWAV
+			wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			if wav.loop_end <= 0 and wav.data.size() > 0:
+				wav.loop_begin = 0
+				wav.loop_end = int(wav.data.size() / 2)  # 16-bit mono
 		_bgm_streams[track.id] = stream
+
+
+func _load_bgm_stream(res_path: String) -> AudioStream:
+	if ResourceLoader.exists(res_path):
+		var loaded = load(res_path)
+		if loaded is AudioStream:
+			return loaded
+	var abs_path := ProjectSettings.globalize_path(res_path)
+	if FileAccess.file_exists(abs_path) and AudioStreamWAV.has_method("load_from_file"):
+		return AudioStreamWAV.load_from_file(abs_path)
+	return null
 
 
 func _generate_default_bgm(track_id: String) -> AudioStreamWAV:

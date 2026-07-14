@@ -34,6 +34,8 @@ func _on_save() -> void:
 	Settings.save_settings()
 
 	AudioManager.set_master_volume(Settings.master_volume)
+	AudioManager.set_sfx_volume(Settings.sfx_volume)
+	AudioManager.set_music_volume(Settings.music_volume)
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if Settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 
 	message_label.text = "设置已保存"

@@ -24,6 +24,7 @@ func _ready() -> void:
 			title_label.text = "胜利"
 			desc_label.text = "你击败了敌人，获得了奖励。"
 		AudioManager.play_sfx("win")
+		AudioManager.play_bgm_for_phase("victory")
 	else:
 		title_label.text = "失败"
 		if was_ai and ending_flag != "":
@@ -31,6 +32,7 @@ func _ready() -> void:
 		else:
 			desc_label.text = "你倒下了，但还能重新开始。"
 		AudioManager.play_sfx("lose")
+		AudioManager.play_bgm_for_phase("menu")
 
 	continue_button.pressed.connect(_on_continue)
 

@@ -89,6 +89,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(280, 52)
 text = "✕  退出游戏"
 
+[node name="BgmButton" type="Button" parent="LeftPanel/ButtonColumn"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 52)
+text = "♪  BGM：主页轻律"
+
 [node name="FooterTip" type="Label" parent="."]
 layout_mode = 0
 offset_left = 48.0
