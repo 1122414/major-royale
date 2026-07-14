@@ -8,22 +8,50 @@ extends Control
 
 func _ready() -> void:
 	var victory: bool = GameState.player_stats.get("last_battle_victory", false)
+	var was_ai: bool = GameState.player_stats.get("last_enemy_was_ai", false)
+	var ending_flag: String = str(GameState.player_stats.get("last_ending_flag", ""))
+	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
+
 	if victory:
-		title_label.text = "胜利"
-		desc_label.text = "你击败了敌人，获得了奖励。"
+		if enemy_id == "employment_pressure":
+			title_label.text = "唯一上岸者"
+			desc_label.text = "你通过了终极答辩，成为赛场中的唯一上岸者。"
+		elif was_ai:
+			title_label.text = "AI 遭遇胜利"
+			var branch := _ending_text(ending_flag)
+			desc_label.text = "你击败了 AI Native 敌人。%s" % branch
+		else:
+			title_label.text = "胜利"
+			desc_label.text = "你击败了敌人，获得了奖励。"
 		AudioManager.play_sfx("win")
 	else:
 		title_label.text = "失败"
-		desc_label.text = "你倒下了，但还能重新开始。"
+		if was_ai and ending_flag != "":
+			desc_label.text = "你倒下了。%s 仍可重新开始。" % _ending_text(ending_flag)
+		else:
+			desc_label.text = "你倒下了，但还能重新开始。"
 		AudioManager.play_sfx("lose")
 
 	continue_button.pressed.connect(_on_continue)
 
 
+func _ending_text(flag: String) -> String:
+	match flag:
+		"tech_pressure": return "结局标记：技术施压。"
+		"elegant_rebuttal": return "结局标记：优雅 rebuttal。"
+		"delay_shadow": return "结局标记：延毕阴影。"
+		"": return ""
+	return "结局标记：%s。" % flag
+
+
 func _on_continue() -> void:
 	AudioManager.play_sfx("click")
 	var victory: bool = GameState.player_stats.get("last_battle_victory", false)
+	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
 	if victory:
-		GameState.change_screen(GameState.Screen.REWARD)
+		if enemy_id == "employment_pressure":
+			GameState.change_screen(GameState.Screen.MENU)
+		else:
+			GameState.change_screen(GameState.Screen.REWARD)
 	else:
 		GameState.change_screen(GameState.Screen.MENU)

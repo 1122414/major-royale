@@ -236,3 +236,70 @@ offset_bottom = 468.0
 theme_override_font_sizes/font_size = 16
 text = ""
 horizontal_alignment = 1
+
+[node name="AIBanner" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 360.0
+offset_top = 92.0
+offset_right = 920.0
+offset_bottom = 136.0
+
+[node name="BannerLabel" type="Label" parent="AIBanner"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+text = "精英遭遇: AI原生敌人"
+horizontal_alignment = 1
+
+[node name="AIProfilePanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 16.0
+offset_top = 100.0
+offset_right = 250.0
+offset_bottom = 360.0
+
+[node name="ProfileVBox" type="VBoxContainer" parent="AIProfilePanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ProfileTitle" type="Label" parent="AIProfilePanel/ProfileVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 16
+text = "敌人档案"
+
+[node name="ProfileBody" type="Label" parent="AIProfilePanel/ProfileVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "档案"
+autowrap_mode = 3
+
+[node name="LootPreview" type="Label" parent="AIProfilePanel/ProfileVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+text = "掉落预览：稀有卡 / 称号"
+autowrap_mode = 3
+
+[node name="AIActionsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 1080.0
+offset_top = 100.0
+offset_right = 1264.0
+offset_bottom = 400.0
+
+[node name="ActionsVBox" type="VBoxContainer" parent="AIActionsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ActionsTitle" type="Label" parent="AIActionsPanel/ActionsVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+text = "可选行动"
+
+[node name="ActionsList" type="VBoxContainer" parent="AIActionsPanel/ActionsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4

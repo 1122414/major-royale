@@ -23,8 +23,17 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var draw_pile_label: Label = $DrawDiscard/DrawPileLabel
 @onready var discard_pile_label: Label = $DrawDiscard/DiscardPileLabel
 @onready var enemy_fig_label: Label = $Arena/EnemyFigure/EnemyFigLabel
+@onready var ai_banner: PanelContainer = $AIBanner
+@onready var ai_profile_panel: PanelContainer = $AIProfilePanel
+@onready var ai_profile_body: Label = $AIProfilePanel/ProfileVBox/ProfileBody
+@onready var ai_loot_preview: Label = $AIProfilePanel/ProfileVBox/LootPreview
+@onready var ai_actions_panel: PanelContainer = $AIActionsPanel
+@onready var ai_actions_list: VBoxContainer = $AIActionsPanel/ActionsVBox/ActionsList
+@onready var buff_panel: PanelContainer = $BuffPanel
 
 var _battle: Battle
+var _is_ai_battle: bool = false
+var _enemy_res: EnemyResource = null
 
 
 func _ready() -> void:
@@ -32,6 +41,8 @@ func _ready() -> void:
 	var enemy_res = Config.enemies.get(enemy_id)
 	if enemy_res == null:
 		enemy_res = Config.enemies["gpa_anxiety"]
+	_enemy_res = enemy_res
+	_is_ai_battle = bool(enemy_res.is_ai_native)
 
 	var player := _create_player()
 	_battle = Battle.new(player, enemy_res)
@@ -55,10 +66,8 @@ func _ready() -> void:
 	skill_button.text = major.active_skill.get("name", "技能")
 	player_title.text = "%s新生" % major.name
 	battle_title.text = "战斗"
-	if enemy_id in ["ai_interviewer", "paper_reviewer"]:
-		battle_title.text = "精英遭遇"
-		battle_title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
-	enemy_fig_label.text = "AI" if enemy_id.begins_with("ai_") or enemy_id == "paper_reviewer" else "敌"
+	_setup_ai_native_ui(enemy_id, enemy_res)
+	enemy_fig_label.text = "AI" if _is_ai_battle else "敌"
 
 	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
 	settings_btn.icon_text = "⚙"
@@ -69,6 +78,52 @@ func _ready() -> void:
 	_update_ui()
 	AudioManager.play_sfx("click")
 
+
+func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
+	ai_banner.visible = _is_ai_battle
+	ai_profile_panel.visible = _is_ai_battle
+	ai_actions_panel.visible = _is_ai_battle
+	buff_panel.visible = not _is_ai_battle
+	if not _is_ai_battle:
+		return
+	battle_title.text = "精英遭遇"
+	battle_title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+	var banner: Label = ai_banner.get_node("BannerLabel")
+	banner.text = "精英遭遇: %s" % enemy_res.name
+	var traits := "行为学习 / 多维评估 / 心理施压" if enemy_id == "ai_interviewer" else "拒稿逻辑 / 方法质疑 / 修订压迫"
+	ai_profile_body.text = "%s\n危险等级：精英\n特质：%s\nHP %d" % [enemy_res.name, traits, enemy_res.hp]
+	ai_loot_preview.text = "掉落预览：稀有卡 / 事件称号 / ending_flag 分支"
+	_refresh_ai_actions("")
+
+
+func _refresh_ai_actions(selected_id: String) -> void:
+	if not _is_ai_battle or _enemy_res == null:
+		return
+	for child in ai_actions_list.get_children():
+		child.queue_free()
+	for action in _enemy_res.actions:
+		var aid: String = str(action.get("id", ""))
+		var label := Label.new()
+		var name_map := {
+			"ask_algorithm": "算法追问",
+			"ask_ethics": "职业伦理",
+			"resume_challenge": "简历质疑",
+			"praise_then_pressure": "先夸后压",
+			"silent_observe": "沉默观察",
+			"reject_core_card": "拒绝核心卡",
+			"demand_revision": "要求大修",
+			"question_method": "质疑方法",
+			"accept_minor": "小修接收",
+			"desk_reject": "直接拒稿",
+		}
+		label.text = "• %s" % name_map.get(aid, aid)
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_font_size_override("font_size", 13)
+		if aid == selected_id:
+			label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+		else:
+			label.add_theme_color_override("font_color", UIColors.TEXT_MUTED)
+		ai_actions_list.add_child(label)
 
 func _style_end_turn_button() -> void:
 	var style := StyleBoxFlat.new()
@@ -196,11 +251,15 @@ func _on_ai_decision_requested(context: Dictionary) -> void:
 
 func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String) -> void:
 	_battle.set_ai_decision(action_id, intent_text, ending_flag)
+	GameState.player_stats["last_ending_flag"] = ending_flag
+	_refresh_ai_actions(action_id)
 	_update_ui()
 
 
 func _on_ai_decision_failed() -> void:
 	message_label.text = "AI 服务未响应，使用规则兜底"
+	if _is_ai_battle:
+		_refresh_ai_actions(str(_battle.get_enemy_intent_text()))
 
 
 func _on_boss_phase_changed(phase_name: String) -> void:
@@ -209,6 +268,7 @@ func _on_boss_phase_changed(phase_name: String) -> void:
 
 func _on_battle_ended(victory: bool) -> void:
 	GameState.player_stats["last_battle_victory"] = victory
+	GameState.player_stats["last_enemy_was_ai"] = _is_ai_battle
 	if _battle != null and _battle.player != null:
 		GameState.sync_from_battle_character(_battle.player)
 	AudioManager.play_sfx("win" if victory else "lose")
