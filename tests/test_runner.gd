@@ -34,6 +34,7 @@ func _ready() -> void:
 	print("TEST: 所有战斗逻辑测试通过")
 
 	print("TEST: 开始局内状态回归测试")
+	_test_all_preset_majors_startable()
 	_test_run_state_persistence()
 	_test_ai_first_turn_request()
 	print("TEST: 局内状态回归测试通过")
@@ -110,6 +111,16 @@ func _test_run_state_persistence() -> void:
 	var second_player := GameState.create_battle_player()
 	assert(second_player.max_hp == expected_max_hp, "跨战斗最大生命不应继续增长")
 	assert(second_player.max_spirit == expected_max_spirit, "跨战斗最大精神不应继续增长")
+
+
+func _test_all_preset_majors_startable() -> void:
+	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
+		GameState.start_run(major_id)
+		assert(GameState.player_major_id == major_id, "专业应能进入局内: %s" % major_id)
+		assert(not GameState.deck_card_ids.is_empty(), "专业初始牌组不能为空: %s" % major_id)
+		var player := GameState.create_battle_player()
+		assert(player != null, "专业应能创建战斗角色: %s" % major_id)
+		assert(player.deck.size() == GameState.deck_card_ids.size(), "专业卡组应完整加载: %s" % major_id)
 
 
 func _test_ai_first_turn_request() -> void:

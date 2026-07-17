@@ -25,127 +25,201 @@ mouse_filter = 2
 texture_filter = 1
 script = ExtResource("3_bg")
 texture_path = "res://assets/sprites/bg/menu_campus.png"
+dim = 0.46
 
-[node name="Header" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 90.0
-grow_horizontal = 2
-
-[node name="BackButton" type="Button" parent="Header"]
+[node name="MenuSidebar" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 28.0
-offset_right = 140.0
-offset_bottom = 72.0
-text = "◀ 返回"
-
-[node name="TitleLabel" type="Label" parent="Header"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -160.0
+offset_left = 24.0
 offset_top = 24.0
-offset_right = 160.0
-offset_bottom = 72.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 36
-theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
-text = "选择专业"
+offset_right = 292.0
+offset_bottom = 696.0
+
+[node name="Margin" type="MarginContainer" parent="MenuSidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="MenuSidebar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="GameTitle" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 32
+text = "专业大逃杀"
 horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "异化校园 · 生存选科"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 22
+text = "▶  开始游戏"
+
+[node name="SectionLabel" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+text = "当前专业"
+
+[node name="CurrentMajorName" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 24
+text = "计算机"
+
+[node name="CustomButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+text = "✎  自定义专业"
+
+[node name="SettingsButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+text = "⚙  设置"
+
+[node name="BackButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+text = "◀  返回主菜单"
+
+[node name="Spacer" type="Control" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="KeyboardHint" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "← → 选择  ·  Enter 开局\nS 设置  ·  Esc 返回"
+horizontal_alignment = 1
+
+[node name="SurvivalHint" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+theme_override_font_sizes/font_size = 12
+text = "存活 48/100　压力圈逼近"
+horizontal_alignment = 1
+
+[node name="SelectorPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 310.0
+offset_top = 24.0
+offset_right = 1256.0
+offset_bottom = 696.0
+
+[node name="Margin" type="MarginContainer" parent="SelectorPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="SelectorPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="SelectorPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="SelectorPanel/Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 30
+text = "选择专业"
+
+[node name="CounterLabel" type="Label" parent="SelectorPanel/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 18
+text = "1 / 5"
 vertical_alignment = 1
 
-[node name="HintLabel" type="Label" parent="Header"]
-layout_mode = 0
-offset_left = 400.0
-offset_top = 70.0
-offset_right = 880.0
-offset_bottom = 94.0
-theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.54, 0.6, 0.66, 1)
-text = "左右滑动查看更多专业；也可自定义八维属性开局。"
-horizontal_alignment = 1
-
-[node name="Scroll" type="ScrollContainer" parent="."]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 100.0
-offset_right = 1240.0
-offset_bottom = 560.0
-horizontal_scroll_mode = 1
-vertical_scroll_mode = 0
-
-[node name="CardsContainer" type="HBoxContainer" parent="Scroll"]
+[node name="InstructionLabel" type="Label" parent="SelectorPanel/Margin/VBox"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 13
+text = "专业决定初始八维、卡组与生存技能。先选择，再从左侧或下方确认开局。"
+
+[node name="CardsContainer" type="HBoxContainer" parent="SelectorPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="Footer" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -120.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="SelectedInfoPanel" type="PanelContainer" parent="SelectorPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_type_variation = &"PanelGold"
 
-[node name="FooterPanel" type="PanelContainer" parent="Footer"]
+[node name="Margin" type="MarginContainer" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="HBox" type="HBoxContainer" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="InfoCol" type="VBoxContainer" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="NameLabel" type="Label" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 22
+text = "计算机"
+
+[node name="DescLabel" type="Label" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "远程控制、异常状态、技术爆发。"
+
+[node name="SkillLabel" type="Label" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 12
+text = "主动：代码注入　被动：熬夜 Debug"
+autowrap_mode = 3
+
+[node name="StartSelectedButton" type="Button" parent="SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox"]
+custom_minimum_size = Vector2(190, 62)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 20
+text = "以此专业开局"
+
+[node name="CustomShade" type="ColorRect" parent="."]
+visible = false
+z_index = 20
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = 8.0
-offset_right = -40.0
-offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="HBox" type="HBoxContainer" parent="Footer/FooterPanel"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="InfoCol" type="VBoxContainer" parent="Footer/FooterPanel/HBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="NameLabel" type="Label" parent="Footer/FooterPanel/HBox/InfoCol"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
-text = "计算机"
-
-[node name="DescLabel" type="Label" parent="Footer/FooterPanel/HBox/InfoCol"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "远程控制、异常状态、技术爆发。"
-
-[node name="SkillLabel" type="Label" parent="Footer/FooterPanel/HBox/InfoCol"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
-text = "主动 / 被动"
-
-[node name="CustomButton" type="Button" parent="Footer/FooterPanel/HBox"]
-custom_minimum_size = Vector2(180, 56)
-layout_mode = 2
-text = "✎ 自定义专业"
-
-[node name="TipLabel" type="Label" parent="Footer/FooterPanel/HBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(220, 0)
-theme_override_font_sizes/font_size = 13
-theme_override_colors/font_color = Color(0.54, 0.6, 0.66, 1)
-text = "点击专业卡片直接开局；或自定义八维后确认。"
-autowrap_mode = 3
-vertical_alignment = 1
+mouse_filter = 0
+color = Color(0, 0, 0, 0.72)
 
 [node name="CustomPanel" type="PanelContainer" parent="."]
 visible = false
-z_index = 20
+z_index = 21
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -158,40 +232,49 @@ offset_right = 320.0
 offset_bottom = 260.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_type_variation = &"PanelGold"
 
-[node name="VBox" type="VBoxContainer" parent="CustomPanel"]
+[node name="Margin" type="MarginContainer" parent="CustomPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="CustomPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="CustomTitle" type="Label" parent="CustomPanel/VBox"]
+[node name="CustomTitle" type="Label" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
 text = "自定义专业"
 horizontal_alignment = 1
 
-[node name="NameLabel" type="Label" parent="CustomPanel/VBox"]
+[node name="NameLabel" type="Label" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 text = "专业名称"
 
-[node name="NameEdit" type="LineEdit" parent="CustomPanel/VBox"]
+[node name="NameEdit" type="LineEdit" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 text = "我的专业"
 
-[node name="PointsLabel" type="Label" parent="CustomPanel/VBox"]
+[node name="PointsLabel" type="Label" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 text = "剩余点数：0 / 48"
 
-[node name="StatsContainer" type="GridContainer" parent="CustomPanel/VBox"]
+[node name="StatsContainer" type="GridContainer" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 columns = 2
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 8
 
-[node name="ConfirmButton" type="Button" parent="CustomPanel/VBox"]
+[node name="ConfirmButton" type="Button" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
+theme_type_variation = &"PrimaryButton"
 text = "确认开局"
 
-[node name="CancelButton" type="Button" parent="CustomPanel/VBox"]
+[node name="CancelButton" type="Button" parent="CustomPanel/Margin/VBox"]
 layout_mode = 2
 text = "取消"

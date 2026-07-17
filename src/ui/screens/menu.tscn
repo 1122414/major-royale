@@ -25,100 +25,156 @@ mouse_filter = 2
 texture_filter = 1
 script = ExtResource("3_bg")
 texture_path = "res://assets/sprites/bg/menu_campus.png"
+dim = 0.2
 
-[node name="TopBar" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 100.0
-grow_horizontal = 2
-
-[node name="TitleLabel" type="Label" parent="TopBar"]
+[node name="MenuSidebar" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_left = 48.0
-offset_top = 28.0
-offset_right = 480.0
-offset_bottom = 96.0
-theme_override_colors/font_color = Color(0.91, 0.941, 0.961, 1)
-theme_override_font_sizes/font_size = 42
-text = "《专业大逃杀》"
-vertical_alignment = 1
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 354.0
+offset_bottom = 696.0
 
-[node name="LeftPanel" type="PanelContainer" parent="."]
-layout_mode = 0
-offset_left = 48.0
-offset_top = 140.0
-offset_right = 360.0
-offset_bottom = 560.0
-
-[node name="ButtonColumn" type="VBoxContainer" parent="LeftPanel"]
+[node name="Margin" type="MarginContainer" parent="MenuSidebar"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
 
-[node name="StartButton" type="Button" parent="LeftPanel/ButtonColumn"]
+[node name="VBox" type="VBoxContainer" parent="MenuSidebar/Margin"]
 layout_mode = 2
-custom_minimum_size = Vector2(280, 56)
-text = "▶  开始游戏"
+theme_override_constants/separation = 13
 
-[node name="MajorButton" type="Button" parent="LeftPanel/ButtonColumn"]
+[node name="TitleLabel" type="Label" parent="MenuSidebar/Margin/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(280, 52)
-text = "🎓  选择专业"
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 40
+text = "专业大逃杀"
+horizontal_alignment = 1
 
-[node name="SettingsButton" type="Button" parent="LeftPanel/ButtonColumn"]
-layout_mode = 2
-custom_minimum_size = Vector2(280, 52)
-text = "⚙  设置"
-
-[node name="QuitButton" type="Button" parent="LeftPanel/ButtonColumn"]
-layout_mode = 2
-custom_minimum_size = Vector2(280, 52)
-text = "✕  退出游戏"
-
-[node name="BgmButton" type="Button" parent="LeftPanel/ButtonColumn"]
-layout_mode = 2
-custom_minimum_size = Vector2(280, 52)
-text = "♪  BGM：主页轻律"
-
-[node name="AchievementsButton" type="Button" parent="LeftPanel/ButtonColumn"]
-layout_mode = 2
-custom_minimum_size = Vector2(280, 52)
-text = "🏅  成就"
-
-[node name="FooterTip" type="Label" parent="."]
-layout_mode = 0
-offset_left = 48.0
-offset_top = 560.0
-offset_right = 640.0
-offset_bottom = 640.0
-theme_override_colors/font_color = Color(0.54, 0.6, 0.66, 1)
-theme_override_font_sizes/font_size = 16
-text = "提示：选择专业进入异化校园。击败终极答辩，成为唯一上岸者。"
-autowrap_mode = 3
-
-[node name="AtmospherePanel" type="PanelContainer" parent="."]
-layout_mode = 0
-offset_left = 900.0
-offset_top = 540.0
-offset_right = 1240.0
-offset_bottom = 680.0
-
-[node name="VBox" type="VBoxContainer" parent="AtmospherePanel"]
-layout_mode = 2
-
-[node name="Survivors" type="Label" parent="AtmospherePanel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "存活人数  48/100"
-
-[node name="Countdown" type="Label" parent="AtmospherePanel/VBox"]
+[node name="Subtitle" type="Label" parent="MenuSidebar/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
-theme_override_font_sizes/font_size = 22
-text = "倒计时  15:00"
+theme_override_font_sizes/font_size = 15
+text = "活到毕业，成为唯一上岸者"
+horizontal_alignment = 1
 
-[node name="PressureHint" type="Label" parent="AtmospherePanel/VBox"]
+[node name="Separator" type="HSeparator" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 24
+text = "▶  开始游戏"
+
+[node name="MajorButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "🎓  选择专业"
+
+[node name="SettingsButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "⚙  设置"
+
+[node name="AchievementsButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "🏅  成就档案"
+
+[node name="BgmButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "♪  BGM：主页轻律"
+
+[node name="QuitButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_type_variation = &"DangerButton"
+text = "✕  退出游戏"
+
+[node name="Spacer" type="Control" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FooterTip" type="Label" parent="MenuSidebar/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "Enter 开始　M 专业　S 设置\n压力圈将在开局后持续收缩"
+horizontal_alignment = 1
+
+[node name="ThreatBanner" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 620.0
+offset_top = 24.0
+offset_right = 1216.0
+offset_bottom = 88.0
+theme_type_variation = &"PanelGold"
+
+[node name="Label" type="Label" parent="ThreatBanner"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.61, 0.24, 1)
+theme_override_font_sizes/font_size = 22
+text = "⚠  生存压力区已覆盖异化校园"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MajorCallout" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 826.0
+offset_top = 470.0
+offset_right = 1248.0
+offset_bottom = 696.0
+
+[node name="Margin" type="MarginContainer" parent="MajorCallout"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="MajorCallout/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="MajorCallout/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 20
+text = "入场生存档案"
+
+[node name="Stats" type="Label" parent="MajorCallout/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "5 个专业　·　108 张卡牌\n教学楼 / 图书馆 / 宿舍 / 食堂 / 操场"
+autowrap_mode = 3
+
+[node name="Survivors" type="Label" parent="MajorCallout/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
-theme_override_font_sizes/font_size = 14
-text = "压力圈正在收缩"
+theme_override_font_sizes/font_size = 18
+text = "存活人数　48 / 100"
+
+[node name="Countdown" type="Label" parent="MajorCallout/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+theme_override_font_sizes/font_size = 25
+text = "倒计时　15:00"
+
+[node name="SelectHint" type="Label" parent="MajorCallout/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "先选择专业，再用你的卡组突破答辩。"
+
+[node name="SettingsShortcut" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1220.0
+offset_top = 24.0
+offset_right = 1264.0
+offset_bottom = 68.0
+text = "⚙"
+tooltip_text = "设置"
