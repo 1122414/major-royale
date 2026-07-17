@@ -43,6 +43,9 @@ var run_cards_played: int = 0
 var run_events_resolved: int = 0
 var run_started_at: int = 0
 
+var _settings_overlay: Control = null
+var _settings_previous_pause_state := false
+
 
 func start_run(major_id: String) -> void:
 	player_major_id = major_id
@@ -195,18 +198,54 @@ func sync_from_battle_character(player: Character) -> void:
 
 
 func change_screen(screen: Screen) -> void:
-	if screen == Screen.SETTINGS and current_screen != Screen.SETTINGS:
-		settings_return_screen = current_screen
+	if screen == Screen.SETTINGS:
+		_open_settings_overlay()
+		return
+	_dismiss_settings_overlay()
 	current_screen = screen
 	var scene_path := _screen_to_path(screen)
 	get_tree().change_scene_to_file(scene_path)
 
 
 func return_from_settings() -> void:
+	if is_instance_valid(_settings_overlay):
+		var target := settings_return_screen
+		_dismiss_settings_overlay()
+		current_screen = Screen.MENU if target == Screen.SETTINGS else target
+		return
 	var target := settings_return_screen
 	if target == Screen.SETTINGS:
 		target = Screen.MENU
 	change_screen(target)
+
+
+func _open_settings_overlay() -> void:
+	if is_instance_valid(_settings_overlay):
+		return
+	settings_return_screen = current_screen
+	var current_scene := get_tree().current_scene
+	if current_scene == null:
+		current_screen = Screen.SETTINGS
+		get_tree().change_scene_to_file(_screen_to_path(Screen.SETTINGS))
+		return
+	var packed := load("res://src/ui/screens/settings.tscn") as PackedScene
+	_settings_overlay = packed.instantiate() as Control
+	_settings_overlay.name = "SettingsOverlay"
+	_settings_overlay.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	_settings_overlay.z_index = 1000
+	current_scene.add_child(_settings_overlay)
+	_settings_previous_pause_state = get_tree().paused
+	get_tree().paused = true
+	current_screen = Screen.SETTINGS
+
+
+func _dismiss_settings_overlay() -> void:
+	if not is_instance_valid(_settings_overlay):
+		_settings_overlay = null
+		return
+	get_tree().paused = _settings_previous_pause_state
+	_settings_overlay.queue_free()
+	_settings_overlay = null
 
 
 func _screen_to_path(screen: Screen) -> String:

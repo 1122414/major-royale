@@ -36,6 +36,7 @@ func _ready() -> void:
 	print("TEST: 校园探索竖切测试通过")
 	print("TEST: 开始完整交付界面回归")
 	await _test_delivery_screen_flow()
+	await _test_settings_overlay_preserves_run_scene()
 	print("TEST: 完整交付界面回归通过")
 
 	print("TEST: 开始战斗逻辑测试")
@@ -237,7 +238,25 @@ func _test_ai_native_presentation() -> void:
 	assert(screen.get_node("AIActionsPanel/ActionsVBox/ActionsList").get_child_count() == 5, "AI 精英战应显示完整白名单行动")
 	var state_text: String = screen.get_node("AIChatBubble/BubbleVBox/AIStateLabel").text
 	assert("离线策略已就绪" in state_text, "AI 关闭时应明确展示可继续战斗的离线策略")
+	screen._on_ai_decision_received("delete_player_save", "非法行动", "", "remote")
+	var allowed_ids: Array[String] = []
+	for action in Config.enemies["ai_interviewer"].actions:
+		allowed_ids.append(str(action.get("id", "")))
+	assert(screen._battle.get_enemy_intent_id() in allowed_ids, "AI 非法行动应在界面层回落到白名单策略")
+	assert("安全策略已接管" in screen.get_node("AIChatBubble/BubbleVBox/AIStateLabel").text, "非法行动不应向玩家暴露技术错误")
+	screen._on_ai_decision_failed()
+	assert("离线策略已就绪" in screen.get_node("AIChatBubble/BubbleVBox/AIStateLabel").text, "AI 超时应切换为可继续战斗的离线策略")
 	screen.queue_free()
+	await get_tree().process_frame
+
+	GameState.player_stats["current_enemy_id"] = "paper_reviewer"
+	var reviewer_screen := packed.instantiate()
+	add_child(reviewer_screen)
+	await get_tree().process_frame
+	assert(reviewer_screen.get_node("AIProfilePanel/ProfileVBox/ProfileTitle").text == "论文审稿人", "第二种 AI Native 应展示独立档案")
+	assert("审稿意见遗物" in reviewer_screen.get_node("AIProfilePanel/ProfileVBox/LootPreview").text, "论文审稿人应展示独立掉落")
+	assert(reviewer_screen._enemy_res.actions[0].get("id", "") != Config.enemies["ai_interviewer"].actions[0].get("id", ""), "两种 AI Native 应使用不同白名单行动")
+	reviewer_screen.queue_free()
 	await get_tree().process_frame
 	Settings.ai_enabled = previous_ai_enabled
 
@@ -403,6 +422,38 @@ func _test_delivery_screen_flow() -> void:
 	assert(achievements_screen.get_node("Tabs").get_child_count() == 4, "成就页应按四个难度分组")
 	assert(achievements_screen.get_node("Scroll/List").get_child_count() > 0, "成就页应展示成就项目")
 	achievements_screen.queue_free()
+	await get_tree().process_frame
+
+
+func _test_settings_overlay_preserves_run_scene() -> void:
+	GameState.start_run("computer")
+	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var battle_screen := (load("res://src/ui/screens/battle.tscn") as PackedScene).instantiate()
+	add_child(battle_screen)
+	await get_tree().process_frame
+	var battle_before: Battle = battle_screen._battle
+	battle_before.energy = 1
+	battle_before.enemy.hp -= 3
+	var enemy_hp_before := battle_before.enemy.hp
+	var hand_before := battle_before.player.hand.duplicate()
+
+	GameState.current_screen = GameState.Screen.BATTLE
+	GameState.change_screen(GameState.Screen.SETTINGS)
+	await get_tree().process_frame
+	var overlay := get_tree().current_scene.get_node_or_null("SettingsOverlay")
+	assert(overlay != null, "局内设置应作为当前场景上的覆盖层打开")
+	assert(get_tree().paused, "打开局内设置时应暂停背景场景")
+	assert(battle_screen._battle == battle_before, "打开设置不应重建战斗对象")
+	assert(battle_screen._battle.energy == 1, "打开设置不应重置当前能量")
+	assert(battle_screen._battle.enemy.hp == enemy_hp_before, "打开设置不应重置敌人生命")
+	assert(battle_screen._battle.player.hand == hand_before, "打开设置不应重抽当前手牌")
+
+	GameState.return_from_settings()
+	await get_tree().process_frame
+	assert(not get_tree().paused, "关闭局内设置后应恢复暂停前状态")
+	assert(GameState.current_screen == GameState.Screen.BATTLE, "关闭设置应返回来源场景状态")
+	assert(is_instance_valid(battle_screen) and battle_screen._battle == battle_before, "关闭设置后应继续同一场战斗")
+	battle_screen.queue_free()
 	await get_tree().process_frame
 
 func _test_custom_major() -> void:
