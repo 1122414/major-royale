@@ -3,7 +3,6 @@ extends CanvasLayer
 ## 校园探索 HUD：状态、资源、压力圈、目标、快捷键与基础功能面板。
 
 signal settings_requested
-signal fallback_requested
 signal event_choice_selected(choice_index: int)
 signal event_continue_requested
 
@@ -63,7 +62,6 @@ func _ready() -> void:
 	$TopBar/Margin/Row/MapButton.pressed.connect(_open_map)
 	$TopBar/Margin/Row/SettingsButton.pressed.connect(func(): settings_requested.emit())
 	$UtilityPanel/Margin/VBox/CloseButton.pressed.connect(_close_utility)
-	$UtilityPanel/Margin/VBox/FallbackButton.pressed.connect(func(): fallback_requested.emit())
 	utility_shade.gui_input.connect(_on_shade_input)
 	interaction_prompt.visible = false
 	event_shade.visible = false

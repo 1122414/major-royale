@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://e1qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/settings.gd" id="1_settings"]
-[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
 
 [node name="SettingsScreen" type="Control"]

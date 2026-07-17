@@ -1,17 +1,13 @@
 class_name CardEffectProcessor
 extends RefCounted
 
-## 处理单张卡牌的所有效果。
+## 处理单张卡牌的所有效果。使用弱引用避免与 Battle 形成 RefCounted 环。
 
-signal card_drawn(amount: int)
-signal energy_gained(amount: int)
-signal intent_revealed
-
-var _battle: Battle
+var _battle_ref: WeakRef
 
 
 func _init(battle: Battle) -> void:
-	_battle = battle
+	_battle_ref = weakref(battle)
 
 
 func process_card(card: Resource, caster: Character, target: Character) -> void:
@@ -53,11 +49,10 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			# 抽牌默认作用在施法者；JSON 常省略 target，不能落到敌人上
 			if caster.is_player:
 				caster.draw_cards(value)
-				card_drawn.emit(value)
 		"energy":
-			if caster.is_player:
-				_battle.energy += value
-				energy_gained.emit(value)
+			var battle := _get_battle()
+			if caster.is_player and battle != null:
+				battle.energy += value
 		"status":
 			actual_target.add_status(effect.status_id, effect.status_stacks)
 		"debuff":
@@ -68,7 +63,9 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			if actual_target.is_player:
 				_remove_negative_status(actual_target, value)
 		"reveal_intent":
-			intent_revealed.emit()
+			var battle := _get_battle()
+			if battle != null:
+				battle.reveal_intent()
 		"conditional_damage":
 			var threshold: int = int(_get_effect_param(effect, "threshold", 0))
 			var real_value := value
@@ -86,7 +83,13 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			if caster.is_player:
 				GameState.run_damage_dealt += total
 		"delay":
-			_battle.delay_enemy(value)
+			var battle := _get_battle()
+			if battle != null:
+				battle.delay_enemy(value)
+
+
+func _get_battle() -> Battle:
+	return _battle_ref.get_ref() as Battle if _battle_ref != null else null
 
 
 func _resolve_target(effect_target: String, caster: Character, default_target: Character) -> Character:

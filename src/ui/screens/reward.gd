@@ -193,7 +193,7 @@ func _finish_choice(msg: String = "已选择奖励") -> void:
 
 func _return_to_map() -> void:
 	AudioManager.play_sfx("click")
-	GameState.change_screen(GameState.Screen.MAP_EXPLORE)
+	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
 
 
 func _on_settings() -> void:

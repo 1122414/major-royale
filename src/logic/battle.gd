@@ -46,7 +46,6 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	enemy_resource = p_enemy_resource
 	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, p_enemy_resource.hp)
 	_effect_processor = CardEffectProcessor.new(self)
-	_effect_processor.intent_revealed.connect(reveal_intent)
 	# 专注≥8：最大能量 +1；精英徽章再 +1
 	max_energy = BASE_ENERGY + (1 if GameState.get_effective_stat("专注") >= 8 else 0)
 	if GameState.has_relic("elite_badge"):

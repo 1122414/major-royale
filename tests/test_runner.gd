@@ -34,6 +34,9 @@ func _ready() -> void:
 	await _test_campus_world()
 	await _test_reward_growth_loop()
 	print("TEST: 校园探索竖切测试通过")
+	print("TEST: 开始完整交付界面回归")
+	await _test_delivery_screen_flow()
+	print("TEST: 完整交付界面回归通过")
 
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
@@ -54,6 +57,10 @@ func _ready() -> void:
 	_test_custom_major()
 	print("TEST: 自定义专业测试通过")
 
+	Config.majors.erase("custom_test")
+	GameState.player_stats.erase("battle_player")
+	AudioManager.prepare_shutdown()
+	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)
 
 
@@ -318,7 +325,6 @@ func _test_reward_growth_loop() -> void:
 	var reward_screen := packed.instantiate()
 	add_child(reward_screen)
 	await get_tree().process_frame
-
 	var max_hp_before := GameState.run_max_hp
 	reward_screen._apply_reward({
 		"type": RewardGenerator.RewardType.STAT_UP,
@@ -339,6 +345,65 @@ func _test_reward_growth_loop() -> void:
 	reward_screen.queue_free()
 	await get_tree().process_frame
 
+
+func _test_delivery_screen_flow() -> void:
+	assert(
+		GameState._screen_to_path(GameState.Screen.CAMPUS_EXPLORE) == "res://src/ui/screens/campus_explore.tscn",
+		"局内探索状态应只指向可移动校园场景"
+	)
+	assert(not ResourceLoader.exists("res://src/ui/screens/map_explore.tscn"), "旧线性地图场景应已移除")
+
+	var menu := (load("res://src/ui/screens/menu.tscn") as PackedScene).instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	assert(menu.get_node("MenuSidebar/Margin/VBox/StartButton") is Button, "主菜单应提供开始游戏入口")
+	assert(menu.get_node("MenuSidebar/Margin/VBox/AchievementsButton") is Button, "主菜单应提供成就入口")
+	menu.queue_free()
+	await get_tree().process_frame
+
+	var major_select := (load("res://src/ui/screens/major_select.tscn") as PackedScene).instantiate()
+	add_child(major_select)
+	await get_tree().process_frame
+	assert(major_select.get_node("SelectorPanel/Margin/VBox/CardsContainer").get_child_count() == 5, "专业选择应完整展示五个预设专业")
+	major_select.queue_free()
+	await get_tree().process_frame
+
+	GameState.start_run("arts")
+	GameState.player_stats["current_enemy_id"] = "employment_pressure"
+	var boss_battle := Battle.new(GameState.create_battle_player(), Config.enemies["employment_pressure"])
+	boss_battle.enemy.hp = 1
+	boss_battle.player.hand = [Config.cards["strike"]]
+	boss_battle.energy = 3
+	assert(boss_battle.play_card(0), "终局 Boss 应可正常接收卡牌结算")
+	assert(boss_battle.state == Battle.BattleState.PLAYER_WON, "终局 Boss 生命归零后应进入胜利状态")
+	boss_battle = null
+
+	GameState.player_stats["last_battle_victory"] = true
+	GameState.player_stats["last_enemy_was_ai"] = false
+	var result_screen := (load("res://src/ui/screens/result.tscn") as PackedScene).instantiate()
+	add_child(result_screen)
+	await get_tree().process_frame
+	assert(result_screen.get_node("VBoxContainer/TitleLabel").text == "唯一上岸者", "终局胜利应进入唯一上岸者结算")
+	assert("通关总结" in result_screen.get_node("VBoxContainer/ContinueButton").text, "终局结算应通向本局总结")
+	result_screen.queue_free()
+	await get_tree().process_frame
+
+	GameState.player_stats["last_battle_victory"] = false
+	var summary_screen := (load("res://src/ui/screens/run_summary.tscn") as PackedScene).instantiate()
+	add_child(summary_screen)
+	await get_tree().process_frame
+	assert("战斗数据" in summary_screen.get_node("Scroll/BodyLabel").text, "本局总结应展示战斗统计")
+	assert("通过了终极答辩" in summary_screen._build_summary(true), "通关总结应包含终极答辩文案")
+	summary_screen.queue_free()
+	await get_tree().process_frame
+
+	var achievements_screen := (load("res://src/ui/screens/achievements.tscn") as PackedScene).instantiate()
+	add_child(achievements_screen)
+	await get_tree().process_frame
+	assert(achievements_screen.get_node("Tabs").get_child_count() == 4, "成就页应按四个难度分组")
+	assert(achievements_screen.get_node("Scroll/List").get_child_count() > 0, "成就页应展示成就项目")
+	achievements_screen.queue_free()
+	await get_tree().process_frame
 
 func _test_custom_major() -> void:
 	var custom := MajorResource.new()

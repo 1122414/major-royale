@@ -90,6 +90,33 @@ func _ready() -> void:
 		AudioManager.play_bgm_for_phase("battle")
 
 
+func _exit_tree() -> void:
+	if AIClient.decision_received.is_connected(_on_ai_decision_received):
+		AIClient.decision_received.disconnect(_on_ai_decision_received)
+	if AIClient.decision_failed.is_connected(_on_ai_decision_failed):
+		AIClient.decision_failed.disconnect(_on_ai_decision_failed)
+	if _battle != null:
+		_disconnect_battle_signals()
+		_battle = null
+	_enemy_res = null
+	GameState.player_stats.erase("battle_player")
+
+
+func _disconnect_battle_signals() -> void:
+	var connections := [
+		[_battle.hand_updated, _update_ui],
+		[_battle.energy_updated, _update_ui],
+		[_battle.turn_changed, _on_turn_changed],
+		[_battle.battle_ended, _on_battle_ended],
+		[_battle.skill_used, _on_skill_used],
+		[_battle.ai_decision_requested, _on_ai_decision_requested],
+		[_battle.boss_phase_changed, _on_boss_phase_changed],
+	]
+	for connection in connections:
+		if connection[0].is_connected(connection[1]):
+			connection[0].disconnect(connection[1])
+
+
 func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
 	ai_banner.visible = _is_ai_battle
 	ai_profile_panel.visible = _is_ai_battle

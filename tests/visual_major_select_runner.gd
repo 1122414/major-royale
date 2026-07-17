@@ -8,7 +8,8 @@ func _ready() -> void:
 		if argument.begins_with("--screenshot="):
 			screenshot_path = argument.trim_prefix("--screenshot=")
 	var packed := load("res://src/ui/screens/major_select.tscn") as PackedScene
-	add_child(packed.instantiate())
+	var major_screen := packed.instantiate()
+	add_child(major_screen)
 	if screenshot_path.is_empty():
 		return
 	for _frame in 4:
@@ -18,4 +19,7 @@ func _ready() -> void:
 	var error := image.save_jpg(absolute_path, 0.94)
 	assert(error == OK, "视觉验收截图保存失败: %s" % absolute_path)
 	print("VISUAL: 截图已保存到 %s" % absolute_path)
+	major_screen.queue_free()
+	AudioManager.prepare_shutdown()
+	await get_tree().create_timer(0.2).timeout
 	get_tree().quit()

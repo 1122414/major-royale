@@ -1,5 +1,5 @@
 extends Node2D
-## 可移动校园探索竖切：世界移动、五建筑交互、位置恢复与旧路线回退。
+## 可移动校园探索竖切：世界移动、五建筑交互与位置恢复。
 
 @onready var player: CampusPlayer = $World/Player
 @onready var hotspots: Node2D = $World/Hotspots
@@ -23,7 +23,6 @@ func _ready() -> void:
 		hotspot.proximity_changed.connect(_on_hotspot_proximity_changed)
 		hotspot.activated.connect(_on_hotspot_activated)
 		hotspot.set_visited(hotspot.location_id in GameState.campus_visited_locations)
-	hud.fallback_requested.connect(_on_fallback_pressed)
 	hud.settings_requested.connect(_on_settings_pressed)
 	hud.event_choice_selected.connect(_on_event_choice_selected)
 	hud.event_continue_requested.connect(_on_event_continue_requested)
@@ -182,11 +181,6 @@ func _refresh_pressure_world() -> void:
 		Vector2(left + 110.0, 720),
 	])
 	pressure_zone.color = Color(UIColors.DANGER_RED, clampf(0.1 + float(GameState.run_progress) * 0.018, 0.1, 0.34))
-
-
-func _on_fallback_pressed() -> void:
-	GameState.campus_player_position = player.global_position
-	get_tree().change_scene_to_file("res://src/ui/screens/map_explore.tscn")
 
 
 func _on_settings_pressed() -> void:

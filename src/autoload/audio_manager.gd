@@ -31,6 +31,26 @@ func _ready() -> void:
 	play_bgm_by_id("menu")
 
 
+func _exit_tree() -> void:
+	prepare_shutdown()
+
+
+func stop_all() -> void:
+	_current_bgm_id = ""
+	if is_instance_valid(sfx_player):
+		sfx_player.stop()
+		sfx_player.stream = null
+	if is_instance_valid(music_player):
+		music_player.stop()
+		music_player.stream = null
+
+
+func prepare_shutdown() -> void:
+	stop_all()
+	_sfx_placeholders.clear()
+	_bgm_streams.clear()
+
+
 func _apply_volumes() -> void:
 	if Settings:
 		set_master_volume(Settings.master_volume)

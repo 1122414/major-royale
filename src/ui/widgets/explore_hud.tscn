@@ -313,10 +313,6 @@ theme_override_font_sizes/font_size = 15
 text = "内容"
 autowrap_mode = 3
 
-[node name="FallbackButton" type="Button" parent="UtilityPanel/Margin/VBox"]
-layout_mode = 2
-text = "临时打开旧版线性路线"
-
 [node name="CloseButton" type="Button" parent="UtilityPanel/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"

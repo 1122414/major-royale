@@ -1,12 +1,12 @@
-# 专业大逃杀（Major Royale）— 1.0.0-mvp
+# 专业大逃杀（Major Royale）— 1.1.0-vertical-slice
 
 一款像素 2.5D 半开放世界肉鸽卡牌游戏。玩家选择大学专业作为战斗流派，在校园异化赛场中探索、构筑卡组、遭遇 AI Native 敌人，并在终极答辩中争夺“唯一上岸者”。
 
 ## 版本
 
-- **当前版本**：`1.0.0-mvp`
+- **当前版本**：`1.1.0-vertical-slice`
 - **引擎**：Godot 4.4
-- **平台**：Windows / macOS 桌面（导出预设已提供，需本机安装导出模板后打包）
+- **平台**：Windows / macOS 桌面
 
 ## 技术栈
 
@@ -79,8 +79,8 @@ tools/Godot.app/Contents/MacOS/Godot --path .
 ### 3. 游戏操作
 
 - **主菜单**：开始游戏、设置、退出
-- **专业选择**：点击专业卡片进入游戏（计算机 / 法学 / 医学）
-- **地图探索**：点击可用节点移动；顶栏查看 HP/精神/压力圈
+- **专业选择**：从计算机 / 法学 / 医学 / 金融 / 艺术中选择，或点买八维创建自定义专业
+- **校园探索**：WASD / 方向键移动，靠近建筑后按 `E` 交互；顶栏查看生命、精神与压力圈
 - **战斗**：点击手牌出牌；技能；结束回合
 - **AI Native 战**：左侧档案、右侧可选行动高亮
 - **奖励**：三选一；若选新卡可再点具体卡牌
@@ -88,7 +88,9 @@ tools/Godot.app/Contents/MacOS/Godot --path .
 
 ## 导出打包
 
-1. 在 Godot 编辑器：**编辑器 → 管理导出模板**，安装与引擎版本匹配的模板（4.4.x）。
+本地交付验证产物位于 `build/mac/MajorRoyale.app` 与 `build/win/MajorRoyale.exe`；`build/` 已加入忽略列表，不进入源码提交。
+
+1. 在 Godot 编辑器：**编辑器 → 管理导出模板**，安装与引擎版本完全匹配的 `4.4.1.stable` 模板。
 2. 打开 **项目 → 导出**，使用预设：
    - `macOS` → `build/mac/MajorRoyale.app`
    - `Windows Desktop` → `build/win/MajorRoyale.exe`
@@ -105,29 +107,25 @@ tools/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "Windo
 
 ```bash
 source .venv/bin/activate
-python test_game.py
-# 或
-pytest tests/ -v
+python -m pytest tests/ -v
 tools/Godot.app/Contents/MacOS/Godot --headless --path . --scene tests/test_runner.tscn
 ```
 
 ## 演示材料
 
-见 [docs/DEMO.md](docs/DEMO.md)。建议录制 60–90 秒：菜单 → 选专业 → 探索 → 战斗 →（可选 AI）→ 奖励。
+见 [docs/DEMO.md](docs/DEMO.md)。仓库内含 43 秒无声预览；完整演示应覆盖主菜单与五专业、自由校园探索、普通战、AI Native 精英战、奖励和终局总结。
 
-## 已知问题 / MVP 边界
+## 已知边界
 
-1. 像素美术为程序生成占位精灵，后续可替换 `assets/sprites/`。
-2. 音效仍为程序波形占位。
-3. 探索为节点图，非自由 2.5D 角色移动。
-4. 导出包需本机安装 Godot 导出模板后生成。
-5. AI 服务失败时规则兜底，不中断战斗。
+1. 角色目前使用静态立绘与程序动效，尚未制作逐帧行走/攻击动画图集。
+2. 音效与 BGM 为可替换的轻量 WAV；资源路径与循环已接通。
+3. 当前竖切集中在一张校园地图和五个建筑热点，尚未扩展为多地图世界。
+4. AI 服务失败时使用同一行动白名单的本地规则兜底，不中断战斗。
 
-## 更新记录（1.0.0-mvp）
+## 更新记录（1.1.0-vertical-slice）
 
-- 肉鸽牌组 / 属性 / 生命跨战斗持久化
-- 地图刷出 AI Native；压力圈伤害缩放与终局解锁
-- 主菜单 / 选专业 / 探索 / 战斗 UI 对齐赛博校园参考布局
-- AI Native 专属侧栏与行动展示
-- 敌人动作补全；Boss 群面限手；终局「唯一上岸者」文案
-- 像素场景底图与角色/卡面占位资源
+- 以四张参考图为锚点重做主菜单、五专业选择、自由校园探索、普通战与 AI Native 精英战
+- 补齐五专业、十名敌人、专业核心卡牌与终局战正式像素素材
+- 接通五建筑事件、奖励、牌组、属性、遗物、Boss、成就与本局总结
+- 移除旧线性节点地图，修复战斗引用环、音频停播与正常退出清理
+- 完成 1280×720、1600×900、1920×1080 回归与双平台导出流程

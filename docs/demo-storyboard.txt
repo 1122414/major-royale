@@ -1,8 +1,9 @@
-DEMO STORYBOARD 1.0.0-mvp (60-90s)
-00:00 Menu title 《专业大逃杀》 + Start
-00:08 Major select Computer gold border
-00:15 Map HUD + pressure minimap
-00:25 Enter battle vs GPA anxiety / AI interviewer
-00:45 Play cards + end turn
-01:00 Victory / reward card pick
-01:15 Boss or return map — title card 唯一上岸者 if boss clear
+DEMO STORYBOARD 1.1.0-vertical-slice (90-120s)
+00:00 夜景主菜单《专业大逃杀》+ 金色开始按钮
+00:08 五专业选择 + 八维 + 计算机金色选中框
+00:18 白天校园移动 + 压力圈 + 建筑 E 交互
+00:34 教学楼普通战 + 三张牌 + 伤害/护盾反馈
+00:55 图书馆 AI 精英战 + 档案/白名单/策略气泡
+01:15 精英奖励 + 卡牌/属性/遗物三选一
+01:28 操场就业压力 Boss + 终局背景
+01:42 唯一上岸者 + 成就 + 本局总结

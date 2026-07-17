@@ -128,7 +128,7 @@ func _start_selected_major() -> void:
 		return
 	AudioManager.play_sfx("click")
 	GameState.start_run(_selected_id)
-	GameState.change_screen(GameState.Screen.MAP_EXPLORE)
+	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
 
 
 func _on_custom_pressed() -> void:
@@ -178,7 +178,7 @@ func _on_custom_confirm() -> void:
 
 	Config.majors[custom_major.id] = custom_major
 	GameState.start_run(custom_major.id)
-	GameState.change_screen(GameState.Screen.MAP_EXPLORE)
+	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
 
 
 func _on_back_pressed() -> void:

@@ -4,7 +4,7 @@ extends Node
 enum Screen {
 	MENU,
 	MAJOR_SELECT,
-	MAP_EXPLORE,
+	CAMPUS_EXPLORE,
 	BATTLE,
 	REWARD,
 	SETTINGS,
@@ -17,7 +17,6 @@ var current_screen: Screen = Screen.MENU
 var settings_return_screen: Screen = Screen.MENU
 var player_major_id: String = ""
 var player_stats: Dictionary = {}
-var player_deck: Array[Dictionary] = []
 var run_progress: int = 0
 
 ## 一局持久化状态
@@ -32,8 +31,6 @@ var run_relic_ids: Array[String] = []
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
-var map_seed: int = 0
-var map_path_index: int = 0  ## 当前所在线性节点序号
 var last_reward_is_elite: bool = false
 var campus_player_position := Vector2(640, 620)
 var campus_visited_locations: Array[String] = []
@@ -50,7 +47,6 @@ var run_started_at: int = 0
 func start_run(major_id: String) -> void:
 	player_major_id = major_id
 	player_stats = {}
-	player_deck = []
 	run_progress = 0
 	permanent_stats = {}
 	pending_buffs = []
@@ -59,8 +55,6 @@ func start_run(major_id: String) -> void:
 	credits = 120
 	credit_points = 560
 	day_count = 1
-	map_seed = 0
-	map_path_index = 0
 	campus_player_position = Vector2(640, 620)
 	campus_visited_locations.clear()
 	run_enemies_defeated.clear()
@@ -70,7 +64,7 @@ func start_run(major_id: String) -> void:
 	run_events_resolved = 0
 	run_started_at = int(Time.get_unix_time_from_system())
 	_init_run_from_major(major_id)
-	current_screen = Screen.MAP_EXPLORE
+	current_screen = Screen.CAMPUS_EXPLORE
 
 
 func add_relic(relic_id: String) -> void:
@@ -219,7 +213,7 @@ func _screen_to_path(screen: Screen) -> String:
 	match screen:
 		Screen.MENU: return "res://src/ui/screens/menu.tscn"
 		Screen.MAJOR_SELECT: return "res://src/ui/screens/major_select.tscn"
-		Screen.MAP_EXPLORE: return "res://src/ui/screens/campus_explore.tscn"
+		Screen.CAMPUS_EXPLORE: return "res://src/ui/screens/campus_explore.tscn"
 		Screen.BATTLE: return "res://src/ui/screens/battle.tscn"
 		Screen.REWARD: return "res://src/ui/screens/reward.tscn"
 		Screen.SETTINGS: return "res://src/ui/screens/settings.tscn"
