@@ -67,4 +67,4 @@ func _on_back() -> void:
 	AudioManager.set_master_volume(Settings.master_volume)
 	AudioManager.set_sfx_volume(Settings.sfx_volume)
 	AudioManager.set_music_volume(Settings.music_volume)
-	GameState.change_screen(GameState.Screen.MENU)
+	GameState.return_from_settings()

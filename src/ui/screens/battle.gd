@@ -59,6 +59,7 @@ func _ready() -> void:
 
 	AIClient.decision_received.connect(_on_ai_decision_received)
 	AIClient.decision_failed.connect(_on_ai_decision_failed)
+	_battle.request_current_ai_decision()
 
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
@@ -215,39 +216,7 @@ func _style_end_turn_button() -> void:
 	end_turn_button.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
 
 func _create_player() -> Character:
-	var major: MajorResource = Config.majors[GameState.player_major_id]
-	# 体能永久加成可抬高上限
-	var stamina_bonus := GameState.get_effective_stat("体能") - int(major.stats.get("体能", 5))
-	var max_hp := GameState.run_max_hp + stamina_bonus * 3
-	if max_hp < GameState.run_hp:
-		max_hp = GameState.run_hp
-
-	var player := Character.new("player", "玩家", max_hp, true)
-	player.major_id = GameState.player_major_id
-	player.max_hp = max_hp
-	player.hp = clampi(GameState.run_hp, 1, max_hp)
-
-	var resist_bonus := GameState.get_effective_stat("抗压") - int(major.stats.get("抗压", 5))
-	player.max_spirit = GameState.run_max_spirit + resist_bonus * 5
-	player.spirit = clampi(GameState.run_spirit, 0, player.max_spirit)
-
-	# 持久牌组（含奖励卡）
-	var card_ids: Array = GameState.deck_card_ids
-	if card_ids.is_empty():
-		card_ids = major.starter_deck
-	for card_id in card_ids:
-		var card = Config.cards.get(str(card_id))
-		if card != null:
-			player.deck.append(card)
-
-	# 开战前挂上待生效 Buff
-	for buff in GameState.pending_buffs:
-		player.add_status(str(buff.get("status_id", "")), int(buff.get("stacks", 1)))
-	GameState.pending_buffs.clear()
-
-	player.draw_pile = player.deck.duplicate()
-	player.shuffle_draw_pile()
-	return player
+	return GameState.create_battle_player()
 
 
 func _update_ui() -> void:

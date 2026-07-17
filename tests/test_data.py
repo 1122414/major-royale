@@ -31,6 +31,20 @@ def _load_all_enemies() -> dict:
     return enemies
 
 
+def _all_records(folder: str, collection_key: str):
+    for file in _json_files(folder):
+        data = json.loads(file.read_text(encoding="utf-8"))
+        for record in data.get(collection_key, []):
+            yield file, record
+
+
+def test_content_baseline():
+    assert len(_json_files("majors")) == 5
+    assert len(_load_all_cards()) == 108
+    assert len(_load_all_enemies()) == 10
+    assert sum(1 for _ in _all_records("events", "events")) == 10
+
+
 def test_majors_have_required_fields():
     for file in _json_files("majors"):
         data = json.loads(file.read_text(encoding="utf-8"))
@@ -82,15 +96,16 @@ def test_major_starter_deck_cards_exist():
 
 def test_no_duplicate_card_ids():
     seen = set()
-    cards = _load_all_cards()
-    for card_id in cards:
+
+    for _file, card in _all_records("cards", "cards"):
+        card_id = card["id"]
         assert card_id not in seen, f"重复的卡牌 ID: {card_id}"
         seen.add(card_id)
 
 
 def test_no_duplicate_enemy_ids():
     seen = set()
-    enemies = _load_all_enemies()
-    for enemy_id in enemies:
+    for _file, enemy in _all_records("enemies", "enemies"):
+        enemy_id = enemy["id"]
         assert enemy_id not in seen, f"重复的敌人 ID: {enemy_id}"
         seen.add(enemy_id)

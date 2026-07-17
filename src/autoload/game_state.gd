@@ -14,6 +14,7 @@ enum Screen {
 }
 
 var current_screen: Screen = Screen.MENU
+var settings_return_screen: Screen = Screen.MENU
 var player_major_id: String = ""
 var player_stats: Dictionary = {}
 var player_deck: Array[Dictionary] = []
@@ -126,6 +127,36 @@ func get_effective_stat(stat_name: String) -> int:
 	return base + int(permanent_stats.get(stat_name, 0))
 
 
+func create_battle_player() -> Character:
+	if not Config.majors.has(player_major_id):
+		push_error("无法创建战斗角色，未知专业: %s" % player_major_id)
+		return null
+
+	var major: MajorResource = Config.majors[player_major_id]
+	var player := Character.new("player", "玩家", run_max_hp, true)
+	player.major_id = player_major_id
+	player.max_hp = run_max_hp
+	player.hp = clampi(run_hp, 1, run_max_hp)
+	player.max_spirit = run_max_spirit
+	player.spirit = clampi(run_spirit, 0, run_max_spirit)
+
+	var card_ids: Array = deck_card_ids
+	if card_ids.is_empty():
+		card_ids = major.starter_deck
+	for card_id in card_ids:
+		var card = Config.cards.get(str(card_id))
+		if card != null:
+			player.deck.append(card)
+
+	for buff in pending_buffs:
+		player.add_status(str(buff.get("status_id", "")), int(buff.get("stacks", 1)))
+	pending_buffs.clear()
+
+	player.draw_pile = player.deck.duplicate()
+	player.shuffle_draw_pile()
+	return player
+
+
 func heal_run(amount: int) -> int:
 	var before := run_hp
 	run_hp = mini(run_hp + amount, run_max_hp)
@@ -166,9 +197,18 @@ func sync_from_battle_character(player: Character) -> void:
 
 
 func change_screen(screen: Screen) -> void:
+	if screen == Screen.SETTINGS and current_screen != Screen.SETTINGS:
+		settings_return_screen = current_screen
 	current_screen = screen
 	var scene_path := _screen_to_path(screen)
 	get_tree().change_scene_to_file(scene_path)
+
+
+func return_from_settings() -> void:
+	var target := settings_return_screen
+	if target == Screen.SETTINGS:
+		target = Screen.MENU
+	change_screen(target)
 
 
 func _screen_to_path(screen: Screen) -> String:

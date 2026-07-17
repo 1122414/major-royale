@@ -37,8 +37,8 @@ var _reveal_intent: bool = false
 var _skill_used_this_battle: bool = false
 var _law_passive_used: bool = false
 var _boss_current_phase: int = 0
-var _ai_decision_ready: bool = false
 var _thesis_clip_ready: bool = true
+var _pending_ai_context: Dictionary = {}
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -352,6 +352,7 @@ func _decide_enemy_intent() -> void:
 	if enemy_resource.is_ai_native and Settings.ai_enabled:
 		# 使用本地兜底作为默认意图，并触发 AI 请求
 		var context := _build_ai_context()
+		_pending_ai_context = context
 		var fallback := FallbackAI.decide(context)
 		_enemy_intent = fallback
 		_enemy_intent["value"] = _map_ai_action_to_value(fallback["action_id"])
@@ -368,9 +369,16 @@ func _decide_enemy_intent() -> void:
 	_reveal_intent = false
 
 
+func request_current_ai_decision() -> void:
+	if state != BattleState.PLAYER_TURN or _pending_ai_context.is_empty():
+		return
+	ai_decision_requested.emit(_pending_ai_context.duplicate(true))
+
+
 func set_ai_decision(action_id: String, intent_text: String, ending_flag: String) -> void:
 	if state != BattleState.PLAYER_TURN:
 		return
+	_pending_ai_context.clear()
 	_enemy_intent = {
 		"id": action_id,
 		"description": intent_text,
