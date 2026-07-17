@@ -65,6 +65,14 @@ const RARITY_COLORS := {
 	"rare": Color("#B67CFF"),
 }
 
+const MAJOR_FALLBACK_ART := {
+	"computer": "bug_generate",
+	"law": "law_search",
+	"medicine": "triage",
+	"finance": "compound",
+	"arts": "muse",
+}
+
 
 func setup(card: Resource, index: int) -> void:
 	card_index = index
@@ -111,12 +119,14 @@ func _refresh() -> void:
 	rarity_label.add_theme_color_override("font_color", RARITY_COLORS.get(rarity, UIColors.TEXT_MUTED))
 	icon_label.text = ""
 	_apply_frame(_frame_color(str(_card.type), rarity))
-	_apply_card_icon(str(_card.id), str(_card.type))
+	_apply_card_icon(str(_card.id), str(_card.type), major_id)
 	_apply_affordability()
 
 
-func _apply_card_icon(card_id: String, card_type: String) -> void:
+func _apply_card_icon(card_id: String, card_type: String, major_id: String) -> void:
 	var path := "res://assets/sprites/cards/%s.png" % card_id
+	if not ResourceLoader.exists(path) and MAJOR_FALLBACK_ART.has(major_id):
+		path = "res://assets/sprites/cards/%s.png" % MAJOR_FALLBACK_ART[major_id]
 	if not ResourceLoader.exists(path):
 		path = "res://assets/sprites/cards/%s.png" % card_type
 	if not ResourceLoader.exists(path):

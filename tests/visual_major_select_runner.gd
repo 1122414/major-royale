@@ -1,0 +1,21 @@
+extends Node
+## 五专业选择界面人工验收入口，可在图形渲染器中保存稳定截图。
+
+
+func _ready() -> void:
+	var screenshot_path := ""
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--screenshot="):
+			screenshot_path = argument.trim_prefix("--screenshot=")
+	var packed := load("res://src/ui/screens/major_select.tscn") as PackedScene
+	add_child(packed.instantiate())
+	if screenshot_path.is_empty():
+		return
+	for _frame in 4:
+		await get_tree().process_frame
+	var image := get_viewport().get_texture().get_image()
+	var absolute_path := ProjectSettings.globalize_path(screenshot_path)
+	var error := image.save_jpg(absolute_path, 0.94)
+	assert(error == OK, "视觉验收截图保存失败: %s" % absolute_path)
+	print("VISUAL: 截图已保存到 %s" % absolute_path)
+	get_tree().quit()

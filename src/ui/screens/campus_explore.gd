@@ -5,6 +5,7 @@ extends Node2D
 @onready var hotspots: Node2D = $World/Hotspots
 @onready var pressure_zone: Polygon2D = $World/PressureZone
 @onready var hud: ExploreHUD = $HUD
+@onready var player_sprite: Sprite2D = $World/Player/Sprite
 
 var _current_hotspot: CampusHotspot = null
 var _current_event: EventResource = null
@@ -13,6 +14,7 @@ var _pending_hotspot: CampusHotspot = null
 
 
 func _ready() -> void:
+	_apply_player_art()
 	player.global_position = GameState.campus_player_position
 	for node in hotspots.get_children():
 		var hotspot := node as CampusHotspot
@@ -31,6 +33,19 @@ func _ready() -> void:
 	hud.refresh()
 	_refresh_pressure_world()
 	AudioManager.play_bgm_for_phase("explore")
+
+
+func _apply_player_art() -> void:
+	var paths := {
+		"computer": "res://assets/sprites/chars/player_cs.png",
+		"law": "res://assets/sprites/chars/player_law.png",
+		"medicine": "res://assets/sprites/chars/player_med.png",
+		"finance": "res://assets/sprites/chars/player_finance.png",
+		"arts": "res://assets/sprites/chars/player_arts.png",
+	}
+	var path: String = paths.get(GameState.player_major_id, paths.computer)
+	if ResourceLoader.exists(path):
+		player_sprite.texture = load(path)
 
 
 func _exit_tree() -> void:

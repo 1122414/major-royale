@@ -10,6 +10,11 @@ extends Control
 var _pressure_tween: Tween
 
 
+func _ready() -> void:
+	_start_idle(player_figure, -0.012)
+	_start_idle(enemy_figure, 0.012)
+
+
 func setup_art(player_path: String, enemy_path: String) -> void:
 	_set_texture(player_figure, player_path)
 	_set_texture(enemy_figure, enemy_path)
@@ -97,6 +102,24 @@ func pulse_figure(on_enemy: bool, color: Color) -> void:
 	var tween := create_tween()
 	tween.tween_property(target, "modulate", color, 0.07)
 	tween.tween_property(target, "modulate", Color.WHITE, 0.2)
+
+
+func play_outcome(player_won: bool) -> void:
+	var winner: Control = player_figure if player_won else enemy_figure
+	var loser: Control = enemy_figure if player_won else player_figure
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(winner, "scale", Vector2(1.1, 1.1), 0.38).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(winner, "modulate", Color(1.25, 1.2, 0.72), 0.38)
+	tween.tween_property(loser, "position:y", loser.position.y + 24.0, 0.38).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(loser, "modulate", Color(0.35, 0.35, 0.42, 0.25), 0.38)
+	await tween.finished
+
+
+func _start_idle(target: Control, angle: float) -> void:
+	target.pivot_offset = target.size * 0.5
+	var tween := create_tween().set_loops()
+	tween.tween_property(target, "rotation", angle, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(target, "rotation", -angle, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _spawn_slash(attacker: Control, defender: Control, from_player: bool) -> void:

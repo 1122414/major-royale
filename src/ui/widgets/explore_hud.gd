@@ -14,6 +14,7 @@ const StatLex := preload("res://src/logic/stat_lexicon.gd")
 
 @onready var major_label: Label = $TopBar/Margin/Row/Identity/MajorLabel
 @onready var area_label: Label = $TopBar/Margin/Row/Identity/AreaLabel
+@onready var avatar: TextureRect = $TopBar/Margin/Row/AvatarPanel/Avatar
 @onready var bars: VBoxContainer = $TopBar/Margin/Row/Bars
 @onready var day_label: Label = $TopBar/Margin/Row/DayPanel/DayLabel
 @onready var credits_label: Label = $TopBar/Margin/Row/CreditsLabel
@@ -76,6 +77,15 @@ func refresh() -> void:
 	if Config.majors.has(GameState.player_major_id):
 		major_name = str(Config.majors[GameState.player_major_id].name)
 	major_label.text = "%s新生" % major_name
+	var player_art: String = {
+		"computer": "res://assets/sprites/chars/player_cs.png",
+		"law": "res://assets/sprites/chars/player_law.png",
+		"medicine": "res://assets/sprites/chars/player_med.png",
+		"finance": "res://assets/sprites/chars/player_finance.png",
+		"arts": "res://assets/sprites/chars/player_arts.png",
+	}.get(GameState.player_major_id, "res://assets/sprites/chars/player_cs.png")
+	if ResourceLoader.exists(player_art):
+		avatar.texture = load(player_art)
 	day_label.text = "第 %d 天" % GameState.day_count
 	credits_label.text = "▣ 学分  %d" % GameState.credits
 	points_label.text = "● 信用点  %d" % GameState.credit_points

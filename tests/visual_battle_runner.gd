@@ -1,14 +1,35 @@
 extends Node
-## 战斗界面人工验收入口：提供稳定的计算机专业普通战斗初始状态。
+## 战斗界面人工验收入口：提供可指定专业与敌人的稳定初始状态。
 
 
 func _ready() -> void:
 	var enemy_id := "gpa_anxiety"
+	var major_id := "computer"
+	var screenshot_path := ""
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--enemy="):
 			enemy_id = argument.trim_prefix("--enemy=")
+		elif argument.begins_with("--major="):
+			major_id = argument.trim_prefix("--major=")
+		elif argument.begins_with("--screenshot="):
+			screenshot_path = argument.trim_prefix("--screenshot=")
 		elif argument == "--offline-ai":
 			Settings.ai_enabled = false
-	GameState.start_run("computer")
+	GameState.start_run(major_id)
 	GameState.player_stats["current_enemy_id"] = enemy_id
-	get_tree().call_deferred("change_scene_to_file", "res://src/ui/screens/battle.tscn")
+	_open_battle.call_deferred(screenshot_path)
+
+
+func _open_battle(screenshot_path: String) -> void:
+	var packed := load("res://src/ui/screens/battle.tscn") as PackedScene
+	add_child(packed.instantiate())
+	if screenshot_path.is_empty():
+		return
+	for _frame in 4:
+		await get_tree().process_frame
+	var image := get_viewport().get_texture().get_image()
+	var absolute_path := ProjectSettings.globalize_path(screenshot_path)
+	var error := image.save_jpg(absolute_path, 0.94)
+	assert(error == OK, "视觉验收截图保存失败: %s" % absolute_path)
+	print("VISUAL: 截图已保存到 %s" % absolute_path)
+	get_tree().quit()

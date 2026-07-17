@@ -38,6 +38,7 @@ func _ready() -> void:
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
 	_test_battle_presentation()
+	_test_professional_asset_coverage()
 	_test_card_effect_and_cost_feedback()
 	_test_ai_decision_whitelist()
 	await _test_ai_native_presentation()
@@ -101,6 +102,71 @@ func _test_battle_presentation() -> void:
 	assert(stage.get_node_or_null("PlayerFigure") is TextureRect, "舞台应包含玩家立绘层")
 	assert(stage.get_node_or_null("EnemyFigure") is TextureRect, "舞台应包含敌人立绘层")
 	stage.queue_free()
+
+
+func _test_professional_asset_coverage() -> void:
+	var player_paths := [
+		"res://assets/sprites/chars/player_cs.png",
+		"res://assets/sprites/chars/player_law.png",
+		"res://assets/sprites/chars/player_med.png",
+		"res://assets/sprites/chars/player_finance.png",
+		"res://assets/sprites/chars/player_arts.png",
+	]
+	for path in player_paths:
+		assert(ResourceLoader.exists(path), "五专业应具备正式玩家立绘: %s" % path)
+
+	var enemy_paths := [
+		"res://assets/sprites/chars/enemy_anxiety.png",
+		"res://assets/sprites/chars/enemy_seat_grabber.png",
+		"res://assets/sprites/chars/enemy_all_nighter.png",
+		"res://assets/sprites/chars/enemy_sports_student.png",
+		"res://assets/sprites/chars/enemy_client_phantom.png",
+		"res://assets/sprites/chars/enemy_all_nighter_elite.png",
+		"res://assets/sprites/chars/enemy_sports_ace.png",
+		"res://assets/sprites/chars/enemy_ai.png",
+		"res://assets/sprites/chars/enemy_reviewer.png",
+		"res://assets/sprites/chars/enemy_boss.png",
+	]
+	var unique_enemy_paths := {}
+	for path in enemy_paths:
+		assert(ResourceLoader.exists(path), "敌人应具备正式立绘: %s" % path)
+		assert(not unique_enemy_paths.has(path), "不同敌人不应误用同一素材: %s" % path)
+		unique_enemy_paths[path] = true
+
+	var card_paths := [
+		"res://assets/sprites/cards/burden_of_proof.png",
+		"res://assets/sprites/cards/not_guilty_defense.png",
+		"res://assets/sprites/cards/objection.png",
+		"res://assets/sprites/cards/law_search.png",
+		"res://assets/sprites/cards/first_aid.png",
+		"res://assets/sprites/cards/anatomy_weakness.png",
+		"res://assets/sprites/cards/scalpel.png",
+		"res://assets/sprites/cards/triage.png",
+		"res://assets/sprites/cards/bull_run.png",
+		"res://assets/sprites/cards/hedge.png",
+		"res://assets/sprites/cards/compound.png",
+		"res://assets/sprites/cards/muse.png",
+	]
+	for path in card_paths:
+		assert(ResourceLoader.exists(path), "专业核心卡应具备正式插画: %s" % path)
+	assert(ResourceLoader.exists("res://assets/sprites/bg/battle_finale.png"), "终局战应具备专属背景")
+
+	var card_packed := load("res://src/ui/widgets/card_view.tscn") as PackedScene
+	var card_view := card_packed.instantiate() as PanelContainer
+	card_view.setup(Config.cards["trial_delay"], 0)
+	add_child(card_view)
+	var icon_texture: TextureRect = card_view.get_node("Margin/VBox/IconTex")
+	assert(icon_texture.texture.resource_path == "res://assets/sprites/cards/law_search.png", "未单独绘制的法学牌应回退到法学核心插画")
+	card_view.queue_free()
+
+	var major_packed := load("res://src/ui/widgets/major_card.tscn") as PackedScene
+	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
+		var major_card := major_packed.instantiate()
+		major_card.setup(Config.majors[major_id])
+		add_child(major_card)
+		var representative := major_card.get_node_or_null("Margin/VBox/RepresentativeFrame/RepresentativeArt") as TextureRect
+		assert(representative != null and representative.texture != null, "专业选择卡应展示代表立绘: %s" % major_id)
+		major_card.queue_free()
 
 
 func _test_card_effect_and_cost_feedback() -> void:

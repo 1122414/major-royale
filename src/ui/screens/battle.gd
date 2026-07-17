@@ -183,7 +183,11 @@ func _refresh_ai_actions(selected_id: String) -> void:
 func _setup_battle_art(enemy_id: String) -> void:
 	var bg: TextureRect = $PixelBackground
 	if bg and bg.has_method("_ready"):
-		if _is_ai_battle:
+		if enemy_id == "employment_pressure":
+			bg.texture_path = "res://assets/sprites/bg/battle_finale.png"
+			if ResourceLoader.exists(bg.texture_path):
+				bg.texture = load(bg.texture_path)
+		elif _is_ai_battle:
 			bg.texture_path = "res://assets/sprites/bg/battle_interview.png"
 			if ResourceLoader.exists(bg.texture_path):
 				bg.texture = load(bg.texture_path)
@@ -196,13 +200,21 @@ func _setup_battle_art(enemy_id: String) -> void:
 	match GameState.player_major_id:
 		"law": player_path = "res://assets/sprites/chars/player_law.png"
 		"medicine": player_path = "res://assets/sprites/chars/player_med.png"
-	var enemy_path := "res://assets/sprites/chars/enemy_anxiety.png"
-	if enemy_id == "ai_interviewer":
-		enemy_path = "res://assets/sprites/chars/enemy_ai.png"
-	elif enemy_id == "paper_reviewer":
-		enemy_path = "res://assets/sprites/chars/enemy_reviewer.png"
-	elif enemy_id == "employment_pressure":
-		enemy_path = "res://assets/sprites/chars/enemy_boss.png"
+		"finance": player_path = "res://assets/sprites/chars/player_finance.png"
+		"arts": player_path = "res://assets/sprites/chars/player_arts.png"
+	var enemy_paths := {
+		"gpa_anxiety": "res://assets/sprites/chars/enemy_anxiety.png",
+		"seat_grabber": "res://assets/sprites/chars/enemy_seat_grabber.png",
+		"all_nighter": "res://assets/sprites/chars/enemy_all_nighter.png",
+		"sports_student": "res://assets/sprites/chars/enemy_sports_student.png",
+		"client_phantom": "res://assets/sprites/chars/enemy_client_phantom.png",
+		"all_nighter_king": "res://assets/sprites/chars/enemy_all_nighter_elite.png",
+		"sports_ace": "res://assets/sprites/chars/enemy_sports_ace.png",
+		"ai_interviewer": "res://assets/sprites/chars/enemy_ai.png",
+		"paper_reviewer": "res://assets/sprites/chars/enemy_reviewer.png",
+		"employment_pressure": "res://assets/sprites/chars/enemy_boss.png",
+	}
+	var enemy_path: String = enemy_paths.get(enemy_id, "res://assets/sprites/chars/enemy_anxiety.png")
 	battle_stage.setup_art(player_path, enemy_path)
 	if _is_ai_battle and ResourceLoader.exists(enemy_path):
 		ai_profile_portrait.texture = load(enemy_path)
@@ -456,6 +468,8 @@ func _on_boss_phase_changed(phase_name: String) -> void:
 
 
 func _on_battle_ended(victory: bool) -> void:
+	end_turn_button.disabled = true
+	skill_button.disabled = true
 	GameState.player_stats["last_battle_victory"] = victory
 	GameState.player_stats["last_enemy_was_ai"] = _is_ai_battle
 	if _battle != null and _battle.player != null:
@@ -467,6 +481,8 @@ func _on_battle_ended(victory: bool) -> void:
 		var ename := str(_enemy_res.name) if _enemy_res else _battle.enemy.display_name
 		var eid := str(_enemy_res.id) if _enemy_res else _battle.enemy.id
 		GameState.record_enemy_defeat(eid, ename, etype)
+	await get_tree().create_timer(0.35).timeout
+	await battle_stage.play_outcome(victory)
 	GameState.change_screen(GameState.Screen.RESULT)
 
 

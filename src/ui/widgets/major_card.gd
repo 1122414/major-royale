@@ -63,8 +63,7 @@ func _on_gui_input(event: InputEvent) -> void:
 
 func _update_ui() -> void:
 	name_label.text = _major.name
-	icon_label.text = MAJOR_ICONS.get(_major.id, "●")
-	icon_label.add_theme_color_override("font_color", MAJOR_COLORS.get(_major.id, UIColors.BORDER_CYAN))
+	_apply_representative_art()
 	desc_label.text = _major.description
 	var active_name: String = str(_major.active_skill.get("name", ""))
 	var passive_name: String = str(_major.passive_skill.get("name", ""))
@@ -81,6 +80,32 @@ func _update_ui() -> void:
 
 	for stat_name in STAT_ORDER:
 		stats_container.add_child(_make_stat_row(stat_name, int(_major.stats.get(stat_name, 5))))
+
+
+func _apply_representative_art() -> void:
+	var paths := {
+		"computer": "res://assets/sprites/chars/player_cs.png",
+		"law": "res://assets/sprites/chars/player_law.png",
+		"medicine": "res://assets/sprites/chars/player_med.png",
+		"finance": "res://assets/sprites/chars/player_finance.png",
+		"arts": "res://assets/sprites/chars/player_arts.png",
+	}
+	var path: String = paths.get(str(_major.id), "")
+	if ResourceLoader.exists(path):
+		var texture_rect := representative_frame.get_node_or_null("RepresentativeArt") as TextureRect
+		if texture_rect == null:
+			texture_rect = TextureRect.new()
+			texture_rect.name = "RepresentativeArt"
+			texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			texture_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			representative_frame.add_child(texture_rect)
+		texture_rect.texture = load(path)
+		icon_label.visible = false
+	else:
+		icon_label.visible = true
+		icon_label.text = MAJOR_ICONS.get(_major.id, "●")
+		icon_label.add_theme_color_override("font_color", MAJOR_COLORS.get(_major.id, UIColors.BORDER_CYAN))
 
 
 func _make_stat_row(stat_name: String, value: int) -> Control:
