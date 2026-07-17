@@ -92,8 +92,14 @@ func _test_campus_world() -> void:
 
 	var player := campus.get_node("World/Player") as CampusPlayer
 	var hotspots := campus.get_node("World/Hotspots")
+	var hud := campus.get_node("HUD") as ExploreHUD
 	assert(player != null, "校园场景应包含可移动玩家")
 	assert(hotspots.get_child_count() == 5, "校园场景应接通五个建筑热点")
+	assert(hud.main_title.text == "前往教学楼", "新局主目标应指向教学楼")
+	var bag_button: Button = campus.get_node("HUD/TopBar/Margin/Row/BagButton")
+	bag_button.pressed.emit()
+	assert(hud.utility_panel.visible, "背包入口应打开基础面板")
+	hud._close_utility()
 
 	var start_position := player.global_position
 	Input.action_press("move_up")
@@ -118,6 +124,10 @@ func _test_campus_world() -> void:
 	var teaching := hotspots.get_node("Teaching") as CampusHotspot
 	assert(campus._prepare_hotspot_activation(teaching), "教学楼热点应准备普通战斗")
 	assert(GameState.player_stats.get("current_enemy_id", "") == "gpa_anxiety", "教学楼应接入绩点焦虑者战斗")
+	assert(hud.main_title.text == "前往图书馆", "完成教学楼后主目标应更新为图书馆")
+	var pressure_zone: Polygon2D = campus.get_node("World/PressureZone")
+	assert(pressure_zone.polygon.size() == 4, "压力增加后世界层应出现危险区")
+	assert(hud.vignette.pressure == GameState.run_progress, "屏幕边缘压力反馈应与局内状态同步")
 
 	var saved_position := player.global_position
 	campus.queue_free()

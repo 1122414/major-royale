@@ -3,12 +3,8 @@ extends Node2D
 
 @onready var player: CampusPlayer = $World/Player
 @onready var hotspots: Node2D = $World/Hotspots
-@onready var interaction_prompt: PanelContainer = $HUD/InteractionPrompt
-@onready var interaction_label: Label = $HUD/InteractionPrompt/InteractionLabel
-@onready var location_label: Label = $HUD/TopHelp/Margin/VBox/LocationLabel
-@onready var message_label: Label = $HUD/LocationToast/Margin/MessageLabel
-@onready var fallback_button: Button = $HUD/FallbackButton
-@onready var settings_button: Button = $HUD/SettingsButton
+@onready var pressure_zone: Polygon2D = $World/PressureZone
+@onready var hud: ExploreHUD = $HUD
 
 var _current_hotspot: CampusHotspot = null
 
@@ -22,23 +18,19 @@ func _ready() -> void:
 		hotspot.proximity_changed.connect(_on_hotspot_proximity_changed)
 		hotspot.activated.connect(_on_hotspot_activated)
 		hotspot.set_visited(hotspot.location_id in GameState.campus_visited_locations)
-	fallback_button.pressed.connect(_on_fallback_pressed)
-	settings_button.pressed.connect(_on_settings_pressed)
-	interaction_prompt.visible = false
-	location_label.text = "异化校园 · %s新生" % _major_name()
-	message_label.text = "从校门进入校园。使用 WASD / 方向键移动，靠近建筑后按 E 交互。"
+	hud.fallback_requested.connect(_on_fallback_pressed)
+	hud.settings_requested.connect(_on_settings_pressed)
+	hud.set_area("校园正门")
+	hud.set_interaction(null)
+	hud.show_message("从校门进入校园。使用 WASD / 方向键移动，靠近建筑后按 E 交互。")
+	hud.refresh()
+	_refresh_pressure_world()
 	AudioManager.play_bgm_for_phase("explore")
 
 
 func _exit_tree() -> void:
 	if is_instance_valid(player):
 		GameState.campus_player_position = player.global_position
-
-
-func _major_name() -> String:
-	if Config.majors.has(GameState.player_major_id):
-		return str(Config.majors[GameState.player_major_id].name)
-	return "未定专业"
 
 
 func _on_hotspot_proximity_changed(_hotspot: CampusHotspot, _is_near: bool) -> void:
@@ -56,9 +48,8 @@ func _refresh_nearby_hotspot() -> void:
 		if distance < best_distance:
 			best_distance = distance
 			_current_hotspot = hotspot
-	interaction_prompt.visible = _current_hotspot != null
-	if _current_hotspot != null:
-		interaction_label.text = "E  交互 · %s" % _current_hotspot.display_name
+	hud.set_interaction(_current_hotspot)
+	hud.set_area(_current_hotspot.display_name if _current_hotspot != null else "异化校园")
 
 
 func _on_hotspot_activated(hotspot: CampusHotspot) -> void:
@@ -75,14 +66,33 @@ func _prepare_hotspot_activation(hotspot: CampusHotspot) -> bool:
 	hotspot.set_visited(true)
 	GameState.player_stats["last_campus_hotspot"] = hotspot.location_id
 	GameState.campus_player_position = player.global_position
-	message_label.text = "%s：%s" % [hotspot.display_name, hotspot.description]
+	hud.show_message("%s：%s" % [hotspot.display_name, hotspot.description])
 
 	if hotspot.action_id == "battle":
 		if first_visit:
 			GameState.run_progress += 1
 		GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+		hud.refresh()
+		_refresh_pressure_world()
 		return true
+	hud.refresh()
+	_refresh_pressure_world()
 	return false
+
+
+func _refresh_pressure_world() -> void:
+	if GameState.run_progress <= 0:
+		pressure_zone.polygon = PackedVector2Array()
+		return
+	var danger_width := clampf(80.0 + float(GameState.run_progress) * 52.0, 80.0, 560.0)
+	var left := 1280.0 - danger_width
+	pressure_zone.polygon = PackedVector2Array([
+		Vector2(left, 0),
+		Vector2(1280, 0),
+		Vector2(1280, 720),
+		Vector2(left + 110.0, 720),
+	])
+	pressure_zone.color = Color(UIColors.DANGER_RED, clampf(0.1 + float(GameState.run_progress) * 0.018, 0.1, 0.34))
 
 
 func _on_fallback_pressed() -> void:
