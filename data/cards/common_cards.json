@@ -25,7 +25,8 @@
       "effects": [
         {
           "type": "shield",
-          "value": 5
+          "value": 5,
+          "target": "self"
         }
       ]
     },

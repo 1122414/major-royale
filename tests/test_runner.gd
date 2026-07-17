@@ -37,6 +37,7 @@ func _ready() -> void:
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
 	_test_battle_presentation()
+	_test_card_effect_and_cost_feedback()
 	print("TEST: 所有战斗逻辑测试通过")
 
 	print("TEST: 开始局内状态回归测试")
@@ -97,6 +98,39 @@ func _test_battle_presentation() -> void:
 	assert(stage.get_node_or_null("PlayerFigure") is TextureRect, "舞台应包含玩家立绘层")
 	assert(stage.get_node_or_null("EnemyFigure") is TextureRect, "舞台应包含敌人立绘层")
 	stage.queue_free()
+
+
+func _test_card_effect_and_cost_feedback() -> void:
+	GameState.start_run("computer")
+	var player := GameState.create_battle_player()
+	var battle := Battle.new(player, Config.enemies["gpa_anxiety"])
+
+	player.hand = [Config.cards["defend"]]
+	battle.energy = 1
+	assert(battle.can_play_card(0), "能量充足时卡牌应处于可打出状态")
+	assert(battle.play_card(0), "通用防御牌应可打出")
+	assert(player.shield == 5, "通用防御牌应给玩家 5 点护盾")
+	assert(battle.enemy.shield == 0, "通用防御牌不应错误地给敌人护盾")
+
+	player.hand = [Config.cards["null_pointer"]]
+	battle.energy = 0
+	assert(not battle.can_play_card(0), "能量不足时卡牌应处于不可打出状态")
+	assert(not battle.play_card(0), "能量不足时不应扣牌或结算效果")
+	assert(player.hand.size() == 1, "拒绝出牌后手牌应保留")
+
+	player.hand = [Config.cards["bug_generate"]]
+	battle.energy = 1
+	var hp_before := battle.enemy.hp
+	assert(battle.play_card(0), "Bug 生成应可正常结算")
+	assert(hp_before - battle.enemy.hp == 6, "Bug 生成应结算 4 基础伤害和 2 点学识加成")
+	assert(battle.enemy.get_status_stacks("bug") == 1, "Bug 生成应施加 1 层 Bug")
+
+	player.hand = [Config.cards["refactor"]]
+	player.add_status("pressure", 1)
+	battle.energy = 1
+	assert(battle.play_card(0), "重构应可正常结算")
+	assert(player.shield >= 6, "重构应获得至少 6 点护盾")
+	assert(not player.has_status("pressure"), "重构应移除 1 个负面状态")
 
 
 func _test_campus_world() -> void:

@@ -255,7 +255,10 @@ func _rebuild_hand() -> void:
 		card_view.custom_minimum_size = Vector2(card_w, 200)
 		card_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		card_view.setup(_battle.player.hand[i], i)
+		card_view.set_play_cost(_battle.get_card_cost(i))
+		card_view.set_affordable(_battle.can_play_card(i))
 		card_view.card_clicked.connect(_on_card_clicked)
+		card_view.card_rejected.connect(_on_card_rejected)
 		hand_container.add_child(card_view)
 
 
@@ -273,7 +276,9 @@ func _on_card_clicked(index: int) -> void:
 		return
 	var card: Resource = _battle.player.hand[index]
 	var card_type: String = str(card.type)
+	var before := _combat_snapshot()
 	if _battle.play_card(index):
+		var after := _combat_snapshot()
 		AudioManager.play_sfx("card_play")
 		if card_type == "attack":
 			_play_attack_animation(true)
@@ -284,9 +289,57 @@ func _on_card_clicked(index: int) -> void:
 			AudioManager.play_sfx("heal")
 		else:
 			_flash_intent()
+		_show_card_feedback(before, after)
 		message_label.text = ""
 	else:
 		message_label.text = "能量不足或无法出牌"
+
+
+func _on_card_rejected(_index: int) -> void:
+	message_label.text = "能量不足：请选择费用不高于当前能量的卡牌"
+	AudioManager.play_sfx("click")
+
+
+func _combat_snapshot() -> Dictionary:
+	return {
+		"player_hp": _battle.player.hp,
+		"player_shield": _battle.player.shield,
+		"player_spirit": _battle.player.spirit,
+		"player_statuses": _battle.player.statuses.duplicate(true),
+		"enemy_hp": _battle.enemy.hp,
+		"enemy_shield": _battle.enemy.shield,
+		"enemy_statuses": _battle.enemy.statuses.duplicate(true),
+	}
+
+
+func _show_card_feedback(before: Dictionary, after: Dictionary) -> void:
+	if not is_instance_valid(battle_stage):
+		return
+	var enemy_damage := int(before.enemy_hp) - int(after.enemy_hp)
+	var shield_gain := int(after.player_shield) - int(before.player_shield)
+	var heal_gain := int(after.player_hp) - int(before.player_hp)
+	var spirit_loss := int(before.player_spirit) - int(after.player_spirit)
+	if enemy_damage > 0:
+		battle_stage.show_feedback("-%d" % enemy_damage, true, UIColors.DANGER_RED)
+	if shield_gain > 0:
+		battle_stage.show_feedback("+%d 护盾" % shield_gain, false, UIColors.BORDER_CYAN_BRIGHT)
+		battle_stage.pulse_figure(false, Color(0.55, 1.25, 1.35))
+	if heal_gain > 0:
+		battle_stage.show_feedback("+%d 生命" % heal_gain, false, UIColors.SUCCESS_GREEN)
+		battle_stage.pulse_figure(false, Color(0.65, 1.35, 0.75))
+	if spirit_loss > 0:
+		battle_stage.show_feedback("-%d 精神" % spirit_loss, false, UIColors.SPIRIT_BLUE)
+	_show_status_delta(before.enemy_statuses, after.enemy_statuses, true)
+	_show_status_delta(before.player_statuses, after.player_statuses, false)
+
+
+func _show_status_delta(before: Dictionary, after: Dictionary, on_enemy: bool) -> void:
+	for status_id in after:
+		var added := int(after[status_id]) - int(before.get(status_id, 0))
+		if added > 0:
+			var info := Status.get_status_info(str(status_id))
+			var color := UIColors.DANGER_RED if info.get("is_debuff", false) else UIColors.SUCCESS_GREEN
+			battle_stage.show_feedback("%s +%d" % [info.get("name", status_id), added], on_enemy, color)
 
 
 func _flash_intent() -> void:
@@ -302,10 +355,15 @@ func _play_attack_animation(from_player: bool) -> void:
 func _on_end_turn() -> void:
 	AudioManager.play_sfx("click")
 	var intent_id: String = _battle.get_enemy_intent_id()
+	var before := _combat_snapshot()
 	_battle.end_player_turn()
+	var after := _combat_snapshot()
 	# 若本回合意图是攻击类，播敌人冲刺动画
 	if intent_id in ["attack", "multi_attack", "heavy_attack", "drain", "special_attack"]:
 		_play_attack_animation(false)
+	var damage_taken := int(before.player_hp) - int(after.player_hp)
+	if damage_taken > 0 and is_instance_valid(battle_stage):
+		battle_stage.show_feedback("-%d" % damage_taken, false, UIColors.DANGER_RED)
 
 func _on_skill() -> void:
 	if _battle.use_active_skill():

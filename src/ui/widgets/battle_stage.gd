@@ -46,6 +46,37 @@ func play_attack(from_player: bool) -> void:
 	hit_tween.tween_property(defender, "modulate", Color.WHITE, 0.12)
 
 
+func show_feedback(text: String, on_enemy: bool, color: Color) -> void:
+	var target: Control = enemy_figure if on_enemy else player_figure
+	if not is_instance_valid(target):
+		return
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_index = 30
+	add_child(label)
+	label.global_position = target.global_position + Vector2(target.size.x * 0.35, 42)
+	var end_position := label.position + Vector2(0, -46)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(label, "position", end_position, 1.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 0.0, 0.75).set_delay(0.45)
+	tween.chain().tween_callback(label.queue_free)
+
+
+func pulse_figure(on_enemy: bool, color: Color) -> void:
+	var target: Control = enemy_figure if on_enemy else player_figure
+	if not is_instance_valid(target):
+		return
+	var tween := create_tween()
+	tween.tween_property(target, "modulate", color, 0.07)
+	tween.tween_property(target, "modulate", Color.WHITE, 0.2)
+
+
 func _spawn_slash(attacker: Control, defender: Control, from_player: bool) -> void:
 	var slash := ColorRect.new()
 	slash.color = Color(1.0, 0.92, 0.55, 0.9) if from_player else Color(1.0, 0.4, 0.4, 0.9)

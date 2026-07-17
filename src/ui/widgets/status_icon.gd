@@ -7,6 +7,19 @@ var _status_id: String = ""
 var _stacks: int = 0
 var _tooltip_panel: PanelContainer
 
+const STATUS_SYMBOLS := {
+	"bug": "◇",
+	"举证失败": "×",
+	"vulnerable": "!",
+	"bleed": "♥",
+	"pressure": "●",
+	"shield": "◆",
+	"resistance": "▣",
+	"adrenaline": "↑",
+	"counter": "↶",
+	"charged": "⚡",
+}
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -27,15 +40,24 @@ func _apply_label() -> void:
 	var info := Status.get_status_info(_status_id)
 	var display_name: String = str(info.get("name", _status_id))
 	var effect_short: String = _short_effect(info)
+	var symbol: String = STATUS_SYMBOLS.get(_status_id, "•")
 	if _stacks > 1:
-		label.text = "%s×%d\n%s" % [display_name, _stacks, effect_short]
+		label.text = "%s %s×%d\n%s" % [symbol, display_name, _stacks, effect_short]
 	else:
-		label.text = "%s\n%s" % [display_name, effect_short]
+		label.text = "%s %s\n%s" % [symbol, display_name, effect_short]
 
-	if info.get("is_debuff", false):
-		modulate = Color(1.0, 0.72, 0.72)
-	else:
-		modulate = Color(0.72, 1.0, 0.78)
+	var accent := UIColors.DANGER_RED if info.get("is_debuff", false) else UIColors.SUCCESS_GREEN
+	label.add_theme_color_override("font_color", accent)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.055, 0.067, 0.94)
+	style.set_border_width_all(1)
+	style.border_color = accent
+	style.set_corner_radius_all(2)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	add_theme_stylebox_override("panel", style)
 	tooltip_text = _full_tooltip(info)
 
 
@@ -87,7 +109,11 @@ func _show_floating_tip() -> void:
 		return
 	root.add_child(_tooltip_panel)
 	var global_pos := get_global_rect().position
-	_tooltip_panel.global_position = global_pos + Vector2(0, size.y + 4)
+	var desired := global_pos + Vector2(0, size.y + 4)
+	var viewport_size := get_viewport_rect().size
+	desired.x = clampf(desired.x, 8.0, maxf(8.0, viewport_size.x - 230.0))
+	desired.y = minf(desired.y, viewport_size.y - 100.0)
+	_tooltip_panel.global_position = desired
 
 
 func _hide_floating_tip() -> void:

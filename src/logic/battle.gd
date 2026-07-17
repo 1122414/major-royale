@@ -71,17 +71,11 @@ func _apply_battle_start_relics() -> void:
 
 
 func play_card(card_index: int) -> bool:
-	if state != BattleState.PLAYER_TURN:
-		return false
-	if card_index < 0 or card_index >= player.hand.size():
+	if not can_play_card(card_index):
 		return false
 
 	var card: Resource = player.hand[card_index]
-	var cost: int = card.cost
-	if GameState.has_relic("thesis_clip") and _thesis_clip_ready:
-		cost = maxi(0, cost - 1)
-	if cost > energy:
-		return false
+	var cost := get_card_cost(card_index)
 
 	energy -= cost
 	if GameState.has_relic("thesis_clip") and _thesis_clip_ready and card.cost > 0:
@@ -116,6 +110,24 @@ func play_card(card_index: int) -> bool:
 	_check_end_conditions()
 	_update_boss_phase()
 	return true
+
+
+func can_play_card(card_index: int) -> bool:
+	if state != BattleState.PLAYER_TURN:
+		return false
+	if card_index < 0 or card_index >= player.hand.size():
+		return false
+	return get_card_cost(card_index) <= energy
+
+
+func get_card_cost(card_index: int) -> int:
+	if card_index < 0 or card_index >= player.hand.size():
+		return 0
+	var card: Resource = player.hand[card_index]
+	var cost: int = card.cost
+	if GameState.has_relic("thesis_clip") and _thesis_clip_ready:
+		cost = maxi(0, cost - 1)
+	return cost
 
 
 func use_active_skill() -> bool:
