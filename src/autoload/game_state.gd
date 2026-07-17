@@ -35,6 +35,8 @@ var day_count: int = 1
 var map_seed: int = 0
 var map_path_index: int = 0  ## 当前所在线性节点序号
 var last_reward_is_elite: bool = false
+var campus_player_position := Vector2(640, 620)
+var campus_visited_locations: Array[String] = []
 
 ## 通关总结统计
 var run_enemies_defeated: Array[Dictionary] = []  ## [{id, name, type}]
@@ -59,6 +61,8 @@ func start_run(major_id: String) -> void:
 	day_count = 1
 	map_seed = 0
 	map_path_index = 0
+	campus_player_position = Vector2(640, 620)
+	campus_visited_locations.clear()
 	run_enemies_defeated.clear()
 	run_battles_won = 0
 	run_damage_dealt = 0
@@ -215,7 +219,7 @@ func _screen_to_path(screen: Screen) -> String:
 	match screen:
 		Screen.MENU: return "res://src/ui/screens/menu.tscn"
 		Screen.MAJOR_SELECT: return "res://src/ui/screens/major_select.tscn"
-		Screen.MAP_EXPLORE: return "res://src/ui/screens/map_explore.tscn"
+		Screen.MAP_EXPLORE: return "res://src/ui/screens/campus_explore.tscn"
 		Screen.BATTLE: return "res://src/ui/screens/battle.tscn"
 		Screen.REWARD: return "res://src/ui/screens/reward.tscn"
 		Screen.SETTINGS: return "res://src/ui/screens/settings.tscn"

@@ -29,6 +29,10 @@ func _ready() -> void:
 
 	print("TEST: 所有 Godot 数据加载测试通过")
 
+	print("TEST: 开始校园探索竖切测试")
+	await _test_campus_world()
+	print("TEST: 校园探索竖切测试通过")
+
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -75,6 +79,50 @@ func _test_battle_core() -> void:
 
 	battle.end_player_turn()
 	assert(battle.state == Battle.BattleState.PLAYER_TURN, "敌人回合结束后应回到玩家回合")
+
+
+func _test_campus_world() -> void:
+	GameState.start_run("computer")
+	var packed := load("res://src/ui/screens/campus_explore.tscn") as PackedScene
+	assert(packed != null, "校园探索场景应可加载")
+	var campus := packed.instantiate()
+	add_child(campus)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+
+	var player := campus.get_node("World/Player") as CampusPlayer
+	var hotspots := campus.get_node("World/Hotspots")
+	assert(player != null, "校园场景应包含可移动玩家")
+	assert(hotspots.get_child_count() == 5, "校园场景应接通五个建筑热点")
+
+	var start_position := player.global_position
+	Input.action_press("move_up")
+	for _frame in 6:
+		await get_tree().physics_frame
+	Input.action_release("move_up")
+	assert(player.global_position.y < start_position.y, "玩家应能连续向上移动")
+
+	player.global_position = Vector2(770, 500)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await get_tree().process_frame
+	var prompt: PanelContainer = campus.get_node("HUD/InteractionPrompt")
+	assert(prompt.visible, "靠近建筑热点时应显示 E 交互提示")
+
+	player.global_position = Vector2(615, 260)
+	Input.action_press("move_up")
+	for _frame in 30:
+		await get_tree().physics_frame
+	Input.action_release("move_up")
+	assert(player.global_position.y >= 185.0, "玩家不应穿过教学楼碰撞区")
+	var teaching := hotspots.get_node("Teaching") as CampusHotspot
+	assert(campus._prepare_hotspot_activation(teaching), "教学楼热点应准备普通战斗")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "gpa_anxiety", "教学楼应接入绩点焦虑者战斗")
+
+	var saved_position := player.global_position
+	campus.queue_free()
+	await get_tree().process_frame
+	assert(GameState.campus_player_position.distance_to(saved_position) < 0.1, "返回校园时应恢复玩家位置")
 
 
 func _test_custom_major() -> void:

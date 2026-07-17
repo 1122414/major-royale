@@ -1,0 +1,247 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/campus_explore.gd" id="1_campus"]
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bg/map_campus.png" id="3_map"]
+[ext_resource type="Texture2D" path="res://assets/sprites/chars/player_cs.png" id="4_player"]
+[ext_resource type="Script" path="res://src/ui/world/campus_player.gd" id="5_player_script"]
+[ext_resource type="PackedScene" path="res://src/ui/world/campus_hotspot.tscn" id="6_hotspot"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape_player"]
+radius = 10.0
+height = 26.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_horizontal"]
+size = Vector2(1280, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_vertical"]
+size = Vector2(24, 720)
+
+[node name="CampusExploreScreen" type="Node2D"]
+script = ExtResource("1_campus")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Background" type="Sprite2D" parent="World"]
+z_index = -10
+position = Vector2(640, 360)
+texture = ExtResource("3_map")
+texture_filter = 1
+
+[node name="Obstacles" type="StaticBody2D" parent="World"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="TeachingBuilding" type="CollisionPolygon2D" parent="World/Obstacles"]
+polygon = PackedVector2Array(468, 38, 752, 38, 770, 176, 452, 176)
+
+[node name="CafeteriaBuilding" type="CollisionPolygon2D" parent="World/Obstacles"]
+polygon = PackedVector2Array(112, 166, 402, 166, 416, 294, 104, 318)
+
+[node name="DormBuilding" type="CollisionPolygon2D" parent="World/Obstacles"]
+polygon = PackedVector2Array(872, 96, 1152, 108, 1162, 252, 866, 256)
+
+[node name="LibraryBuilding" type="CollisionPolygon2D" parent="World/Obstacles"]
+polygon = PackedVector2Array(626, 270, 958, 278, 958, 418, 624, 418)
+
+[node name="SportsField" type="CollisionPolygon2D" parent="World/Obstacles"]
+polygon = PackedVector2Array(0, 354, 382, 354, 430, 510, 402, 556, 0, 586)
+
+[node name="WorldBounds" type="StaticBody2D" parent="World"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Top" type="CollisionShape2D" parent="World/WorldBounds"]
+position = Vector2(640, 12)
+shape = SubResource("RectangleShape_horizontal")
+
+[node name="Bottom" type="CollisionShape2D" parent="World/WorldBounds"]
+position = Vector2(640, 708)
+shape = SubResource("RectangleShape_horizontal")
+
+[node name="Left" type="CollisionShape2D" parent="World/WorldBounds"]
+position = Vector2(12, 360)
+shape = SubResource("RectangleShape_vertical")
+
+[node name="Right" type="CollisionShape2D" parent="World/WorldBounds"]
+position = Vector2(1268, 360)
+shape = SubResource("RectangleShape_vertical")
+
+[node name="Player" type="CharacterBody2D" parent="World"]
+z_index = 1
+position = Vector2(640, 620)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("5_player_script")
+
+[node name="Sprite" type="Sprite2D" parent="World/Player"]
+position = Vector2(0, -44)
+scale = Vector2(0.24, 0.24)
+texture = ExtResource("4_player")
+texture_filter = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="World/Player"]
+position = Vector2(0, -10)
+shape = SubResource("CapsuleShape_player")
+
+[node name="Camera2D" type="Camera2D" parent="World/Player"]
+position = Vector2(0, -22)
+zoom = Vector2(1.06, 1.06)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+limit_left = 0
+limit_top = 0
+limit_right = 1280
+limit_bottom = 720
+
+[node name="Foreground" type="Node2D" parent="World"]
+z_index = 2
+
+[node name="LeftCanopy" type="Sprite2D" parent="World/Foreground"]
+position = Vector2(235, 405)
+texture = ExtResource("3_map")
+texture_filter = 1
+region_enabled = true
+region_rect = Rect2(0, 300, 470, 210)
+
+[node name="RightCanopy" type="Sprite2D" parent="World/Foreground"]
+position = Vector2(1110, 425)
+texture = ExtResource("3_map")
+texture_filter = 1
+region_enabled = true
+region_rect = Rect2(960, 300, 300, 250)
+
+[node name="Hotspots" type="Node2D" parent="World"]
+
+[node name="Teaching" parent="World/Hotspots" instance=ExtResource("6_hotspot")]
+position = Vector2(615, 214)
+location_id = "teaching"
+display_name = "教学楼"
+description = "课堂挑战入口。进入后迎战绩点焦虑者。"
+icon_path = "res://assets/sprites/ui/locations/teaching.svg"
+action_id = "battle"
+
+[node name="Dorm" parent="World/Hotspots" instance=ExtResource("6_hotspot")]
+position = Vector2(924, 276)
+location_id = "dorm"
+display_name = "宿舍楼"
+description = "宿舍入口已记录，可作为校园事件地点。"
+icon_path = "res://assets/sprites/ui/locations/dorm.svg"
+
+[node name="Library" parent="World/Hotspots" instance=ExtResource("6_hotspot")]
+position = Vector2(770, 456)
+location_id = "library"
+display_name = "图书馆"
+description = "图书馆入口已记录，可在这里寻找线索。"
+icon_path = "res://assets/sprites/ui/locations/library.svg"
+
+[node name="Cafeteria" parent="World/Hotspots" instance=ExtResource("6_hotspot")]
+position = Vector2(306, 330)
+location_id = "cafeteria"
+display_name = "食堂"
+description = "食堂入口已记录，可作为补给与事件地点。"
+icon_path = "res://assets/sprites/ui/locations/cafeteria.svg"
+
+[node name="Sports" parent="World/Hotspots" instance=ExtResource("6_hotspot")]
+position = Vector2(448, 470)
+location_id = "sports"
+display_name = "操场"
+description = "操场入口已记录，终局挑战将在这里发生。"
+icon_path = "res://assets/sprites/ui/locations/sports.svg"
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Root" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_theme")
+
+[node name="TopHelp" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 438.0
+offset_bottom = 108.0
+theme = ExtResource("2_theme")
+
+[node name="Margin" type="MarginContainer" parent="HUD/TopHelp"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="VBox" type="VBoxContainer" parent="HUD/TopHelp/Margin"]
+layout_mode = 2
+
+[node name="LocationLabel" type="Label" parent="HUD/TopHelp/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 18
+text = "异化校园"
+
+[node name="MoveHint" type="Label" parent="HUD/TopHelp/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 13
+text = "WASD / 方向键移动　E 交互"
+
+[node name="FallbackButton" type="Button" parent="HUD"]
+offset_left = 1032.0
+offset_top = 24.0
+offset_right = 1192.0
+offset_bottom = 72.0
+theme = ExtResource("2_theme")
+text = "线性路线回退"
+tooltip_text = "临时返回旧版固定路线"
+
+[node name="SettingsButton" type="Button" parent="HUD"]
+offset_left = 1204.0
+offset_top = 24.0
+offset_right = 1256.0
+offset_bottom = 72.0
+theme = ExtResource("2_theme")
+text = "⚙"
+tooltip_text = "设置"
+
+[node name="LocationToast" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 628.0
+offset_right = 492.0
+offset_bottom = 696.0
+theme = ExtResource("2_theme")
+
+[node name="Margin" type="MarginContainer" parent="HUD/LocationToast"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 8
+
+[node name="MessageLabel" type="Label" parent="HUD/LocationToast/Margin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "探索提示"
+autowrap_mode = 3
+
+[node name="InteractionPrompt" type="PanelContainer" parent="HUD"]
+visible = false
+offset_left = 518.0
+offset_top = 630.0
+offset_right = 762.0
+offset_bottom = 690.0
+theme = ExtResource("2_theme")
+theme_type_variation = &"PanelGold"
+
+[node name="InteractionLabel" type="Label" parent="HUD/InteractionPrompt"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 18
+text = "E  交互"
+horizontal_alignment = 1
+vertical_alignment = 1

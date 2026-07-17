@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/ui/world/campus_hotspot.gd" id="1_hotspot"]
+
+[sub_resource type="CircleShape2D" id="CircleShape_hotspot"]
+radius = 52.0
+
+[node name="CampusHotspot" type="Area2D"]
+z_index = 4
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+monitorable = false
+script = ExtResource("1_hotspot")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -8)
+shape = SubResource("CircleShape_hotspot")
+
+[node name="Icon" type="Sprite2D" parent="."]
+position = Vector2(0, -66)
+scale = Vector2(0.68, 0.68)
+texture_filter = 1
+
+[node name="NamePlate" type="PanelContainer" parent="."]
+offset_left = -58.0
+offset_top = -44.0
+offset_right = 58.0
+offset_bottom = -16.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="NamePlate"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "地点"
+horizontal_alignment = 1
+vertical_alignment = 1
