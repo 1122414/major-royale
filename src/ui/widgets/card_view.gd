@@ -12,13 +12,13 @@ var _card: Resource = null
 @onready var type_label: Label = $Margin/VBox/TypeLabel
 @onready var desc_label: Label = $Margin/VBox/DescLabel
 
-const TYPE_COLORS := {
-	"attack": Color("#C94A4A"),
-	"defense": Color("#2E8B8B"),
-	"skill": Color("#3A7CC9"),
-	"control": Color("#8B5FBF"),
-	"heal": Color("#3A9B5C"),
-	"finisher": Color("#E8A838"),
+var _type_colors := {
+	"attack": UIColors.CARD_ATTACK,
+	"defense": UIColors.CARD_DEFENSE,
+	"skill": UIColors.CARD_SKILL,
+	"control": UIColors.CARD_CONTROL,
+	"heal": UIColors.CARD_HEAL,
+	"finisher": UIColors.CARD_FINISHER,
 }
 
 const TYPE_ICONS := {
@@ -56,7 +56,7 @@ func _refresh() -> void:
 	type_label.text = _type_name(_card.type)
 	desc_label.text = _card.description
 	icon_label.text = ""
-	_apply_frame(TYPE_COLORS.get(_card.type, UIColors.BORDER_CYAN))
+	_apply_frame(_type_colors.get(_card.type, UIColors.BORDER_CYAN))
 	_apply_card_icon(str(_card.type))
 
 

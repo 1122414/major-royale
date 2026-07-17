@@ -1,0 +1,301 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="1_theme"]
+
+[node name="StyleGuide" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_theme")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.024, 0.035, 0.047, 1)
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 1256.0
+offset_bottom = 112.0
+
+[node name="HeaderRow" type="HBoxContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Header/HeaderRow"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+size_flags_horizontal = 3
+text = "专业大逃杀 · 视觉基础样板"
+vertical_alignment = 1
+
+[node name="Version" type="Label" parent="Header/HeaderRow"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "1280×720  /  赛博校园像素界面"
+vertical_alignment = 1
+
+[node name="LeftPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 132.0
+offset_right = 402.0
+offset_bottom = 696.0
+
+[node name="VBox" type="VBoxContainer" parent="LeftPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SectionTitle" type="Label" parent="LeftPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 24
+text = "按钮与交互状态"
+
+[node name="Separator" type="HSeparator" parent="LeftPanel/VBox"]
+layout_mode = 2
+
+[node name="PrimaryButton" type="Button" parent="LeftPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+theme_type_variation = &"PrimaryButton"
+tooltip_text = "主 CTA：开始游戏、确认选择、结束回合"
+text = "▶  开始游戏"
+
+[node name="SecondaryButton" type="Button" parent="LeftPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+tooltip_text = "常规导航和次级操作"
+text = "选择专业"
+
+[node name="FocusedButton" type="Button" parent="LeftPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+text = "键盘焦点示例"
+
+[node name="DisabledButton" type="Button" parent="LeftPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+disabled = true
+text = "尚未解锁"
+
+[node name="DangerButton" type="Button" parent="LeftPanel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+theme_type_variation = &"DangerButton"
+text = "退出本局"
+
+[node name="Hint" type="Label" parent="LeftPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "金色仅用于主交互与当前选择；\n红色仅用于危险和不可逆操作。"
+autowrap_mode = 2
+
+[node name="CenterPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 422.0
+offset_top = 132.0
+offset_right = 838.0
+offset_bottom = 696.0
+
+[node name="VBox" type="VBoxContainer" parent="CenterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SectionTitle" type="Label" parent="CenterPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 24
+text = "表单、标签与状态条"
+
+[node name="Tabs" type="TabBar" parent="CenterPanel/VBox"]
+layout_mode = 2
+tab_count = 3
+tab_0/title = "基础"
+tab_1/title = "战斗"
+tab_2/title = "系统"
+current_tab = 1
+
+[node name="InputLabel" type="Label" parent="CenterPanel/VBox"]
+layout_mode = 2
+text = "AI 服务地址"
+
+[node name="Input" type="LineEdit" parent="CenterPanel/VBox"]
+layout_mode = 2
+placeholder_text = "http://127.0.0.1:8000"
+text = "http://127.0.0.1:8000"
+
+[node name="AIEnabled" type="CheckBox" parent="CenterPanel/VBox"]
+layout_mode = 2
+button_pressed = true
+text = "启用 AI Native 敌人"
+
+[node name="Fullscreen" type="CheckBox" parent="CenterPanel/VBox"]
+layout_mode = 2
+text = "全屏显示"
+
+[node name="SliderLabel" type="Label" parent="CenterPanel/VBox"]
+layout_mode = 2
+text = "主音量  70%"
+
+[node name="Slider" type="HSlider" parent="CenterPanel/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+max_value = 1.0
+step = 0.05
+value = 0.7
+
+[node name="HPLabel" type="Label" parent="CenterPanel/VBox"]
+layout_mode = 2
+text = "生命  72/92"
+
+[node name="HP" type="ProgressBar" parent="CenterPanel/VBox"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+max_value = 92.0
+value = 72.0
+show_percentage = false
+
+[node name="StatusRow" type="HBoxContainer" parent="CenterPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Pressure" type="Label" parent="CenterPanel/VBox/StatusRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
+text = "● 压力 3"
+
+[node name="Shield" type="Label" parent="CenterPanel/VBox/StatusRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+text = "◆ 护盾 15"
+
+[node name="AILabel" type="Label" parent="CenterPanel/VBox/StatusRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.608, 0.388, 0.902, 1)
+text = "◎ AI 分析"
+
+[node name="TooltipHint" type="Label" parent="CenterPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+tooltip_text = "Tooltip 使用金色边框和深色背景，正文保持 16px 以上。"
+text = "悬停这里检查 Tooltip"
+
+[node name="RightPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 858.0
+offset_top = 132.0
+offset_right = 1256.0
+offset_bottom = 696.0
+theme_type_variation = &"PanelGold"
+
+[node name="VBox" type="VBoxContainer" parent="RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SectionTitle" type="Label" parent="RightPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 24
+text = "语义颜色与信息层级"
+
+[node name="Separator" type="HSeparator" parent="RightPanel/VBox"]
+layout_mode = 2
+
+[node name="Primary" type="ColorRect" parent="RightPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+color = Color(0, 0.831, 0.878, 1)
+
+[node name="PrimaryLabel" type="Label" parent="RightPanel/VBox/Primary"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.024, 0.035, 0.047, 1)
+text = "常规信息 · 青色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Selected" type="ColorRect" parent="RightPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+color = Color(0.91, 0.659, 0.22, 1)
+
+[node name="SelectedLabel" type="Label" parent="RightPanel/VBox/Selected"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.024, 0.035, 0.047, 1)
+text = "当前选择 · 金色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Danger" type="ColorRect" parent="RightPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+color = Color(0.878, 0.271, 0.271, 1)
+
+[node name="DangerLabel" type="Label" parent="RightPanel/VBox/Danger"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "危险与压力 · 红色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spirit" type="ColorRect" parent="RightPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+color = Color(0.227, 0.549, 1, 1)
+
+[node name="SpiritLabel" type="Label" parent="RightPanel/VBox/Spirit"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "精神与能量 · 蓝色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AI" type="ColorRect" parent="RightPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+color = Color(0.608, 0.388, 0.902, 1)
+
+[node name="AILabel" type="Label" parent="RightPanel/VBox/AI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "AI 与异常 · 紫色"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Rule" type="Label" parent="RightPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+text = "背景比角色低一层对比度；\n角色比 HUD 低一层信息优先级。\n所有中文由 Godot 绘制，禁止烘焙。"
+autowrap_mode = 2
