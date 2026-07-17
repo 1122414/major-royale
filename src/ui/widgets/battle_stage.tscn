@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/widgets/battle_stage.gd" id="1_stage"]
+
+[node name="BattleStage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_stage")
+
+[node name="PlayerGround" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 294.0
+offset_right = 472.0
+offset_bottom = 318.0
+mouse_filter = 2
+color = Color(0.01, 0.04, 0.05, 0.56)
+
+[node name="EnemyGround" type="ColorRect" parent="."]
+layout_mode = 0
+offset_left = 766.0
+offset_top = 294.0
+offset_right = 1010.0
+offset_bottom = 318.0
+mouse_filter = 2
+color = Color(0.08, 0.01, 0.02, 0.52)
+
+[node name="PlayerFigure" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 244.0
+offset_top = 26.0
+offset_right = 474.0
+offset_bottom = 320.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="EnemyFigure" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 762.0
+offset_top = 18.0
+offset_right = 1016.0
+offset_bottom = 320.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1

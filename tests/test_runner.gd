@@ -3,6 +3,7 @@ extends Node
 
 const MajorResource := preload("res://src/resources/major_resource.gd")
 const CardResource := preload("res://src/resources/card_resource.gd")
+const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 
 func _ready() -> void:
 	print("TEST: 开始 Godot 数据加载测试")
@@ -35,6 +36,7 @@ func _ready() -> void:
 
 	print("TEST: 开始战斗逻辑测试")
 	_test_battle_core()
+	_test_battle_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
 
 	print("TEST: 开始局内状态回归测试")
@@ -79,6 +81,22 @@ func _test_battle_core() -> void:
 
 	battle.end_player_turn()
 	assert(battle.state == Battle.BattleState.PLAYER_TURN, "敌人回合结束后应回到玩家回合")
+
+
+func _test_battle_presentation() -> void:
+	for card_count in [3, 5, 7, 10]:
+		var layout := BattleHandLayout.calculate(card_count)
+		assert(layout.start_x >= BattleHandLayout.AREA_LEFT, "%d 张牌不应越过左侧安全区" % card_count)
+		assert(layout.start_x + layout.total_width <= BattleHandLayout.AREA_RIGHT + 0.01, "%d 张牌不应越过右侧安全区" % card_count)
+		assert(layout.card_width > 0.0, "%d 张牌应具有有效宽度" % card_count)
+
+	var packed := load("res://src/ui/widgets/battle_stage.tscn") as PackedScene
+	assert(packed != null, "战斗舞台场景应可加载")
+	var stage := packed.instantiate() as BattleStage
+	add_child(stage)
+	assert(stage.get_node_or_null("PlayerFigure") is TextureRect, "舞台应包含玩家立绘层")
+	assert(stage.get_node_or_null("EnemyFigure") is TextureRect, "舞台应包含敌人立绘层")
+	stage.queue_free()
 
 
 func _test_campus_world() -> void:

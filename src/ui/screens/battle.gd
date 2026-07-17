@@ -3,7 +3,7 @@ extends Control
 
 const CARD_VIEW_SCENE := preload("res://src/ui/widgets/card_view.tscn")
 const STATUS_ICON_SCENE := preload("res://src/ui/widgets/status_icon.tscn")
-const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
+const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 
 @onready var enemy_name_label: Label = $EnemyPanel/VBoxContainer/EnemyNameLabel
 @onready var enemy_hp_label: Label = $EnemyPanel/VBoxContainer/EnemyHPLabel
@@ -14,17 +14,19 @@ const ICON_BUTTON_SCENE := preload("res://src/ui/widgets/icon_button.tscn")
 @onready var energy_label: Label = $PlayerPanel/VBoxContainer/EnergyLabel
 @onready var player_status_container: VBoxContainer = $BuffPanel/BuffCol/PlayerStatusContainer
 @onready var hand_container: HBoxContainer = $HandContainer
-@onready var end_turn_button: Button = $EndTurnButton
-@onready var skill_button: Button = $SkillButton
+@onready var end_turn_button: Button = $ActionPanel/VBox/EndTurnButton
+@onready var skill_button: Button = $ActionPanel/VBox/SkillButton
 @onready var message_label: Label = $MessageLabel
-@onready var turn_label: Label = $TopBar/TopRow/TurnLabel
-@onready var battle_title: Label = $TopBar/TopRow/BattleTitle
-@onready var player_title: Label = $TopBar/TopRow/PlayerTitle
-@onready var draw_pile_label: Label = $DrawDiscard/DrawPileLabel
-@onready var discard_pile_label: Label = $DrawDiscard/DiscardPileLabel
-@onready var deck_total_label: Label = $DrawDiscard/DeckTotalLabel
-@onready var relic_label: Label = $DrawDiscard/RelicLabel
-@onready var enemy_fig_label: Label = $Arena/EnemyFigure/EnemyFigLabel
+@onready var turn_label: Label = $TopBar/Margin/TopRow/TurnLabel
+@onready var battle_title: Label = $TopBar/Margin/TopRow/BattleTitle
+@onready var player_title: Label = $TopBar/Margin/TopRow/PlayerTitle
+@onready var pressure_label: Label = $TopBar/Margin/TopRow/PressureLabel
+@onready var settings_button: Button = $TopBar/Margin/TopRow/SettingsButton
+@onready var draw_pile_label: Label = $DeckPanel/VBox/DrawPileLabel
+@onready var discard_pile_label: Label = $DeckPanel/VBox/DiscardPileLabel
+@onready var deck_total_label: Label = $DeckPanel/VBox/DeckTotalLabel
+@onready var relic_label: Label = $DeckPanel/VBox/RelicLabel
+@onready var battle_stage: BattleStage = $Arena
 @onready var ai_banner: PanelContainer = $AIBanner
 @onready var ai_profile_panel: PanelContainer = $AIProfilePanel
 @onready var ai_profile_body: Label = $AIProfilePanel/ProfileVBox/ProfileBody
@@ -63,7 +65,7 @@ func _ready() -> void:
 
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
-	_style_end_turn_button()
+	settings_button.pressed.connect(_on_settings)
 
 	var major: MajorResource = Config.majors[GameState.player_major_id]
 	skill_button.text = major.active_skill.get("name", "技能")
@@ -72,15 +74,6 @@ func _ready() -> void:
 	battle_title.text = "战斗"
 	_setup_ai_native_ui(enemy_id, enemy_res)
 	_setup_battle_art(enemy_id)
-	enemy_fig_label.text = "AI" if _is_ai_battle else "敌"
-
-	var settings_btn: Button = ICON_BUTTON_SCENE.instantiate()
-	settings_btn.icon_text = "⚙"
-	settings_btn.custom_minimum_size = Vector2(48, 48)
-	settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
-	settings_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	$TopBar/TopRow.add_child(settings_btn)
-	settings_btn.pressed.connect(_on_settings)
 
 	_update_ui()
 	AudioManager.play_sfx("click")
@@ -124,8 +117,6 @@ func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
 	ai_actions_panel.offset_top = 100.0
 	ai_actions_panel.offset_right = 1264.0
 	ai_actions_panel.offset_bottom = 320.0
-	$Arena.offset_left = 240.0
-	$Arena.offset_right = 1040.0
 	# 把敌人状态/意图写到横幅下方短提示
 	enemy_name_label.text = enemy_res.name
 	enemy_hp_label.text = "HP: %d/%d" % [enemy_res.hp, enemy_res.hp]
@@ -175,8 +166,6 @@ func _setup_battle_art(enemy_id: String) -> void:
 	match GameState.player_major_id:
 		"law": player_path = "res://assets/sprites/chars/player_law.png"
 		"medicine": player_path = "res://assets/sprites/chars/player_med.png"
-	_set_figure_texture($Arena/PlayerFigure, player_path)
-
 	var enemy_path := "res://assets/sprites/chars/enemy_anxiety.png"
 	if enemy_id == "ai_interviewer":
 		enemy_path = "res://assets/sprites/chars/enemy_ai.png"
@@ -184,36 +173,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		enemy_path = "res://assets/sprites/chars/enemy_reviewer.png"
 	elif enemy_id == "employment_pressure":
 		enemy_path = "res://assets/sprites/chars/enemy_boss.png"
-	_set_figure_texture($Arena/EnemyFigure, enemy_path)
-
-
-func _set_figure_texture(panel: PanelContainer, path: String) -> void:
-	if not ResourceLoader.exists(path):
-		return
-	var label := panel.get_child(0) as Label
-	if label:
-		label.visible = false
-	var tex := panel.get_node_or_null("Sprite") as TextureRect
-	if tex == null:
-		tex = TextureRect.new()
-		tex.name = "Sprite"
-		tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		panel.add_child(tex)
-	tex.texture = load(path)
-
-
-func _style_end_turn_button() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.14, 0.04, 0.95)
-	style.set_border_width_all(3)
-	style.border_color = UIColors.ACCENT_GOLD
-	style.set_corner_radius_all(2)
-	end_turn_button.add_theme_stylebox_override("normal", style)
-	end_turn_button.add_theme_stylebox_override("hover", style)
-	end_turn_button.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+	battle_stage.setup_art(player_path, enemy_path)
 
 func _create_player() -> Character:
 	return GameState.create_battle_player()
@@ -243,10 +203,11 @@ func _update_ui() -> void:
 		]
 		_refresh_ai_actions(_battle.get_enemy_intent_id())
 
-	player_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
-	player_spirit_label.text = "精神: %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
-	energy_label.text = "能量 %d/%d" % [_battle.energy, _battle.max_energy]
+	player_hp_label.text = "♥ 生命 %d/%d　护盾 %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
+	player_spirit_label.text = "◆ 精神 %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
+	energy_label.text = "⚡ 能量 %d/%d" % [_battle.energy, _battle.max_energy]
 	turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
+	pressure_label.text = "压力等级 %d" % maxi(1, GameState.run_progress + 1)
 	var deck_total := _battle.player.deck.size()
 	draw_pile_label.text = "抽牌堆 %d" % _battle.player.draw_pile.size()
 	deck_total_label.text = "牌库 %d" % deck_total
@@ -273,25 +234,20 @@ func _rebuild_hand() -> void:
 	while hand_container.get_child_count() > 0:
 		var child: Node = hand_container.get_child(0)
 		hand_container.remove_child(child)
-		child.free()
+		child.queue_free()
 
 	var n: int = _battle.player.hand.size()
-	var area_left := 168.0
-	var area_right := 1120.0
-	var area_w := area_right - area_left
-	var sep := 8.0
-	var base_w := 148.0
-	var card_w := base_w
-	if n > 1:
-		card_w = mini(base_w, (area_w - sep * float(n - 1)) / float(n))
-	var total_w := float(n) * card_w + float(maxi(0, n - 1)) * sep
-	var start_x := area_left + (area_w - total_w) * 0.5
+	var layout := BattleHandLayout.calculate(n)
+	var card_w: float = layout.card_width
+	var total_w: float = layout.total_width
+	var start_x: float = layout.start_x
+	var sep: float = layout.separation
 
 	hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	hand_container.offset_left = start_x
-	hand_container.offset_top = 500.0
+	hand_container.offset_top = 492.0
 	hand_container.offset_right = start_x + maxf(total_w, 1.0)
-	hand_container.offset_bottom = 700.0
+	hand_container.offset_bottom = 708.0
 
 	hand_container.add_theme_constant_override("separation", int(sep))
 	for i in n:
@@ -340,50 +296,7 @@ func _flash_intent() -> void:
 
 
 func _play_attack_animation(from_player: bool) -> void:
-	var attacker: Control = $Arena/PlayerFigure if from_player else $Arena/EnemyFigure
-	var defender: Control = $Arena/EnemyFigure if from_player else $Arena/PlayerFigure
-	if not is_instance_valid(attacker) or not is_instance_valid(defender):
-		return
-	attacker.pivot_offset = attacker.size * 0.5
-	defender.pivot_offset = defender.size * 0.5
-	var base := attacker.position
-	var def_base := defender.position
-	var toward := (defender.position - attacker.position)
-	if toward.length() < 1.0:
-		toward = Vector2(40, 0) if from_player else Vector2(-40, 0)
-	else:
-		toward = toward.normalized() * 48.0
-
-	# 冲刺 → 受击抖动 → 回位
-	var tw := create_tween()
-	tw.set_parallel(false)
-	tw.tween_property(attacker, "position", base + toward, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(attacker, "scale", Vector2(1.08, 0.92), 0.05)
-	tw.tween_callback(_spawn_slash_fx.bind(attacker, defender, from_player))
-	tw.tween_property(attacker, "scale", Vector2.ONE, 0.08)
-	tw.tween_property(attacker, "position", base, 0.14).set_trans(Tween.TRANS_SINE)
-
-	var hit := create_tween()
-	hit.tween_property(defender, "modulate", Color(1.5, 0.45, 0.45), 0.05)
-	hit.tween_property(defender, "position", def_base + Vector2(10 if from_player else -10, -4), 0.05)
-	hit.tween_property(defender, "position", def_base + Vector2(-6 if from_player else 6, 2), 0.05)
-	hit.tween_property(defender, "position", def_base, 0.08)
-	hit.tween_property(defender, "modulate", Color.WHITE, 0.12)
-
-
-func _spawn_slash_fx(attacker: Control, defender: Control, from_player: bool) -> void:
-	var slash := ColorRect.new()
-	slash.color = Color(1.0, 0.92, 0.55, 0.85) if from_player else Color(1.0, 0.4, 0.4, 0.85)
-	slash.size = Vector2(56, 8)
-	slash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slash.z_index = 20
-	var mid := (attacker.global_position + defender.global_position) * 0.5 + Vector2(40, 60)
-	$Arena.add_child(slash)
-	slash.global_position = mid
-	slash.rotation = 0.6 if from_player else -0.6
-	var tw := create_tween()
-	tw.tween_property(slash, "modulate:a", 0.0, 0.18)
-	tw.tween_callback(slash.queue_free)
+	battle_stage.play_attack(from_player)
 
 
 func _on_end_turn() -> void:
