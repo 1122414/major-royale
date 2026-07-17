@@ -7,6 +7,9 @@ extends Node2D
 @onready var hud: ExploreHUD = $HUD
 
 var _current_hotspot: CampusHotspot = null
+var _current_event: EventResource = null
+var _pending_battle_after_event := false
+var _pending_hotspot: CampusHotspot = null
 
 
 func _ready() -> void:
@@ -20,6 +23,8 @@ func _ready() -> void:
 		hotspot.set_visited(hotspot.location_id in GameState.campus_visited_locations)
 	hud.fallback_requested.connect(_on_fallback_pressed)
 	hud.settings_requested.connect(_on_settings_pressed)
+	hud.event_choice_selected.connect(_on_event_choice_selected)
+	hud.event_continue_requested.connect(_on_event_continue_requested)
 	hud.set_area("校园正门")
 	hud.set_interaction(null)
 	hud.show_message("从校门进入校园。使用 WASD / 方向键移动，靠近建筑后按 E 交互。")
@@ -54,9 +59,10 @@ func _refresh_nearby_hotspot() -> void:
 
 func _on_hotspot_activated(hotspot: CampusHotspot) -> void:
 	AudioManager.play_sfx("click")
-	if _prepare_hotspot_activation(hotspot):
-		player.controls_enabled = false
-		GameState.change_screen(GameState.Screen.BATTLE)
+	player.controls_enabled = false
+	_pending_hotspot = hotspot
+	_pending_battle_after_event = _prepare_hotspot_activation(hotspot)
+	_open_hotspot_event(hotspot)
 
 
 func _prepare_hotspot_activation(hotspot: CampusHotspot) -> bool:
@@ -68,16 +74,84 @@ func _prepare_hotspot_activation(hotspot: CampusHotspot) -> bool:
 	GameState.campus_player_position = player.global_position
 	hud.show_message("%s：%s" % [hotspot.display_name, hotspot.description])
 
-	if hotspot.action_id == "battle":
-		if first_visit:
-			GameState.run_progress += 1
-		GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var battle_enemy_id := ""
+	match hotspot.location_id:
+		"teaching":
+			if first_visit:
+				battle_enemy_id = "gpa_anxiety"
+		"library":
+			if first_visit:
+				battle_enemy_id = "ai_interviewer"
+		"sports":
+			var required := ["teaching", "library", "dorm", "cafeteria"]
+			var all_ready := true
+			for location_id in required:
+				if location_id not in GameState.campus_visited_locations:
+					all_ready = false
+					break
+			var boss_defeated := false
+			for defeated in GameState.run_enemies_defeated:
+				if str(defeated.get("id", "")) == "employment_pressure":
+					boss_defeated = true
+					break
+			if all_ready and not boss_defeated:
+				battle_enemy_id = "employment_pressure"
+	if not battle_enemy_id.is_empty():
+		GameState.run_progress += 1
+		GameState.player_stats["current_enemy_id"] = battle_enemy_id
 		hud.refresh()
 		_refresh_pressure_world()
 		return true
 	hud.refresh()
 	_refresh_pressure_world()
 	return false
+
+
+func _open_hotspot_event(hotspot: CampusHotspot) -> void:
+	var area_map := {
+		"teaching": "classroom",
+		"library": "library",
+		"dorm": "dorm",
+		"cafeteria": "cafeteria",
+		"sports": "playground",
+	}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(hotspot.location_id) + GameState.run_events_resolved * 31 + GameState.day_count * 101
+	_current_event = EventHandler.pick_random_event(str(area_map.get(hotspot.location_id, "")), rng)
+	if _current_event == null:
+		if _pending_battle_after_event:
+			GameState.change_screen(GameState.Screen.BATTLE)
+		else:
+			player.controls_enabled = true
+		return
+	hud.show_event(hotspot.display_name, _current_event)
+
+
+func _on_event_choice_selected(choice_index: int) -> void:
+	if _current_event == null:
+		return
+	AudioManager.play_sfx("click")
+	var handler := EventHandler.new(GameState.player_stats)
+	var result := handler.apply_event(_current_event, choice_index)
+	GameState.run_events_resolved += 1
+	GameState.day_count = maxi(GameState.day_count, 1 + int(GameState.run_events_resolved / 3))
+	var continue_label := "进入战斗 ▶" if _pending_battle_after_event else "返回校园"
+	if _pending_hotspot != null and _pending_hotspot.location_id == "sports" and not _pending_battle_after_event:
+		result += "\n\n终局尚未开启：先完成教学楼、图书馆、宿舍和食堂的准备。"
+	hud.show_event_result(result, continue_label)
+	hud.refresh()
+	_refresh_pressure_world()
+
+
+func _on_event_continue_requested() -> void:
+	hud.close_event()
+	_current_event = null
+	_pending_hotspot = null
+	if _pending_battle_after_event:
+		_pending_battle_after_event = false
+		GameState.change_screen(GameState.Screen.BATTLE)
+		return
+	player.controls_enabled = true
 
 
 func _refresh_pressure_world() -> void:
@@ -106,7 +180,7 @@ func _on_settings_pressed() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed("interact") or _current_hotspot == null:
+	if not player.controls_enabled or not event.is_action_pressed("interact") or _current_hotspot == null:
 		return
 	get_viewport().set_input_as_handled()
 	_current_hotspot.activate()

@@ -4,6 +4,8 @@ extends CanvasLayer
 
 signal settings_requested
 signal fallback_requested
+signal event_choice_selected(choice_index: int)
+signal event_continue_requested
 
 const STAT_BAR_SCENE := preload("res://src/ui/widgets/stat_bar.tscn")
 const MINIMAP_SCENE := preload("res://src/ui/widgets/pressure_minimap.tscn")
@@ -29,6 +31,12 @@ const StatLex := preload("res://src/logic/stat_lexicon.gd")
 @onready var utility_title: Label = $UtilityPanel/Margin/VBox/Title
 @onready var utility_body: Label = $UtilityPanel/Margin/VBox/Body
 @onready var vignette: PressureVignette = $PressureVignette
+@onready var event_shade: ColorRect = $EventShade
+@onready var event_panel: PanelContainer = $EventPanel
+@onready var event_area: Label = $EventPanel/Margin/VBox/AreaLabel
+@onready var event_title: Label = $EventPanel/Margin/VBox/EventTitle
+@onready var event_description: Label = $EventPanel/Margin/VBox/EventDescription
+@onready var event_choices: VBoxContainer = $EventPanel/Margin/VBox/ChoiceList
 
 var _hp_bar: StatBar
 var _spirit_bar: StatBar
@@ -57,6 +65,8 @@ func _ready() -> void:
 	$UtilityPanel/Margin/VBox/FallbackButton.pressed.connect(func(): fallback_requested.emit())
 	utility_shade.gui_input.connect(_on_shade_input)
 	interaction_prompt.visible = false
+	event_shade.visible = false
+	event_panel.visible = false
 	_close_utility()
 	refresh()
 
@@ -104,14 +114,78 @@ func show_message(message: String) -> void:
 	message_label.text = message
 
 
+func show_event(area_name: String, event: EventResource) -> void:
+	event_area.text = "校园事件 · %s" % area_name
+	event_title.text = event.name
+	event_description.text = event.description
+	_clear_event_choices()
+	if event.choices.is_empty():
+		_add_event_button("确认结果", -1, true)
+	else:
+		for i in event.choices.size():
+			_add_event_button(str(event.choices[i].get("text", "选择")), i, i == 0)
+	event_shade.visible = true
+	event_panel.visible = true
+
+
+func show_event_result(message: String, continue_label: String) -> void:
+	event_title.text = "事件结果"
+	event_description.text = message
+	_clear_event_choices()
+	var button := Button.new()
+	button.text = continue_label
+	button.theme_type_variation = &"PrimaryButton"
+	button.custom_minimum_size = Vector2(0, 54)
+	button.pressed.connect(func(): event_continue_requested.emit())
+	event_choices.add_child(button)
+	button.grab_focus()
+
+
+func close_event() -> void:
+	event_shade.visible = false
+	event_panel.visible = false
+	_clear_event_choices()
+
+
+func _add_event_button(text: String, choice_index: int, grab: bool) -> void:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, 48)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.pressed.connect(func(): event_choice_selected.emit(choice_index))
+	event_choices.add_child(button)
+	if grab:
+		button.grab_focus()
+
+
+func _clear_event_choices() -> void:
+	for child in event_choices.get_children():
+		event_choices.remove_child(child)
+		child.queue_free()
+
+
 func _danger_percent() -> int:
 	return clampi(int(round(float(GameState.run_progress) / 12.0 * 100.0)), 0, 100)
 
 
 func _open_bag() -> void:
-	_open_utility("背包与牌组", "牌库：%d 张\n遗物：%d 件\n学分：%d\n信用点：%d" % [
+	var counts: Dictionary = {}
+	for card_id in GameState.deck_card_ids:
+		counts[card_id] = int(counts.get(card_id, 0)) + 1
+	var card_lines: Array[String] = []
+	for card_id in counts:
+		var card = Config.cards.get(str(card_id))
+		card_lines.append("• %s ×%d" % [card.name if card != null else card_id, counts[card_id]])
+	var RelicCat = preload("res://src/logic/relic.gd")
+	var relic_lines: Array[String] = []
+	for relic_id in GameState.run_relic_ids:
+		var info: Dictionary = RelicCat.get_info(str(relic_id))
+		relic_lines.append("• %s：%s" % [info.get("name", relic_id), info.get("desc", "")])
+	_open_utility("背包与牌组", "牌库 %d 张\n%s\n\n遗物 %d 件\n%s\n\n学分 %d　信用点 %d" % [
 		GameState.deck_card_ids.size(),
+		"\n".join(card_lines),
 		GameState.run_relic_ids.size(),
+		"\n".join(relic_lines) if not relic_lines.is_empty() else "• 暂无遗物",
 		GameState.credits,
 		GameState.credit_points,
 	])
@@ -119,12 +193,20 @@ func _open_bag() -> void:
 
 func _open_status() -> void:
 	var stat_text := StatLex.all_stats_block() if not GameState.player_major_id.is_empty() else "尚未选择专业"
-	_open_utility("当前状态", "生命 %d/%d　精神 %d/%d\n压力 %d\n\n%s" % [
+	var buff_lines: Array[String] = []
+	for buff in GameState.pending_buffs:
+		var status_id := str(buff.get("status_id", ""))
+		var info := Status.get_status_info(status_id)
+		buff_lines.append("• %s ×%d" % [info.get("name", status_id), buff.get("stacks", 1)])
+	_open_utility("当前状态", "生命 %d/%d　精神 %d/%d\n压力 %d　已探索 %d/5\n当前目标：%s\n待生效状态：%s\n\n%s" % [
 		GameState.run_hp,
 		GameState.run_max_hp,
 		GameState.run_spirit,
 		GameState.run_max_spirit,
 		GameState.run_progress,
+		GameState.campus_visited_locations.size(),
+		str(_objectives.main_objective.get("title", "继续探索")),
+		"、".join(buff_lines) if not buff_lines.is_empty() else "无",
 		stat_text,
 	])
 
@@ -161,6 +243,9 @@ func _on_shade_input(event: InputEvent) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo:
+		return
+	if event_panel.visible:
+		get_viewport().set_input_as_handled()
 		return
 	if utility_panel.visible and event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()

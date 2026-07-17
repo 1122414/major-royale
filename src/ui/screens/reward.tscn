@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://l1qkvnu0jq2qm"]
 
 [ext_resource type="Script" path="res://src/ui/screens/reward.gd" id="1_reward"]
-[ext_resource type="Theme" uid="uid://n1qkvnu0jq2qm" path="res://src/ui/theme.tres" id="2_theme"]
-[ext_resource type="Script" path="res://src/ui/pixel_background.gd" id="3_bg"]
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/sprites/bg/map_campus.png" id="3_bg"]
 
 [node name="RewardScreen" type="Control"]
 layout_mode = 3
@@ -14,75 +14,103 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_reward")
 
-[node name="PixelBackground" type="ColorRect" parent="."]
+[node name="PixelBackground" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("3_bg")
+mouse_filter = 2
+modulate = Color(0.36, 0.45, 0.48, 1)
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 6
+texture_filter = 1
 
-[node name="TitleLabel" type="Label" parent="."]
+[node name="Backdrop" type="ColorRect" parent="."]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -100.0
-offset_top = 60.0
-offset_right = 100.0
-offset_bottom = 110.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 40
-text = "选择奖励"
-horizontal_alignment = 1
-
-[node name="RewardsContainer" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -580.0
-offset_top = -160.0
-offset_right = 580.0
-offset_bottom = 140.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+color = Color(0.005, 0.018, 0.024, 0.76)
+
+[node name="Header" type="PanelContainer" parent="."]
+offset_left = 20.0
+offset_top = 16.0
+offset_right = 1260.0
+offset_bottom = 94.0
+
+[node name="Margin" type="MarginContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="Header/Margin"]
+layout_mode = 2
 theme_override_constants/separation = 14
-alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Header/Margin/Row"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "选择奖励"
+vertical_alignment = 1
+
+[node name="RunSummary" type="Label" parent="Header/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "牌库 12　遗物 0　生命 72/72　压力 1"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SettingsButton" type="Button" parent="Header/Margin/Row"]
+custom_minimum_size = Vector2(52, 48)
+layout_mode = 2
+text = "⚙"
 
 [node name="InfoLabel" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = -160.0
-offset_right = 300.0
-offset_bottom = -100.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 20
-text = ""
+offset_left = 110.0
+offset_top = 104.0
+offset_right = 1170.0
+offset_bottom = 144.0
+theme_override_colors/font_color = Color(1, 0.827, 0.416, 1)
+theme_override_font_sizes/font_size = 17
+text = "从奖励中选择一项，强化本局构筑。"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RewardsPanel" type="PanelContainer" parent="."]
+offset_left = 34.0
+offset_top = 146.0
+offset_right = 1246.0
+offset_bottom = 626.0
+
+[node name="Margin" type="MarginContainer" parent="RewardsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="RewardsContainer" type="HBoxContainer" parent="RewardsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
 
 [node name="ContinueButton" type="Button" parent="."]
 visible = false
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -140.0
-offset_top = -88.0
-offset_right = 140.0
-offset_bottom = -32.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_left = 492.0
+offset_top = 644.0
+offset_right = 788.0
+offset_bottom = 704.0
+theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 22
-text = "返回地图 ▶"
+text = "返回校园 ▶"

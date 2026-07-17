@@ -132,6 +132,7 @@ location_id = "dorm"
 display_name = "宿舍楼"
 description = "宿舍入口已记录，可作为校园事件地点。"
 icon_path = "res://assets/sprites/ui/locations/dorm.svg"
+action_id = "event"
 
 [node name="Library" parent="World/Hotspots" instance=ExtResource("5_hotspot")]
 position = Vector2(770, 456)
@@ -139,6 +140,7 @@ location_id = "library"
 display_name = "图书馆"
 description = "图书馆入口已记录，可在这里寻找线索。"
 icon_path = "res://assets/sprites/ui/locations/library.svg"
+action_id = "event"
 
 [node name="Cafeteria" parent="World/Hotspots" instance=ExtResource("5_hotspot")]
 position = Vector2(306, 330)
@@ -146,6 +148,7 @@ location_id = "cafeteria"
 display_name = "食堂"
 description = "食堂入口已记录，可作为补给与事件地点。"
 icon_path = "res://assets/sprites/ui/locations/cafeteria.svg"
+action_id = "event"
 
 [node name="Sports" parent="World/Hotspots" instance=ExtResource("5_hotspot")]
 position = Vector2(448, 470)
@@ -153,5 +156,6 @@ location_id = "sports"
 display_name = "操场"
 description = "操场入口已记录，终局挑战将在这里发生。"
 icon_path = "res://assets/sprites/ui/locations/sports.svg"
+action_id = "event"
 
 [node name="HUD" parent="." instance=ExtResource("6_hud")]

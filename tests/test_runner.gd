@@ -32,6 +32,7 @@ func _ready() -> void:
 
 	print("TEST: 开始校园探索竖切测试")
 	await _test_campus_world()
+	await _test_reward_growth_loop()
 	print("TEST: 校园探索竖切测试通过")
 
 	print("TEST: 开始战斗逻辑测试")
@@ -212,6 +213,27 @@ func _test_campus_world() -> void:
 	assert(campus._prepare_hotspot_activation(teaching), "教学楼热点应准备普通战斗")
 	assert(GameState.player_stats.get("current_enemy_id", "") == "gpa_anxiety", "教学楼应接入绩点焦虑者战斗")
 	assert(hud.main_title.text == "前往图书馆", "完成教学楼后主目标应更新为图书馆")
+
+	var dorm := hotspots.get_node("Dorm") as CampusHotspot
+	var events_before := GameState.run_events_resolved
+	campus._pending_hotspot = dorm
+	campus._pending_battle_after_event = campus._prepare_hotspot_activation(dorm)
+	campus._open_hotspot_event(dorm)
+	assert(hud.event_panel.visible, "宿舍热点应打开校园事件选择面板")
+	campus._on_event_choice_selected(-1)
+	assert(GameState.run_events_resolved == events_before + 1, "校园事件结算次数应写入局内状态")
+	assert(hud.event_title.text == "事件结果", "选择后应显示事件结果反馈")
+	campus._on_event_continue_requested()
+	assert(not hud.event_panel.visible and player.controls_enabled, "普通事件结束后应返回可移动校园")
+
+	var library := hotspots.get_node("Library") as CampusHotspot
+	assert(campus._prepare_hotspot_activation(library), "首次图书馆事件后应准备 AI 面试官精英战")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "ai_interviewer", "图书馆应接入 AI 面试官")
+	var cafeteria := hotspots.get_node("Cafeteria") as CampusHotspot
+	assert(not campus._prepare_hotspot_activation(cafeteria), "食堂应作为纯事件与补给热点")
+	var sports := hotspots.get_node("Sports") as CampusHotspot
+	assert(campus._prepare_hotspot_activation(sports), "完成四区准备后操场应解锁终局 Boss")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "employment_pressure", "操场终局应接入就业压力 Boss")
 	var pressure_zone: Polygon2D = campus.get_node("World/PressureZone")
 	assert(pressure_zone.polygon.size() == 4, "压力增加后世界层应出现危险区")
 	assert(hud.vignette.pressure == GameState.run_progress, "屏幕边缘压力反馈应与局内状态同步")
@@ -220,6 +242,36 @@ func _test_campus_world() -> void:
 	campus.queue_free()
 	await get_tree().process_frame
 	assert(GameState.campus_player_position.distance_to(saved_position) < 0.1, "返回校园时应恢复玩家位置")
+
+
+func _test_reward_growth_loop() -> void:
+	GameState.start_run("computer")
+	GameState.campus_player_position = Vector2(734, 488)
+	var saved_position := GameState.campus_player_position
+	var packed := load("res://src/ui/screens/reward.tscn") as PackedScene
+	var reward_screen := packed.instantiate()
+	add_child(reward_screen)
+	await get_tree().process_frame
+
+	var max_hp_before := GameState.run_max_hp
+	reward_screen._apply_reward({
+		"type": RewardGenerator.RewardType.STAT_UP,
+		"stat": "体能",
+		"value": 1,
+	})
+	assert(GameState.run_max_hp == max_hp_before + 3, "体能奖励应只增加一次最大生命")
+	reward_screen._apply_reward({
+		"type": RewardGenerator.RewardType.RELIC,
+		"relic_id": "mentor_letter",
+	})
+	assert(GameState.has_relic("mentor_letter"), "遗物奖励应写入本局背包")
+	var deck_before := GameState.deck_card_ids.size()
+	reward_screen._on_card_picked("null_pointer")
+	assert(GameState.deck_card_ids.size() == deck_before + 1, "卡牌奖励应加入当前牌组")
+	assert(GameState.campus_player_position == saved_position, "奖励选择不应改写返回校园位置")
+	assert("牌库 %d" % GameState.deck_card_ids.size() in reward_screen.run_summary.text, "奖励页顶部摘要应同步最新牌组")
+	reward_screen.queue_free()
+	await get_tree().process_frame
 
 
 func _test_custom_major() -> void:

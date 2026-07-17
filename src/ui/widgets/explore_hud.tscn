@@ -281,10 +281,10 @@ color = Color(0, 0, 0, 0.68)
 [node name="UtilityPanel" type="PanelContainer" parent="."]
 visible = false
 z_index = 21
-offset_left = 390.0
-offset_top = 170.0
-offset_right = 890.0
-offset_bottom = 550.0
+offset_left = 280.0
+offset_top = 96.0
+offset_right = 1000.0
+offset_bottom = 626.0
 theme = ExtResource("2_theme")
 theme_type_variation = &"PanelGold"
 
@@ -321,3 +321,66 @@ text = "临时打开旧版线性路线"
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
 text = "关闭"
+
+[node name="EventShade" type="ColorRect" parent="."]
+visible = false
+z_index = 30
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.74)
+
+[node name="EventPanel" type="PanelContainer" parent="."]
+visible = false
+z_index = 31
+offset_left = 330.0
+offset_top = 118.0
+offset_right = 950.0
+offset_bottom = 602.0
+theme = ExtResource("2_theme")
+theme_type_variation = &"PanelGold"
+
+[node name="Margin" type="MarginContainer" parent="EventPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="EventPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="AreaLabel" type="Label" parent="EventPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.427, 0.969, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "校园事件 · 教学楼"
+horizontal_alignment = 1
+
+[node name="EventTitle" type="Label" parent="EventPanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 30
+text = "随堂测验"
+horizontal_alignment = 1
+
+[node name="EventRule" type="HSeparator" parent="EventPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="EventDescription" type="Label" parent="EventPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 17
+text = "事件说明与结果。"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoiceList" type="VBoxContainer" parent="EventPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
