@@ -57,11 +57,13 @@ func _refresh() -> void:
 	desc_label.text = _card.description
 	icon_label.text = ""
 	_apply_frame(_type_colors.get(_card.type, UIColors.BORDER_CYAN))
-	_apply_card_icon(str(_card.type))
+	_apply_card_icon(str(_card.id), str(_card.type))
 
 
-func _apply_card_icon(card_type: String) -> void:
-	var path := "res://assets/sprites/cards/%s.png" % card_type
+func _apply_card_icon(card_id: String, card_type: String) -> void:
+	var path := "res://assets/sprites/cards/%s.png" % card_id
+	if not ResourceLoader.exists(path):
+		path = "res://assets/sprites/cards/%s.png" % card_type
 	if not ResourceLoader.exists(path):
 		path = "res://assets/sprites/cards/skill.png"
 	if ResourceLoader.exists(path):
