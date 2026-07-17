@@ -387,9 +387,24 @@ func request_current_ai_decision() -> void:
 	ai_decision_requested.emit(_pending_ai_context.duplicate(true))
 
 
-func set_ai_decision(action_id: String, intent_text: String, ending_flag: String) -> void:
+func set_ai_decision(action_id: String, intent_text: String, ending_flag: String) -> bool:
 	if state != BattleState.PLAYER_TURN:
-		return
+		return false
+	var allowed_actions: Array[String] = []
+	for action in _get_current_enemy_actions():
+		allowed_actions.append(str(action.get("id", "")))
+	if action_id not in allowed_actions:
+		var context := _pending_ai_context.duplicate(true) if not _pending_ai_context.is_empty() else _build_ai_context()
+		var fallback := FallbackAI.decide(context)
+		_pending_ai_context.clear()
+		_enemy_intent = {
+			"id": str(fallback.get("action_id", allowed_actions[0] if not allowed_actions.is_empty() else "attack")),
+			"description": str(fallback.get("intent_text", "策略已切换为安全行动。")),
+			"value": _map_ai_action_to_value(str(fallback.get("action_id", "attack"))),
+			"ending_flag": "",
+		}
+		_reveal_intent = true
+		return false
 	_pending_ai_context.clear()
 	_enemy_intent = {
 		"id": action_id,
@@ -398,6 +413,7 @@ func set_ai_decision(action_id: String, intent_text: String, ending_flag: String
 		"ending_flag": ending_flag,
 	}
 	_reveal_intent = true
+	return true
 
 
 func _build_ai_context() -> Dictionary:

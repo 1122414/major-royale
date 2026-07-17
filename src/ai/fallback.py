@@ -49,6 +49,6 @@ def rule_based_decision(context: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "action_id": chosen,
-        "intent_text": f"敌人使用了规则兜底行动：{action_names.get(chosen, chosen)}。",
+        "intent_text": f"敌人调整策略，准备使用：{action_names.get(chosen, chosen)}。",
         "ending_flag": None,
     }

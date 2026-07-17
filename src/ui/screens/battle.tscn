@@ -303,25 +303,53 @@ text = "结束回合"
 [node name="AIBanner" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 350.0
+offset_left = 322.0
 offset_top = 90.0
-offset_right = 930.0
-offset_bottom = 136.0
+offset_right = 958.0
+offset_bottom = 140.0
+theme_type_variation = &"PanelGold"
 
 [node name="BannerLabel" type="Label" parent="AIBanner"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.827, 0.416, 1)
-theme_override_font_sizes/font_size = 18
-text = "精英遭遇：AI 原生敌人"
+theme_override_colors/font_color = Color(1, 0.73, 0.25, 1)
+theme_override_font_sizes/font_size = 19
+text = "⚠ 精英遭遇：AI 原生敌人"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AIChatBubble" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 720.0
+offset_top = 148.0
+offset_right = 1006.0
+offset_bottom = 224.0
+
+[node name="BubbleVBox" type="VBoxContainer" parent="AIChatBubble"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="AIStateLabel" type="Label" parent="AIChatBubble/BubbleVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.427, 0.969, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "策略状态：准备中"
+
+[node name="BubbleText" type="Label" parent="AIChatBubble/BubbleVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
+text = "正在分析你的打法，并调整应对策略……"
+vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="AIProfilePanel" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
 offset_left = 12.0
 offset_top = 100.0
-offset_right = 210.0
-offset_bottom = 314.0
+offset_right = 226.0
+offset_bottom = 326.0
 
 [node name="ProfileVBox" type="VBoxContainer" parent="AIProfilePanel"]
 layout_mode = 2
@@ -332,15 +360,37 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.427, 0.969, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "AI 原生敌人"
+horizontal_alignment = 1
+
+[node name="ProfilePortrait" type="TextureRect" parent="AIProfilePanel/ProfileVBox"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="ThreatLabel" type="Label" parent="AIProfilePanel/ProfileVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.376, 0.376, 1)
+theme_override_font_sizes/font_size = 12
+text = "强度　■■■■□"
+
+[node name="AdaptLabel" type="Label" parent="AIProfilePanel/ProfileVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.706, 0.486, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "适应性　■■■■■"
 
 [node name="ProfileBody" type="Label" parent="AIProfilePanel/ProfileVBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 text = "敌人档案"
 autowrap_mode = 3
 
 [node name="LootPreview" type="Label" parent="AIProfilePanel/ProfileVBox"]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
 theme_override_font_sizes/font_size = 11
 text = "掉落预览"
@@ -349,10 +399,10 @@ autowrap_mode = 3
 [node name="AIActionsPanel" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 1070.0
+offset_left = 1032.0
 offset_top = 100.0
 offset_right = 1268.0
-offset_bottom = 338.0
+offset_bottom = 364.0
 
 [node name="ActionsVBox" type="VBoxContainer" parent="AIActionsPanel"]
 layout_mode = 2
@@ -361,7 +411,12 @@ theme_override_constants/separation = 7
 [node name="ActionsTitle" type="Label" parent="AIActionsPanel/ActionsVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
-text = "可选行动"
+theme_override_font_sizes/font_size = 15
+text = "允许行动（白名单）"
+horizontal_alignment = 1
+
+[node name="ActionRule" type="HSeparator" parent="AIActionsPanel/ActionsVBox"]
+layout_mode = 2
 
 [node name="ActionsList" type="VBoxContainer" parent="AIActionsPanel/ActionsVBox"]
 layout_mode = 2

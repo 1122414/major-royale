@@ -4,11 +4,33 @@ extends Control
 
 @onready var player_figure: TextureRect = $PlayerFigure
 @onready var enemy_figure: TextureRect = $EnemyFigure
+@onready var ai_pressure_zone: Polygon2D = $AIPressureZone
+@onready var ai_pressure_core: Polygon2D = $AIPressureCore
+
+var _pressure_tween: Tween
 
 
 func setup_art(player_path: String, enemy_path: String) -> void:
 	_set_texture(player_figure, player_path)
 	_set_texture(enemy_figure, enemy_path)
+
+
+func set_ai_mode(enabled: bool) -> void:
+	ai_pressure_zone.visible = enabled
+	ai_pressure_core.visible = enabled
+	if _pressure_tween and _pressure_tween.is_valid():
+		_pressure_tween.kill()
+	if not enabled:
+		return
+	ai_pressure_zone.scale = Vector2.ONE
+	ai_pressure_core.scale = Vector2.ONE
+	_pressure_tween = create_tween().set_loops()
+	_pressure_tween.set_parallel(true)
+	_pressure_tween.tween_property(ai_pressure_zone, "scale", Vector2(1.08, 1.18), 0.9).set_trans(Tween.TRANS_SINE)
+	_pressure_tween.tween_property(ai_pressure_zone, "modulate:a", 0.45, 0.9)
+	_pressure_tween.chain().set_parallel(true)
+	_pressure_tween.tween_property(ai_pressure_zone, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_SINE)
+	_pressure_tween.tween_property(ai_pressure_zone, "modulate:a", 1.0, 0.9)
 
 
 func _set_texture(target: TextureRect, path: String) -> void:

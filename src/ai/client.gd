@@ -1,7 +1,7 @@
 extends Node
 ## AI 决策服务客户端（Godot 端）。
 
-signal decision_received(action_id: String, intent_text: String, ending_flag: String)
+signal decision_received(action_id: String, intent_text: String, ending_flag: String, source: String)
 signal decision_failed
 
 const TIMEOUT_SECONDS := 5.0
@@ -59,7 +59,8 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 	decision_received.emit(
 		str(data.get("action_id", "")),
 		str(data.get("intent_text", "")),
-		str(data.get("ending_flag", ""))
+		str(data.get("ending_flag", "")),
+		str(data.get("source", "llm"))
 	)
 
 

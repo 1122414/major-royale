@@ -38,6 +38,8 @@ func _ready() -> void:
 	_test_battle_core()
 	_test_battle_presentation()
 	_test_card_effect_and_cost_feedback()
+	_test_ai_decision_whitelist()
+	await _test_ai_native_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
 
 	print("TEST: 开始局内状态回归测试")
@@ -131,6 +133,39 @@ func _test_card_effect_and_cost_feedback() -> void:
 	assert(battle.play_card(0), "重构应可正常结算")
 	assert(player.shield >= 6, "重构应获得至少 6 点护盾")
 	assert(not player.has_status("pressure"), "重构应移除 1 个负面状态")
+
+
+func _test_ai_decision_whitelist() -> void:
+	GameState.start_run("computer")
+	var battle := Battle.new(GameState.create_battle_player(), Config.enemies["ai_interviewer"])
+	var allowed_ids: Array[String] = []
+	for action in Config.enemies["ai_interviewer"].actions:
+		allowed_ids.append(str(action.get("id", "")))
+	assert(not battle.set_ai_decision("delete_player_save", "非法行动", ""), "AI 返回白名单外行动时必须拒绝")
+	assert(battle.get_enemy_intent_id() in allowed_ids, "非法行动应回落到白名单策略")
+	assert(battle.set_ai_decision("ask_algorithm", "准备算法追问。", ""), "白名单行动应被接受")
+	assert(battle.get_enemy_intent_id() == "ask_algorithm", "合法行动应成为当前意图")
+
+
+func _test_ai_native_presentation() -> void:
+	var previous_ai_enabled := Settings.ai_enabled
+	Settings.ai_enabled = false
+	GameState.start_run("computer")
+	GameState.player_stats["current_enemy_id"] = "ai_interviewer"
+	var packed := load("res://src/ui/screens/battle.tscn") as PackedScene
+	var screen := packed.instantiate()
+	add_child(screen)
+	await get_tree().process_frame
+	assert(screen.get_node("AIBanner").visible, "AI 精英战应显示顶部警示横幅")
+	assert(screen.get_node("AIProfilePanel").visible, "AI 精英战应显示敌人档案")
+	assert(screen.get_node("AIChatBubble").visible, "AI 精英战应显示策略气泡")
+	assert(screen.get_node("Arena/AIPressureZone").visible, "AI 精英战应显示舞台压力区")
+	assert(screen.get_node("AIActionsPanel/ActionsVBox/ActionsList").get_child_count() == 5, "AI 精英战应显示完整白名单行动")
+	var state_text: String = screen.get_node("AIChatBubble/BubbleVBox/AIStateLabel").text
+	assert("离线策略已就绪" in state_text, "AI 关闭时应明确展示可继续战斗的离线策略")
+	screen.queue_free()
+	await get_tree().process_frame
+	Settings.ai_enabled = previous_ai_enabled
 
 
 func _test_campus_world() -> void:

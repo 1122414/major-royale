@@ -30,6 +30,18 @@ offset_bottom = 318.0
 mouse_filter = 2
 color = Color(0.08, 0.01, 0.02, 0.52)
 
+[node name="AIPressureZone" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(640, 300)
+polygon = PackedVector2Array(-185, -18, -130, -42, 0, -52, 130, -42, 185, -18, 130, 18, 0, 34, -130, 18)
+color = Color(0.88, 0.12, 0.12, 0.35)
+
+[node name="AIPressureCore" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(640, 300)
+polygon = PackedVector2Array(-105, -10, -72, -25, 0, -32, 72, -25, 105, -10, 72, 10, 0, 22, -72, 10)
+color = Color(1, 0.35, 0.12, 0.28)
+
 [node name="PlayerFigure" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 244.0

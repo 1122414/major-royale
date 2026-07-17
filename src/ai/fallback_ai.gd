@@ -46,6 +46,6 @@ static func decide(context: Dictionary) -> Dictionary:
 
 	return {
 		"action_id": chosen,
-		"intent_text": "敌人使用了规则兜底行动：%s。" % action_names.get(chosen, chosen),
+		"intent_text": "敌人调整策略，准备使用：%s。" % action_names.get(chosen, chosen),
 		"ending_flag": "",
 	}

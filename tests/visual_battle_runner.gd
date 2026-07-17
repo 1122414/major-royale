@@ -3,6 +3,12 @@ extends Node
 
 
 func _ready() -> void:
+	var enemy_id := "gpa_anxiety"
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--enemy="):
+			enemy_id = argument.trim_prefix("--enemy=")
+		elif argument == "--offline-ai":
+			Settings.ai_enabled = false
 	GameState.start_run("computer")
-	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	GameState.player_stats["current_enemy_id"] = enemy_id
 	get_tree().call_deferred("change_scene_to_file", "res://src/ui/screens/battle.tscn")

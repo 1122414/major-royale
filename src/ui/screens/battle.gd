@@ -33,6 +33,13 @@ const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 @onready var ai_loot_preview: Label = $AIProfilePanel/ProfileVBox/LootPreview
 @onready var ai_actions_panel: PanelContainer = $AIActionsPanel
 @onready var ai_actions_list: VBoxContainer = $AIActionsPanel/ActionsVBox/ActionsList
+@onready var ai_chat_bubble: PanelContainer = $AIChatBubble
+@onready var ai_state_label: Label = $AIChatBubble/BubbleVBox/AIStateLabel
+@onready var ai_bubble_text: Label = $AIChatBubble/BubbleVBox/BubbleText
+@onready var ai_profile_title: Label = $AIProfilePanel/ProfileVBox/ProfileTitle
+@onready var ai_profile_portrait: TextureRect = $AIProfilePanel/ProfileVBox/ProfilePortrait
+@onready var ai_threat_label: Label = $AIProfilePanel/ProfileVBox/ThreatLabel
+@onready var ai_adapt_label: Label = $AIProfilePanel/ProfileVBox/AdaptLabel
 @onready var buff_panel: PanelContainer = $BuffPanel
 
 var _battle: Battle
@@ -61,7 +68,6 @@ func _ready() -> void:
 
 	AIClient.decision_received.connect(_on_ai_decision_received)
 	AIClient.decision_failed.connect(_on_ai_decision_failed)
-	_battle.request_current_ai_decision()
 
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
@@ -74,6 +80,7 @@ func _ready() -> void:
 	battle_title.text = "战斗"
 	_setup_ai_native_ui(enemy_id, enemy_res)
 	_setup_battle_art(enemy_id)
+	_battle.request_current_ai_decision()
 
 	_update_ui()
 	AudioManager.play_sfx("click")
@@ -87,36 +94,45 @@ func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
 	ai_banner.visible = _is_ai_battle
 	ai_profile_panel.visible = _is_ai_battle
 	ai_actions_panel.visible = _is_ai_battle
+	ai_chat_bubble.visible = _is_ai_battle
 	buff_panel.visible = not _is_ai_battle
+	battle_stage.set_ai_mode(_is_ai_battle)
 	# 精英战隐藏右侧标准敌人面板，避免与「可选行动」重叠
 	$EnemyPanel.visible = not _is_ai_battle
 	if not _is_ai_battle:
 		return
-	battle_title.text = "精英遭遇"
+	battle_title.text = "AI 精英遭遇"
 	battle_title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
 	var banner: Label = ai_banner.get_node("BannerLabel")
-	banner.text = "精英：%s　HP %d　| %s" % [
-		enemy_res.name,
-		enemy_res.hp,
-		enemy_res.specialty if enemy_res.specialty != "" else "AI Native",
-	]
+	banner.text = "⚠ 精英遭遇：%s　生命 %d/%d" % [enemy_res.name, enemy_res.hp, enemy_res.hp]
 	var trait_str := " / ".join(PackedStringArray(enemy_res.traits)) if enemy_res.traits.size() > 0 else "AI Native"
-	ai_profile_body.text = "%s\n%s\n弱点：%s" % [
-		enemy_res.specialty if enemy_res.specialty != "" else "行为多变",
+	ai_profile_title.text = enemy_res.name
+	ai_profile_body.text = "%s\n弱点：%s" % [
 		trait_str,
 		enemy_res.weakness if enemy_res.weakness != "" else "未知",
 	]
-	ai_loot_preview.text = "掉落：稀有卡 / 称号"
+	var threat_blocks := clampi(int(ceil(float(enemy_res.hp) / 18.0)), 1, 5)
+	ai_threat_label.text = "强度　%s%s" % ["■".repeat(threat_blocks), "□".repeat(5 - threat_blocks)]
+	var adapt_blocks := clampi(enemy_res.actions.size(), 1, 5)
+	ai_adapt_label.text = "适应性　%s%s" % ["■".repeat(adapt_blocks), "□".repeat(5 - adapt_blocks)]
+	if enemy_id == "paper_reviewer":
+		ai_loot_preview.text = "掉落预览\n稀有卡 / 审稿意见遗物"
+	else:
+		ai_loot_preview.text = "掉落预览\n稀有卡 / 算法幸存者称号"
+	if Settings.ai_enabled:
+		_set_ai_strategy_ui("本地策略已装载", enemy_res.specialty, UIColors.AI_PURPLE)
+	else:
+		_set_ai_strategy_ui("离线策略已就绪", _battle.get_enemy_intent_text(), UIColors.AI_PURPLE)
 	_refresh_ai_actions("")
 	# 左档案窄栏，右行动贴顶不挡立绘
-	ai_profile_panel.offset_left = 16.0
+	ai_profile_panel.offset_left = 12.0
 	ai_profile_panel.offset_top = 100.0
-	ai_profile_panel.offset_right = 200.0
-	ai_profile_panel.offset_bottom = 250.0
-	ai_actions_panel.offset_left = 1080.0
+	ai_profile_panel.offset_right = 226.0
+	ai_profile_panel.offset_bottom = 326.0
+	ai_actions_panel.offset_left = 1032.0
 	ai_actions_panel.offset_top = 100.0
-	ai_actions_panel.offset_right = 1264.0
-	ai_actions_panel.offset_bottom = 320.0
+	ai_actions_panel.offset_right = 1268.0
+	ai_actions_panel.offset_bottom = 364.0
 	# 把敌人状态/意图写到横幅下方短提示
 	enemy_name_label.text = enemy_res.name
 	enemy_hp_label.text = "HP: %d/%d" % [enemy_res.hp, enemy_res.hp]
@@ -125,9 +141,11 @@ func _refresh_ai_actions(selected_id: String) -> void:
 	if not _is_ai_battle or _enemy_res == null:
 		return
 	for child in ai_actions_list.get_children():
+		ai_actions_list.remove_child(child)
 		child.queue_free()
 	for action in _enemy_res.actions:
 		var aid: String = str(action.get("id", ""))
+		var row := PanelContainer.new()
 		var label := Label.new()
 		var name_map := {
 			"ask_algorithm": "算法追问",
@@ -141,14 +159,26 @@ func _refresh_ai_actions(selected_id: String) -> void:
 			"accept_minor": "小修接收",
 			"desk_reject": "直接拒稿",
 		}
-		label.text = "• %s" % name_map.get(aid, aid)
+		label.text = "%s %s\n%s" % ["▶" if aid == selected_id else "•", name_map.get(aid, aid), action.get("description", "")]
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_font_size_override("font_size", 10)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.06, 0.12, 0.15, 0.94)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(2)
+		style.content_margin_left = 6
+		style.content_margin_right = 6
+		style.content_margin_top = 3
+		style.content_margin_bottom = 3
 		if aid == selected_id:
 			label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+			style.border_color = UIColors.ACCENT_GOLD
 		else:
 			label.add_theme_color_override("font_color", UIColors.TEXT_MUTED)
-		ai_actions_list.add_child(label)
+			style.border_color = UIColors.BORDER_CYAN_DIM
+		row.add_theme_stylebox_override("panel", style)
+		row.add_child(label)
+		ai_actions_list.add_child(row)
 
 func _setup_battle_art(enemy_id: String) -> void:
 	var bg: TextureRect = $PixelBackground
@@ -174,6 +204,8 @@ func _setup_battle_art(enemy_id: String) -> void:
 	elif enemy_id == "employment_pressure":
 		enemy_path = "res://assets/sprites/chars/enemy_boss.png"
 	battle_stage.setup_art(player_path, enemy_path)
+	if _is_ai_battle and ResourceLoader.exists(enemy_path):
+		ai_profile_portrait.texture = load(enemy_path)
 
 func _create_player() -> Character:
 	return GameState.create_battle_player()
@@ -194,12 +226,11 @@ func _update_ui() -> void:
 			enemy_intent_label.tooltip_text = "弱点：%s" % _enemy_res.weakness
 	else:
 		var banner: Label = ai_banner.get_node("BannerLabel")
-		banner.text = "精英：%s　HP %d/%d 护盾 %d　| %s" % [
+		banner.text = "⚠ 精英遭遇：%s　生命 %d/%d　护盾 %d" % [
 			_battle.enemy.display_name,
 			_battle.enemy.hp,
 			_battle.enemy.max_hp,
 			_battle.enemy.shield,
-			_battle.get_enemy_intent_text(),
 		]
 		_refresh_ai_actions(_battle.get_enemy_intent_id())
 
@@ -385,20 +416,38 @@ func _on_skill_used(skill_name: String) -> void:
 
 
 func _on_ai_decision_requested(context: Dictionary) -> void:
+	_set_ai_strategy_ui("正在实时分析", "正在分析你的出牌、状态与资源，并调整应对策略……", UIColors.BORDER_CYAN_BRIGHT)
 	AIClient.request_decision(context)
 
 
-func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String) -> void:
-	_battle.set_ai_decision(action_id, intent_text, ending_flag)
+func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String, source: String) -> void:
+	var accepted := _battle.set_ai_decision(action_id, intent_text, ending_flag)
 	GameState.player_stats["last_ending_flag"] = ending_flag
-	_refresh_ai_actions(action_id)
+	var selected_id := _battle.get_enemy_intent_id()
+	_refresh_ai_actions(selected_id)
+	if not accepted:
+		_set_ai_strategy_ui("安全策略已接管", _battle.get_enemy_intent_text(), UIColors.WARNING_ORANGE)
+	elif source == "fallback":
+		_set_ai_strategy_ui("安全策略已就绪", intent_text, UIColors.AI_PURPLE)
+	else:
+		_set_ai_strategy_ui("实时策略已更新", intent_text, UIColors.SUCCESS_GREEN)
 	_update_ui()
 
 
 func _on_ai_decision_failed() -> void:
-	message_label.text = "AI 服务未响应，使用规则兜底"
 	if _is_ai_battle:
-		_refresh_ai_actions(str(_battle.get_enemy_intent_text()))
+		var selected_id := _battle.get_enemy_intent_id()
+		_refresh_ai_actions(selected_id)
+		_set_ai_strategy_ui("离线策略已就绪", _battle.get_enemy_intent_text(), UIColors.AI_PURPLE)
+		message_label.text = "敌人已完成策略调整"
+
+
+func _set_ai_strategy_ui(status: String, text: String, color: Color) -> void:
+	if not _is_ai_battle:
+		return
+	ai_state_label.text = "策略状态：%s" % status
+	ai_state_label.add_theme_color_override("font_color", color)
+	ai_bubble_text.text = text if not text.is_empty() else "敌人正在观察你的行动。"
 
 
 func _on_boss_phase_changed(phase_name: String) -> void:
