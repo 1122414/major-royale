@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "generated_on": "2026-07-17",
+  "version": 3,
+  "generated_on": "2026-07-18",
   "generator": "OpenAI imagegen",
   "style_reference": "Plan_/7.17/refs",
   "assets": [
@@ -44,6 +44,51 @@
     {"path": "sprites/cards/hedge.png", "size": "256x256 RGBA", "prompt_version": "major_card_atlas_v1", "role": "金融核心牌；金币对冲护盾"},
     {"path": "sprites/cards/compound.png", "size": "256x256 RGBA", "prompt_version": "major_card_atlas_v1", "role": "金融核心牌；复利金币螺旋"},
     {"path": "sprites/cards/muse.png", "size": "256x256 RGBA", "prompt_version": "major_card_atlas_v1", "role": "艺术核心牌；速写本与紫色缪斯"}
+  ],
+  "card_art_batches": [
+    {
+      "prompt_version": "law_card_sheet_v2",
+      "grid": "4x4",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "law_search.png"],
+      "card_ids": ["trial_delay", "judgment", "cross_exam", "evidence", "injunction", "plea_bargain", "case_file", "subpoena", "precedent", "gavel", "recess", "amicus", "closing", "voir_dire", "contempt", "appeal"]
+    },
+    {
+      "prompt_version": "computer_common_card_sheet_v2",
+      "grid": "4x4",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "bug_generate.png"],
+      "card_ids": ["bsod_warning", "cache_hit", "stack_overflow", "pair_programming", "segfault", "memory_leak", "ci_pipeline", "kernel_panic", "firewall", "open_source", "regex_trap", "ddos", "strike", "defend", "draw_card", "deep_breath"]
+    },
+    {
+      "prompt_version": "medicine_card_sheet_v2",
+      "grid": "4x4",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "first_aid.png"],
+      "card_ids": ["case_analysis", "adrenaline", "night_shift", "bandage", "antibiotic", "vital_check", "syringe", "defibrillate", "anesthesia", "lab_report", "quarantine", "vaccine", "crisis_or", "rounds", "side_effect", "miracle"]
+    },
+    {
+      "prompt_version": "finance_card_sheet_v2",
+      "grid": "4x4",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "compound.png"],
+      "card_ids": ["dividend", "short_sell", "leverage", "cash_flow", "audit", "bailout", "margin_call", "ipo", "portfolio", "arbitrage", "bear_trap", "risk_off", "quant", "insider", "debt_collect", "bankrupt"]
+    },
+    {
+      "prompt_version": "arts_card_sheet_v2",
+      "grid": "4x4",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "muse.png"],
+      "card_ids": ["sketch", "color_block", "critique", "collage", "performance", "gallery", "brushstroke", "residency", "avant_garde", "masterpiece", "palette", "improv", "spotlight", "satire", "encore", "installation"]
+    },
+    {
+      "prompt_version": "remaining_card_sheet_v2",
+      "grid": "3x3",
+      "generator": "OpenAI gpt-image-2（Codex imagegen）",
+      "style_references": ["02_normal_battle.png", "01_ai_native_battle.png"],
+      "card_ids": ["all_nighter_study", "group_project", "coffee_boost", "stretch", "gold_rush", "storyboard", "chaos_theory", "curtain_call"],
+      "extra_asset": "campus_wildcard"
+    }
   ],
   "transparent_workflow": {
     "key": "auto sampled magenta border",

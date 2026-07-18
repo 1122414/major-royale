@@ -141,7 +141,7 @@ func _apply_card_icon(card_id: String, card_type: String, major_id: String) -> v
 		if existing == null:
 			existing = TextureRect.new()
 			existing.name = "IconTex"
-			existing.custom_minimum_size = Vector2(64, 64)
+			existing.custom_minimum_size = Vector2(72, 72)
 			existing.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			existing.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			existing.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

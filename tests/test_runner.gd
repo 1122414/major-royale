@@ -177,22 +177,9 @@ func _test_professional_asset_coverage() -> void:
 		assert(not unique_enemy_paths.has(path), "不同敌人不应误用同一素材: %s" % path)
 		unique_enemy_paths[path] = true
 
-	var card_paths := [
-		"res://assets/sprites/cards/burden_of_proof.png",
-		"res://assets/sprites/cards/not_guilty_defense.png",
-		"res://assets/sprites/cards/objection.png",
-		"res://assets/sprites/cards/law_search.png",
-		"res://assets/sprites/cards/first_aid.png",
-		"res://assets/sprites/cards/anatomy_weakness.png",
-		"res://assets/sprites/cards/scalpel.png",
-		"res://assets/sprites/cards/triage.png",
-		"res://assets/sprites/cards/bull_run.png",
-		"res://assets/sprites/cards/hedge.png",
-		"res://assets/sprites/cards/compound.png",
-		"res://assets/sprites/cards/muse.png",
-	]
-	for path in card_paths:
-		assert(ResourceLoader.exists(path), "专业核心卡应具备正式插画: %s" % path)
+	for card_id in Config.cards:
+		var path := "res://assets/sprites/cards/%s.png" % card_id
+		assert(ResourceLoader.exists(path), "每张卡牌都应具备独立插画: %s" % path)
 	assert(ResourceLoader.exists("res://assets/sprites/bg/battle_finale.png"), "终局战应具备专属背景")
 
 	var card_packed := load("res://src/ui/widgets/card_view.tscn") as PackedScene
@@ -201,7 +188,7 @@ func _test_professional_asset_coverage() -> void:
 	add_child(card_view)
 	assert(card_view.focus_mode == Control.FOCUS_ALL, "卡牌应可通过键盘或手柄焦点选中")
 	var icon_texture: TextureRect = card_view.get_node("Margin/VBox/IconTex")
-	assert(icon_texture.texture.resource_path == "res://assets/sprites/cards/law_search.png", "未单独绘制的法学牌应回退到法学核心插画")
+	assert(icon_texture.texture.resource_path == "res://assets/sprites/cards/trial_delay.png", "卡牌应优先加载与自身 ID 对应的独立插画")
 	var controller_activations: Array[int] = []
 	card_view.card_clicked.connect(func(index: int) -> void: controller_activations.append(index))
 	var accept_event := InputEventAction.new()

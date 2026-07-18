@@ -1,9 +1,11 @@
 """数据文件校验测试。"""
 
 import json
+import struct
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+CARD_ART_DIR = Path(__file__).parent.parent / "assets" / "sprites" / "cards"
 
 
 def _json_files(folder: str):
@@ -109,3 +111,15 @@ def test_no_duplicate_enemy_ids():
         enemy_id = enemy["id"]
         assert enemy_id not in seen, f"重复的敌人 ID: {enemy_id}"
         seen.add(enemy_id)
+
+
+def test_every_card_has_standardized_art():
+    cards = _load_all_cards()
+    missing = sorted(card_id for card_id in cards if not (CARD_ART_DIR / f"{card_id}.png").exists())
+    assert not missing, f"以下卡牌缺少独立插画: {missing}"
+    for card_id in cards:
+        image_path = CARD_ART_DIR / f"{card_id}.png"
+        data = image_path.read_bytes()
+        assert data[:8] == b"\x89PNG\r\n\x1a\n", f"{image_path} 不是有效 PNG"
+        width, height = struct.unpack(">II", data[16:24])
+        assert (width, height) == (256, 256), f"{image_path} 尺寸应为 256×256"

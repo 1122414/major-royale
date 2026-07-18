@@ -23,7 +23,18 @@ assets/
 | 卡牌类型回退 | `{card_type}.png` | 96×96 | 是 |
 | UI / 地点图标 | 语义化英文名 `.svg` | 64×64 viewBox | 是 |
 
-运行时不直接引用生成器原图，只引用上述标准化资产。卡牌组件先查找卡牌 ID 插画，不存在时按专业核心牌、类型图标的顺序回退。
+运行时不直接引用生成器原图，只引用上述标准化资产。108 张正式卡牌均应具备与卡牌 ID 同名的 256×256 插画；专业核心牌和类型图标只作为异常回退。
+
+批量卡牌表可用项目自带工具切片：
+
+```bash
+tools/Godot.app/Contents/MacOS/Godot --headless --path . \
+  --script tools/slice_card_sheet.gd -- \
+  --sheet=/绝对路径/卡牌表.png --columns=4 --rows=4 \
+  --ids=card_a,card_b,... --output=res://assets/sprites/cards
+```
+
+切片工具会按比例计算边界，兼容生成器输出尺寸不能被网格数整除的情况，并统一缩放到 256×256。
 
 ## Godot 导入清单
 

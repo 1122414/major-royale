@@ -2,6 +2,7 @@ extends Node
 ## 全局音效 / BGM 管理器。
 
 const BGM_DIR := "res://assets/audio/bgm/"
+const SFX_VOICE_COUNT := 4
 ## 五轨默认 BGM（可替换同名文件）：menu / explore / battle / boss / victory
 const BGM_TRACKS := [
 	{"id": "menu", "name": "主页轻律", "file": "01_menu.wav", "phase": "menu"},
@@ -16,12 +17,19 @@ const BGM_TRACKS := [
 
 var _sfx_placeholders: Dictionary = {}
 var _bgm_streams: Dictionary = {}  # id -> AudioStream
+var _sfx_players: Array[AudioStreamPlayer] = []
+var _next_sfx_voice := 0
 var _menu_track_index: int = 0
 var _current_bgm_id: String = ""
 
 
 func _ready() -> void:
 	add_child(sfx_player)
+	_sfx_players.append(sfx_player)
+	for _voice_index in range(1, SFX_VOICE_COUNT):
+		var voice := AudioStreamPlayer.new()
+		add_child(voice)
+		_sfx_players.append(voice)
 	add_child(music_player)
 	music_player.finished.connect(_on_music_finished)
 	_generate_placeholders()
@@ -37,9 +45,10 @@ func _exit_tree() -> void:
 
 func stop_all() -> void:
 	_current_bgm_id = ""
-	if is_instance_valid(sfx_player):
-		sfx_player.stop()
-		sfx_player.stream = null
+	for voice in _sfx_players:
+		if is_instance_valid(voice):
+			voice.stop()
+			voice.stream = null
 	if is_instance_valid(music_player):
 		music_player.stop()
 		music_player.stream = null
@@ -59,14 +68,18 @@ func _apply_volumes() -> void:
 
 
 func _generate_placeholders() -> void:
-	# 柔和短音：低音量 + 包络淡入淡出，避免刺耳「滴」声
+	# 小体积程序化音效：不同轮廓负责操作、卡牌、答辩窗口与结算反馈。
 	_sfx_placeholders["click"] = _generate_soft_tone(220.0, 0.06, 0.12)
-	_sfx_placeholders["card_play"] = _generate_soft_tone(330.0, 0.08, 0.14)
+	_sfx_placeholders["card_play"] = _generate_arpeggio(PackedFloat32Array([330.0, 440.0]), 0.1, 0.13)
 	_sfx_placeholders["attack"] = _generate_soft_noise(0.12, 0.18)
-	_sfx_placeholders["shield"] = _generate_soft_tone(196.0, 0.18, 0.12)
-	_sfx_placeholders["heal"] = _generate_soft_tone(392.0, 0.2, 0.12)
-	_sfx_placeholders["win"] = _generate_soft_tone(523.0, 0.35, 0.14)
-	_sfx_placeholders["lose"] = _generate_soft_tone(130.0, 0.4, 0.1)
+	_sfx_placeholders["shield"] = _generate_arpeggio(PackedFloat32Array([196.0, 246.9]), 0.18, 0.11)
+	_sfx_placeholders["heal"] = _generate_arpeggio(PackedFloat32Array([392.0, 523.3]), 0.2, 0.11)
+	_sfx_placeholders["perfect"] = _generate_arpeggio(PackedFloat32Array([392.0, 523.3, 659.3]), 0.3, 0.13)
+	_sfx_placeholders["dodge"] = _generate_arpeggio(PackedFloat32Array([523.3, 392.0]), 0.14, 0.1)
+	_sfx_placeholders["brace"] = _generate_arpeggio(PackedFloat32Array([174.6, 220.0]), 0.2, 0.11)
+	_sfx_placeholders["damage"] = _generate_soft_noise(0.16, 0.22)
+	_sfx_placeholders["win"] = _generate_arpeggio(PackedFloat32Array([392.0, 523.3, 659.3]), 0.42, 0.14)
+	_sfx_placeholders["lose"] = _generate_arpeggio(PackedFloat32Array([196.0, 164.8, 130.8]), 0.45, 0.1)
 
 
 func _generate_soft_tone(frequency: float, duration: float, amplitude: float) -> AudioStreamWAV:
@@ -95,6 +108,33 @@ func _generate_soft_tone(frequency: float, duration: float, amplitude: float) ->
 	return wav
 
 
+func _generate_arpeggio(frequencies: PackedFloat32Array, duration: float, amplitude: float) -> AudioStreamWAV:
+	var sample_rate := 22050
+	var frame_count := int(sample_rate * duration)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.stereo = false
+	wav.mix_rate = sample_rate
+
+	var data := PackedByteArray()
+	data.resize(frame_count * 2)
+	var note_count := maxi(frequencies.size(), 1)
+	var note_duration := duration / float(note_count)
+	for i in frame_count:
+		var t := float(i) / float(sample_rate)
+		var note_index := mini(int(t / note_duration), note_count - 1)
+		var note_time := fmod(t, note_duration)
+		var frequency := frequencies[note_index] if not frequencies.is_empty() else 220.0
+		var note_env := minf(note_time / 0.01, 1.0) * clampf((note_duration - note_time) / maxf(0.025, note_duration * 0.45), 0.0, 1.0)
+		var sample := (
+			sin(t * frequency * TAU)
+			+ sin(t * frequency * 2.0 * TAU) * 0.18
+		) * amplitude * note_env
+		data.encode_s16(i * 2, clampi(int(sample * 32767.0), -32768, 32767))
+	wav.data = data
+	return wav
+
+
 func _generate_soft_noise(duration: float, amplitude: float) -> AudioStreamWAV:
 	var sample_rate := 22050
 	var frame_count := int(sample_rate * duration)
@@ -105,6 +145,8 @@ func _generate_soft_noise(duration: float, amplitude: float) -> AudioStreamWAV:
 
 	var data := PackedByteArray()
 	data.resize(frame_count * 2)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 314159
 	var prev := 0.0
 	for i in frame_count:
 		var t := float(i) / float(sample_rate)
@@ -113,7 +155,7 @@ func _generate_soft_noise(duration: float, amplitude: float) -> AudioStreamWAV:
 		if t > duration - release:
 			env = maxf(0.0, (duration - t) / release)
 		# 简单低通噪声，更闷、不刺耳
-		var n := (randf() * 2.0 - 1.0)
+		var n := rng.randf_range(-1.0, 1.0)
 		prev = prev * 0.85 + n * 0.15
 		var sample := prev * amplitude * env
 		var s16 := clampi(int(sample * 32767.0), -32768, 32767)
@@ -215,10 +257,12 @@ func _try_save_wav(res_path: String, stream: AudioStream) -> void:
 
 func play_sfx(sfx_name: String) -> void:
 	var stream = _sfx_placeholders.get(sfx_name)
-	if stream == null:
+	if stream == null or _sfx_players.is_empty():
 		return
-	sfx_player.stream = stream
-	sfx_player.play()
+	var voice := _sfx_players[_next_sfx_voice % _sfx_players.size()]
+	_next_sfx_voice = (_next_sfx_voice + 1) % _sfx_players.size()
+	voice.stream = stream
+	voice.play()
 
 
 func play_music(stream: AudioStream) -> void:
@@ -279,4 +323,6 @@ func set_music_volume(volume: float) -> void:
 
 
 func set_sfx_volume(volume: float) -> void:
-	sfx_player.volume_db = linear_to_db(clampf(volume, 0.001, 1.0))
+	var volume_db := linear_to_db(clampf(volume, 0.001, 1.0))
+	for voice in _sfx_players:
+		voice.volume_db = volume_db

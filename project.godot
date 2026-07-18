@@ -22,7 +22,7 @@ UIColors="*res://src/ui/ui_colors.gd"
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 
 [dotnet]
 project/assembly_name="专业大逃杀"
@@ -68,6 +68,7 @@ pause_game={"deadzone": 0.5, "events": [Object(InputEventKey,"resource_local_to_
 renderer/rendering_method="mobile"
 textures/canvas_textures/default_texture_filter=0
 textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.008, 0.024, 0.032, 1)
 
 [gui]
 theme/custom="res://src/ui/theme.tres"

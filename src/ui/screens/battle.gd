@@ -600,14 +600,17 @@ func _show_enemy_turn_feedback(intent_id: String, before: Dictionary, after: Dic
 	match outcome:
 		"perfect":
 			message_label.text = "精准反驳：打断行动并反击，下回合 +1 能量"
-			AudioManager.play_sfx("attack")
+			AudioManager.play_sfx("perfect")
 			_vibrate_controllers(0.45, 0.35, 0.16)
 		"dodge":
 			message_label.text = "换位成功：伤害减半并避开控制效果"
+			AudioManager.play_sfx("dodge")
 		"brace":
 			message_label.text = "正面招架：获得护盾并降低 25% 伤害"
+			AudioManager.play_sfx("brace")
 		"miss":
 			message_label.text = "答辩失误：承受完整行动"
+			AudioManager.play_sfx("damage")
 
 func _on_skill() -> void:
 	if _defense_active:

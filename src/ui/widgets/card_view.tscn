@@ -58,7 +58,7 @@ autowrap_mode = 2
 
 [node name="IconLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 54)
+custom_minimum_size = Vector2(0, 72)
 theme_override_font_sizes/font_size = 36
 text = "⚔"
 horizontal_alignment = 1
