@@ -1,6 +1,8 @@
 extends Node2D
 ## 可移动校园探索竖切：世界移动、五建筑交互与位置恢复。
 
+const CampusRouteScript := preload("res://src/logic/campus_route.gd")
+
 @onready var player: CampusPlayer = $World/Player
 @onready var hotspots: Node2D = $World/Hotspots
 @onready var pressure_zone: Polygon2D = $World/PressureZone
@@ -90,37 +92,33 @@ func _prepare_hotspot_activation(hotspot: CampusHotspot) -> bool:
 	GameState.campus_player_position = player.global_position
 	hud.show_message("%s：%s" % [hotspot.display_name, hotspot.description])
 
-	var battle_enemy_id := ""
-	match hotspot.location_id:
-		"teaching":
-			if first_visit:
-				battle_enemy_id = "gpa_anxiety"
-		"library":
-			if first_visit:
-				battle_enemy_id = "ai_interviewer"
-		"sports":
-			var required := ["teaching", "library", "dorm", "cafeteria"]
-			var all_ready := true
-			for location_id in required:
-				if location_id not in GameState.campus_visited_locations:
-					all_ready = false
-					break
-			var boss_defeated := false
-			for defeated in GameState.run_enemies_defeated:
-				if str(defeated.get("id", "")) == "employment_pressure":
-					boss_defeated = true
-					break
-			if all_ready and not boss_defeated:
-				battle_enemy_id = "employment_pressure"
+	var battle_enemy_id := CampusRouteScript.next_enemy_id(hotspot.location_id, GameState.run_enemies_defeated)
 	if not battle_enemy_id.is_empty():
 		GameState.run_progress += 1
 		GameState.player_stats["current_enemy_id"] = battle_enemy_id
 		hud.refresh()
 		_refresh_pressure_world()
 		return true
+	hud.show_message("%s：%s" % [hotspot.display_name, _route_status_message(hotspot.location_id)])
 	hud.refresh()
 	_refresh_pressure_world()
 	return false
+
+
+func _route_status_message(location_id: String) -> String:
+	if location_id == "sports" and CampusRouteScript.is_finale_ready(GameState.run_enemies_defeated):
+		return "终局已经完成，本区暂无新的挑战。"
+	var remaining := CampusRouteScript.remaining_enemy_ids(GameState.run_enemies_defeated)
+	if remaining.is_empty():
+		return "所有区域挑战均已完成。"
+	var progress := CampusRouteScript.location_progress(location_id, GameState.run_enemies_defeated)
+	if bool(progress.get("completed", false)):
+		return "本区挑战已清空，终局前还需完成其他区域。"
+	return _hotspot_description_fallback(location_id)
+
+
+func _hotspot_description_fallback(location_id: String) -> String:
+	return "继续探索，准备下一场校园遭遇。" if location_id != "sports" else "先完成各区域挑战，再返回操场参加终极答辩。"
 
 
 func _open_hotspot_event(hotspot: CampusHotspot) -> void:
@@ -160,7 +158,9 @@ func _on_event_choice_selected(choice_index: int) -> void:
 		result += "\n\n体力已经耗尽，本次校园生存结束。"
 		continue_label = "查看本局总结"
 	if not _pending_run_end_after_event and _pending_hotspot != null and _pending_hotspot.location_id == "sports" and not _pending_battle_after_event:
-		result += "\n\n终局尚未开启：先完成教学楼、图书馆、宿舍和食堂的准备。"
+		var remaining := CampusRouteScript.remaining_enemy_ids(GameState.run_enemies_defeated)
+		if not remaining.is_empty():
+			result += "\n\n终局尚未开启：还需击败 %d 名校园竞争者。" % remaining.size()
 	hud.show_event_result(result, continue_label)
 	hud.refresh()
 	_refresh_pressure_world()

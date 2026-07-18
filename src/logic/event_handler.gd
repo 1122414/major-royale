@@ -47,6 +47,7 @@ func _apply_effect(effect: Dictionary) -> String:
 
 	if type == "heal":
 		var healed := GameState.heal_run(value)
+		Achievements.try_after_rest(GameState.run_hp >= GameState.run_max_hp)
 		return "【恢复】生命 +%d（当前 %d/%d）" % [healed, GameState.run_hp, GameState.run_max_hp]
 	elif type == "damage":
 		var dealt := GameState.damage_run(value)

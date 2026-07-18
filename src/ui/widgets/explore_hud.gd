@@ -10,6 +10,7 @@ const STAT_BAR_SCENE := preload("res://src/ui/widgets/stat_bar.tscn")
 const MINIMAP_SCENE := preload("res://src/ui/widgets/pressure_minimap.tscn")
 const ObjectiveTrackerScript := preload("res://src/logic/objective_tracker.gd")
 const StatLex := preload("res://src/logic/stat_lexicon.gd")
+const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 @onready var major_label: Label = $TopBar/Margin/Row/Identity/MajorLabel
 @onready var area_label: Label = $TopBar/Margin/Row/Identity/AreaLabel
@@ -94,7 +95,7 @@ func refresh() -> void:
 	_minimap.refresh()
 	vignette.set_pressure(GameState.run_progress)
 
-	_objectives.refresh(GameState.campus_visited_locations)
+	_objectives.refresh(GameState.campus_visited_locations, GameState.run_enemies_defeated)
 	main_title.text = str(_objectives.main_objective.get("title", "当前目标"))
 	main_description.text = str(_objectives.main_objective.get("description", ""))
 	for child in optional_list.get_children():
@@ -103,7 +104,7 @@ func refresh() -> void:
 		var label := Label.new()
 		var completed := bool(objective.get("completed", false))
 		label.text = "%s  %s" % ["✓" if completed else "□", str(objective.get("title", ""))]
-		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_font_size_override("font_size", 12)
 		label.add_theme_color_override("font_color", UIColors.SUCCESS_GREEN if completed else UIColors.TEXT_MUTED)
 		optional_list.add_child(label)
 
@@ -173,7 +174,7 @@ func _clear_event_choices() -> void:
 
 
 func _danger_percent() -> int:
-	return clampi(int(round(float(GameState.run_progress) / 12.0 * 100.0)), 0, 100)
+	return clampi(int(round(float(GameState.run_progress) / 10.0 * 100.0)), 0, 100)
 
 
 func _open_bag() -> void:
@@ -206,13 +207,16 @@ func _open_status() -> void:
 		var status_id := str(buff.get("status_id", ""))
 		var info := Status.get_status_info(status_id)
 		buff_lines.append("• %s ×%d" % [info.get("name", status_id), buff.get("stacks", 1)])
-	_open_utility("当前状态", "生命 %d/%d　精神 %d/%d\n压力 %d　已探索 %d/5\n当前目标：%s\n待生效状态：%s\n\n%s" % [
+	var route_total := CampusRouteScript.all_route_enemy_ids().size()
+	var route_cleared := route_total - CampusRouteScript.remaining_enemy_ids(GameState.run_enemies_defeated).size()
+	_open_utility("当前状态", "生命 %d/%d　精神 %d/%d\n压力 %d　五区挑战 %d/%d\n当前目标：%s\n待生效状态：%s\n\n%s" % [
 		GameState.run_hp,
 		GameState.run_max_hp,
 		GameState.run_spirit,
 		GameState.run_max_spirit,
 		GameState.run_progress,
-		GameState.campus_visited_locations.size(),
+		route_cleared,
+		route_total,
 		str(_objectives.main_objective.get("title", "继续探索")),
 		"、".join(buff_lines) if not buff_lines.is_empty() else "无",
 		stat_text,
@@ -225,10 +229,19 @@ func _open_map() -> void:
 	for location_id in GameState.campus_visited_locations:
 		visited_names.append(str(name_map.get(location_id, location_id)))
 	var visited_text := "、".join(visited_names) if not visited_names.is_empty() else "尚未探索"
-	_open_utility("校园地图", "已到达：%s\n压力危险区：%d%%\n当前目标：%s" % [
+	var route_lines: Array[String] = []
+	for location_id in CampusRouteScript.LOCATION_ORDER:
+		var progress := CampusRouteScript.location_progress(location_id, GameState.run_enemies_defeated)
+		route_lines.append("• %s %d/%d" % [
+			CampusRouteScript.LOCATION_NAMES.get(location_id, location_id),
+			progress.get("cleared", 0),
+			progress.get("total", 0),
+		])
+	_open_utility("校园地图", "已到达：%s\n压力危险区：%d%%\n当前目标：%s\n\n五区资格战\n%s" % [
 		visited_text,
 		_danger_percent(),
 		str(_objectives.main_objective.get("title", "")),
+		"\n".join(route_lines),
 	])
 
 

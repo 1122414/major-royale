@@ -5,6 +5,7 @@ const MajorResource := preload("res://src/resources/major_resource.gd")
 const CardResource := preload("res://src/resources/card_resource.gd")
 const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 const RelicCatalog := preload("res://src/logic/relic.gd")
+const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 func _ready() -> void:
 	print("TEST: 开始 Godot 数据加载测试")
@@ -28,6 +29,7 @@ func _ready() -> void:
 	assert(Config.enemies.has("gpa_anxiety"), "缺少普通敌人")
 
 	assert(not Config.events.is_empty(), "事件数据未加载")
+	_test_campus_route_coverage()
 
 	print("TEST: 所有 Godot 数据加载测试通过")
 
@@ -98,6 +100,33 @@ func _test_battle_core() -> void:
 
 	battle.end_player_turn()
 	assert(battle.state == Battle.BattleState.PLAYER_TURN, "敌人回合结束后应回到玩家回合")
+
+
+func _test_campus_route_coverage() -> void:
+	var routed_ids := CampusRouteScript.all_route_enemy_ids()
+	routed_ids.append(CampusRouteScript.BOSS_ID)
+	assert(routed_ids.size() == Config.enemies.size(), "校园路线应覆盖全部已配置敌人")
+	var unique_ids := {}
+	for enemy_id in routed_ids:
+		assert(Config.enemies.has(enemy_id), "校园路线引用了不存在的敌人: %s" % enemy_id)
+		assert(not unique_ids.has(enemy_id), "同一敌人不应重复占用多个路线节点: %s" % enemy_id)
+		unique_ids[enemy_id] = true
+	for enemy_id in Config.enemies:
+		assert(enemy_id in routed_ids, "已配置敌人必须存在真实可达路线: %s" % enemy_id)
+
+	var defeated: Array[Dictionary] = []
+	for location_id in CampusRouteScript.LOCATION_ORDER:
+		for expected_id in CampusRouteScript.LOCATION_ROUTES[location_id]:
+			assert(
+				CampusRouteScript.next_enemy_id(location_id, defeated) == expected_id,
+				"%s 路线应按顺序解锁 %s" % [location_id, expected_id]
+			)
+			defeated.append({"id": expected_id})
+	assert(CampusRouteScript.is_finale_ready(defeated), "击败五区 9 名竞争者后应解锁终局")
+	assert(
+		CampusRouteScript.next_enemy_id("sports", defeated) == CampusRouteScript.BOSS_ID,
+		"终局应在操场接入就业压力 Boss"
+	)
 
 
 func _test_battle_presentation() -> void:
@@ -406,27 +435,35 @@ func _test_campus_world() -> void:
 	var teaching := hotspots.get_node("Teaching") as CampusHotspot
 	assert(campus._prepare_hotspot_activation(teaching), "教学楼热点应准备普通战斗")
 	assert(GameState.player_stats.get("current_enemy_id", "") == "gpa_anxiety", "教学楼应接入绩点焦虑者战斗")
-	assert(hud.main_title.text == "前往图书馆", "完成教学楼后主目标应更新为图书馆")
 
 	var dorm := hotspots.get_node("Dorm") as CampusHotspot
 	var events_before := GameState.run_events_resolved
 	campus._pending_hotspot = dorm
 	campus._pending_battle_after_event = campus._prepare_hotspot_activation(dorm)
+	assert(campus._pending_battle_after_event, "首次宿舍路线应接入熬夜卷王")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "all_nighter", "宿舍首战敌人应正确")
 	campus._open_hotspot_event(dorm)
 	assert(hud.event_panel.visible, "宿舍热点应打开校园事件选择面板")
 	campus._on_event_choice_selected(-1)
 	assert(GameState.run_events_resolved == events_before + 1, "校园事件结算次数应写入局内状态")
 	assert(hud.event_title.text == "事件结果", "选择后应显示事件结果反馈")
+	campus._pending_battle_after_event = false
 	campus._on_event_continue_requested()
-	assert(not hud.event_panel.visible and player.controls_enabled, "普通事件结束后应返回可移动校园")
+	assert(not hud.event_panel.visible and player.controls_enabled, "取消排队战斗后应返回可移动校园")
 
 	var library := hotspots.get_node("Library") as CampusHotspot
-	assert(campus._prepare_hotspot_activation(library), "首次图书馆事件后应准备 AI 面试官精英战")
-	assert(GameState.player_stats.get("current_enemy_id", "") == "ai_interviewer", "图书馆应接入 AI 面试官")
+	assert(campus._prepare_hotspot_activation(library), "首次图书馆事件后应准备抢座学霸战")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "seat_grabber", "图书馆首战敌人应正确")
 	var cafeteria := hotspots.get_node("Cafeteria") as CampusHotspot
-	assert(not campus._prepare_hotspot_activation(cafeteria), "食堂应作为纯事件与补给热点")
+	assert(campus._prepare_hotspot_activation(cafeteria), "食堂路线应接入甲方幻影")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "client_phantom", "食堂首战敌人应正确")
 	var sports := hotspots.get_node("Sports") as CampusHotspot
-	assert(campus._prepare_hotspot_activation(sports), "完成四区准备后操场应解锁终局 Boss")
+	assert(campus._prepare_hotspot_activation(sports), "操场应先接入体育特长生资格战")
+	assert(GameState.player_stats.get("current_enemy_id", "") == "sports_student", "操场首战敌人应正确")
+	GameState.run_enemies_defeated.clear()
+	for enemy_id in CampusRouteScript.all_route_enemy_ids():
+		GameState.run_enemies_defeated.append({"id": enemy_id, "name": enemy_id, "type": "normal"})
+	assert(campus._prepare_hotspot_activation(sports), "清空五区资格战后操场应解锁终局 Boss")
 	assert(GameState.player_stats.get("current_enemy_id", "") == "employment_pressure", "操场终局应接入就业压力 Boss")
 	var pressure_zone: Polygon2D = campus.get_node("World/PressureZone")
 	assert(pressure_zone.polygon.size() == 4, "压力增加后世界层应出现危险区")

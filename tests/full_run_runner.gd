@@ -26,17 +26,22 @@ func _run_full_game() -> void:
 	major_select.get_node("SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/StartSelectedButton").pressed.emit()
 
 	var campus = await _wait_for_scene("CampusExploreScreen")
-	await _resolve_hotspot(campus, "Teaching", true)
-	await _win_current_battle("gpa_anxiety")
-	await _continue_result_to_reward()
-	campus = await _claim_reward_and_return()
-
-	await _resolve_hotspot(campus, "Dorm", false)
-	await _resolve_hotspot(campus, "Cafeteria", false)
-	await _resolve_hotspot(campus, "Library", true)
-	await _win_current_battle("ai_interviewer")
-	await _continue_result_to_reward()
-	campus = await _claim_reward_and_return()
+	var route := [
+		{"hotspot": "Teaching", "enemy": "gpa_anxiety"},
+		{"hotspot": "Teaching", "enemy": "ai_interviewer"},
+		{"hotspot": "Library", "enemy": "seat_grabber"},
+		{"hotspot": "Library", "enemy": "paper_reviewer"},
+		{"hotspot": "Dorm", "enemy": "all_nighter"},
+		{"hotspot": "Dorm", "enemy": "all_nighter_king"},
+		{"hotspot": "Cafeteria", "enemy": "client_phantom"},
+		{"hotspot": "Sports", "enemy": "sports_student"},
+		{"hotspot": "Sports", "enemy": "sports_ace"},
+	]
+	for encounter in route:
+		await _resolve_hotspot(campus, str(encounter.hotspot), true)
+		await _win_current_battle(str(encounter.enemy))
+		await _continue_result_to_reward()
+		campus = await _claim_reward_and_return()
 
 	await _resolve_hotspot(campus, "Sports", true)
 	await _win_current_battle("employment_pressure")
@@ -46,9 +51,9 @@ func _run_full_game() -> void:
 
 	var summary = await _wait_for_scene("RunSummaryScreen")
 	assert("通过了终极答辩" in summary.get_node("Scroll/BodyLabel").text, "整局通关总结应记录终极答辩")
-	assert(GameState.run_battles_won == 3, "竖切整局应完成普通战、AI 精英战与 Boss 三场胜利")
-	assert(GameState.campus_visited_locations.size() == 5, "竖切整局应实际访问五个校园热点")
-	assert(GameState.run_events_resolved == 5, "竖切整局应结算五个热点事件")
+	assert(GameState.run_battles_won == 10, "整局应完成五区 9 场资格战与 1 场 Boss 战")
+	assert(GameState.campus_visited_locations.size() == 5, "整局应实际访问五个校园热点")
+	assert(GameState.run_events_resolved == 10, "整局应为每场路线遭遇结算一次热点事件")
 	summary.get_node("ContinueButton").pressed.emit()
 	await _wait_for_scene("MenuScreen")
 

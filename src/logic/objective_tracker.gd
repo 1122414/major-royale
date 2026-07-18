@@ -1,45 +1,86 @@
 class_name ObjectiveTracker
 extends RefCounted
-## 探索目标派生器：根据已访问热点生成当前主目标与可选目标。
+## 探索目标派生器：根据五区挑战进度生成当前主目标与区域清单。
+
+const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 var main_objective: Dictionary = {}
 var optional_objectives: Array[Dictionary] = []
 
 
-func refresh(visited_locations: Array[String]) -> void:
-	if "teaching" not in visited_locations:
+func refresh(visited_locations: Array[String], defeated_enemies: Array = []) -> void:
+	var all_route_enemies := CampusRouteScript.all_route_enemy_ids()
+	var remaining := CampusRouteScript.remaining_enemy_ids(defeated_enemies)
+	var cleared_count := all_route_enemies.size() - remaining.size()
+	var boss_defeated := _was_defeated(CampusRouteScript.BOSS_ID, defeated_enemies)
+
+	if boss_defeated:
 		main_objective = {
-			"id": "first_classroom",
-			"title": "前往教学楼",
-			"description": "进入教学楼，完成首次课堂挑战。",
-			"target": "teaching",
-		}
-	elif "library" not in visited_locations:
-		main_objective = {
-			"id": "find_library_clue",
-			"title": "前往图书馆",
-			"description": "到达图书馆，寻找下一阶段线索。",
-			"target": "library",
-		}
-	else:
-		main_objective = {
-			"id": "prepare_finale",
-			"title": "准备终局挑战",
-			"description": "继续探索校园热点，提升生存准备。",
+			"id": "campus_cleared",
+			"title": "校园挑战已完成",
+			"description": "你已经通过终极答辩。",
 			"target": "sports",
 		}
+	elif remaining.is_empty():
+		main_objective = {
+			"id": "finale",
+			"title": "前往操场 · 终极答辩",
+			"description": "五区资格战已全部完成，就业压力正在操场等待。",
+			"target": "sports",
+		}
+	else:
+		var target := _recommended_location(visited_locations, defeated_enemies)
+		var enemy_id := CampusRouteScript.next_enemy_id(target, defeated_enemies)
+		main_objective = {
+			"id": "route_%s" % target,
+			"title": "前往%s" % CampusRouteScript.LOCATION_NAMES.get(target, target),
+			"description": "校园竞争者 %d/%d · 下一战：%s" % [
+				cleared_count,
+				all_route_enemies.size(),
+				_enemy_name(enemy_id),
+			],
+			"target": target,
+		}
 
-	optional_objectives = [
-		_make_optional("visit_cafeteria", "在食堂探索一次", "cafeteria", visited_locations),
-		_make_optional("visit_dorm", "在宿舍探索一次", "dorm", visited_locations),
-		_make_optional("visit_sports", "到操场踩点一次", "sports", visited_locations),
-	]
+	optional_objectives.clear()
+	for location_id in CampusRouteScript.LOCATION_ORDER:
+		var progress := CampusRouteScript.location_progress(location_id, defeated_enemies)
+		var next_enemy_id := str(progress.get("next_enemy_id", ""))
+		var title := "%s %d/%d" % [
+			CampusRouteScript.LOCATION_NAMES.get(location_id, location_id),
+			progress.get("cleared", 0),
+			progress.get("total", 0),
+		]
+		if not next_enemy_id.is_empty() and next_enemy_id != CampusRouteScript.BOSS_ID:
+			title += " · %s" % _enemy_name(next_enemy_id)
+		optional_objectives.append({
+			"id": "route_%s" % location_id,
+			"title": title,
+			"target": location_id,
+			"completed": bool(progress.get("completed", false)),
+		})
 
 
-func _make_optional(id: String, title: String, target: String, visited_locations: Array[String]) -> Dictionary:
-	return {
-		"id": id,
-		"title": title,
-		"target": target,
-		"completed": target in visited_locations,
-	}
+func _recommended_location(visited_locations: Array[String], defeated_enemies: Array) -> String:
+	for location_id in CampusRouteScript.LOCATION_ORDER:
+		if location_id not in visited_locations and not CampusRouteScript.next_enemy_id(location_id, defeated_enemies).is_empty():
+			return location_id
+	for location_id in CampusRouteScript.LOCATION_ORDER:
+		var next_id := CampusRouteScript.next_enemy_id(location_id, defeated_enemies)
+		if not next_id.is_empty() and next_id != CampusRouteScript.BOSS_ID:
+			return location_id
+	return "sports"
+
+
+func _enemy_name(enemy_id: String) -> String:
+	var enemy = Config.enemies.get(enemy_id)
+	return str(enemy.name) if enemy != null else enemy_id
+
+
+func _was_defeated(enemy_id: String, defeated_enemies: Array) -> bool:
+	for enemy in defeated_enemies:
+		if enemy is Dictionary and str(enemy.get("id", "")) == enemy_id:
+			return true
+		if str(enemy) == enemy_id:
+			return true
+	return false

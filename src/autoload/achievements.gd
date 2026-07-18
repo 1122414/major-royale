@@ -4,6 +4,7 @@ extends Node
 signal achievement_unlocked(id: String)
 
 const SAVE_PATH := "user://achievements.cfg"
+const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 ## difficulty: easy / normal / hard / legendary
 const CATALOG := [
@@ -16,9 +17,10 @@ const CATALOG := [
 	{"id": "no_spirit_break", "name": "精神不倒", "desc": "通关时精神仍高于 50%。", "difficulty": "hard"},
 	{"id": "speed_runner", "name": "急行军", "desc": "在第 10 天内通关。", "difficulty": "hard"},
 	{"id": "ai_conqueror", "name": "AI 征服者", "desc": "击败全部 AI Native 敌人类型。", "difficulty": "hard"},
+	{"id": "campus_sweep", "name": "五区制霸", "desc": "在同一局击败五区全部 9 名竞争者。", "difficulty": "hard"},
 	{"id": "sole_survivor", "name": "唯一上岸者", "desc": "通关终极答辩。", "difficulty": "legendary"},
 	{"id": "perfectionist", "name": "完美答辩", "desc": "通关时生命高于 80%。", "difficulty": "legendary"},
-	{"id": "all_majors", "name": "全专业通关", "desc": "用 3 个不同专业通关（累计）。", "difficulty": "legendary"},
+	{"id": "all_majors", "name": "全专业通关", "desc": "用 5 个不同专业通关（累计）。", "difficulty": "legendary"},
 ]
 
 var unlocked: Dictionary = {}  # id -> unix time
@@ -82,6 +84,8 @@ func try_after_battle_win(enemy_id: String, was_elite_or_ai: bool) -> void:
 			save_achievements()
 		if "ai_interviewer" in defeated_ai_ids and "paper_reviewer" in defeated_ai_ids:
 			unlock("ai_conqueror")
+	if CampusRouteScript.remaining_enemy_ids(GameState.run_enemies_defeated).is_empty():
+		unlock("campus_sweep")
 
 
 func try_after_rest(healed_to_full: bool) -> void:
@@ -101,7 +105,7 @@ func try_after_clear() -> void:
 	if mid != "" and mid not in cleared_majors:
 		cleared_majors.append(mid)
 		save_achievements()
-	if cleared_majors.size() >= 3:
+	if cleared_majors.size() >= 5:
 		unlock("all_majors")
 
 
