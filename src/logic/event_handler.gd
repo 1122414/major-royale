@@ -4,6 +4,7 @@ extends RefCounted
 ## 处理地图事件效果（读写 GameState 一局持久化状态）。
 
 const StatLex := preload("res://src/logic/stat_lexicon.gd")
+const RelicCat := preload("res://src/logic/relic.gd")
 
 signal event_resolved(message: String)
 
@@ -16,14 +17,17 @@ func _init(stats: Dictionary) -> void:
 
 func apply_event(event: EventResource, choice_index: int = -1) -> String:
 	var effects: Array[Dictionary] = []
+	var raw_effects: Array = event.effects
 	if choice_index >= 0 and choice_index < event.choices.size():
-		effects = event.choices[choice_index].get("effects", [])
-	else:
-		effects = event.effects
+		raw_effects = event.choices[choice_index].get("effects", [])
+	for effect in raw_effects:
+		if effect is Dictionary:
+			effects.append(effect)
 
 	var messages: Array[String] = []
 	for effect in effects:
 		messages.append(_apply_effect(effect))
+	GameState.add_event_flag("event:%s" % event.id)
 	return "\n".join(messages)
 
 
@@ -86,16 +90,58 @@ func _apply_effect(effect: Dictionary) -> String:
 	elif type == "credit_points":
 		GameState.credit_points += value
 		return "【信用点】+%d（当前 %d）" % [value, GameState.credit_points]
+	elif type == "set_flag":
+		var flag_id := str(effect.get("flag", ""))
+		GameState.add_event_flag(flag_id)
+		return "【线索】%s" % str(effect.get("message", "这次选择会影响后续校园事件。"))
+	elif type == "relic":
+		var relic_id := str(effect.get("relic_id", ""))
+		if not RelicCat.RELICS.has(relic_id):
+			return "【遗物】未知遗物，未写入本局"
+		var already_owned := GameState.has_relic(relic_id)
+		GameState.add_relic(relic_id)
+		var info := RelicCat.get_info(relic_id)
+		return "【遗物】%s%s\n　↳ %s" % [
+			info.get("name", relic_id),
+			"（已持有）" if already_owned else "",
+			info.get("desc", ""),
+		]
 	else:
 		return "无效果"
 
 
 static func pick_random_event(area_id: String, rng: RandomNumberGenerator) -> EventResource:
 	var candidates: Array[EventResource] = []
+	var priority_candidates: Array[EventResource] = []
+	var completed_candidates: Array[EventResource] = []
 	for event_id in Config.events:
 		var event: EventResource = Config.events[event_id]
-		if event.area == area_id or event.area.is_empty():
-			candidates.append(event)
+		if event.area != area_id and not event.area.is_empty():
+			continue
+		var requirements_met := true
+		for required_flag in event.requires_flags:
+			if not GameState.has_event_flag(required_flag):
+				requirements_met = false
+				break
+		if not requirements_met:
+			continue
+		if GameState.has_event_flag("event:%s" % event.id):
+			completed_candidates.append(event)
+			continue
+		candidates.append(event)
+		if not event.priority_flags.is_empty():
+			var priority_met := true
+			for priority_flag in event.priority_flags:
+				if not GameState.has_event_flag(priority_flag):
+					priority_met = false
+					break
+			if priority_met:
+				priority_candidates.append(event)
+	if not priority_candidates.is_empty():
+		candidates = priority_candidates
+	if candidates.is_empty():
+		candidates = completed_candidates
 	if candidates.is_empty():
 		return null
+	candidates.sort_custom(func(a: EventResource, b: EventResource) -> bool: return a.id < b.id)
 	return candidates[rng.randi() % candidates.size()]

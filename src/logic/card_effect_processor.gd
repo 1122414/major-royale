@@ -44,7 +44,12 @@ func _process_effect(effect: Resource, caster: Character, target: Character, car
 			if caster.is_player and caster.major_id == "finance":
 				actual_target.gain_shield(2)
 		"heal":
-			actual_target.heal(value)
+			var heal_amount := value
+			if caster.is_player and GameState.has_relic("field_kit"):
+				heal_amount += 3
+			var healed := actual_target.heal(heal_amount)
+			if caster.is_player and actual_target == caster and GameState.has_relic("field_kit"):
+				actual_target.gain_shield(maxi(0, heal_amount - healed))
 		"spirit_damage":
 			actual_target.lose_spirit(value)
 		"draw":

@@ -49,6 +49,8 @@ func _ready() -> void:
 	_test_professional_asset_coverage()
 	_test_card_effect_and_cost_feedback()
 	_test_specialization_rules()
+	_test_event_chains_and_relic_synergies()
+	_test_elite_affix_variety()
 	_test_ai_decision_whitelist()
 	_test_rule_integrity_regressions()
 	_test_defense_window_core()
@@ -381,6 +383,136 @@ func _test_scaled_finishers() -> void:
 	var hp_before_masterpiece := arts_battle.enemy.hp
 	assert(arts_battle.play_card(0), "代表作应可打出")
 	assert(hp_before_masterpiece - arts_battle.enemy.hp == 18, "代表作应按本回合出牌数放大")
+
+
+func _test_event_chains_and_relic_synergies() -> void:
+	assert(Config.events.size() == 14, "校园事件应扩展为 14 个，包含两条跨区域事件链")
+	GameState.start_run("computer")
+	var handler := EventHandler.new(GameState.player_stats)
+	handler.apply_event(Config.events["pop_quiz"], 0)
+	assert(GameState.has_event_flag("study_group"), "认真整理错题应开启学习小组事件链")
+	assert(GameState.has_event_flag("event:pop_quiz"), "已完成事件应写入本局去重标识")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var library_followup := EventHandler.pick_random_event("library", rng)
+	assert(library_followup != null and library_followup.id == "group_research", "学习小组线索应优先触发图书馆后续")
+	handler.apply_event(library_followup, 0)
+	assert(GameState.has_event_flag("published_outline"), "主导联合研究应开启公开展示终章")
+	var showcase := EventHandler.pick_random_event("playground", rng)
+	assert(showcase != null and showcase.id == "research_showcase", "研究提纲应优先触发操场终章")
+	handler.apply_event(showcase)
+	assert(GameState.has_relic("mentor_letter"), "公开展示终章应发放导师推荐信")
+
+	GameState.start_run("medicine")
+	handler = EventHandler.new(GameState.player_stats)
+	handler.apply_event(Config.events["stay_up"], 0)
+	assert(GameState.has_event_flag("roommate_helped"), "帮助室友应开启互助事件链")
+	var meal_followup := EventHandler.pick_random_event("cafeteria", rng)
+	assert(meal_followup != null and meal_followup.id == "meal_return", "室友互助应优先触发食堂回礼")
+	handler.apply_event(meal_followup)
+	assert(GameState.has_event_flag("mutual_aid"), "食堂回礼应开启互助接力终章")
+	var relay := EventHandler.pick_random_event("playground", rng)
+	assert(relay != null and relay.id == "relay_support", "互助线索应优先触发操场接力终章")
+	handler.apply_event(relay)
+	assert(GameState.has_relic("noise_cancelling"), "互助接力终章应发放降噪耳机")
+
+	_test_major_relic_effects()
+
+
+func _test_major_relic_effects() -> void:
+	assert(RelicCatalog.all_ids().size() == 15, "遗物池应包含 10 件通用遗物和 5 件专业遗物")
+	var major_relics := {
+		"computer": "rubber_duck",
+		"law": "red_pen",
+		"medicine": "field_kit",
+		"finance": "risk_terminal",
+		"arts": "backstage_pass",
+	}
+	for major_id in major_relics:
+		var relic_id := str(major_relics[major_id])
+		assert(str(RelicCatalog.get_info(relic_id).get("major_id", "")) == major_id, "专业遗物归属应与专业一致")
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(major_id)
+		for _i in 40:
+			var candidate := RelicCatalog.random_relic(rng, true, [], major_id)
+			var required_major := str(RelicCatalog.get_info(candidate).get("major_id", ""))
+			assert(required_major.is_empty() or required_major == major_id, "奖励不得向 %s 发放其他专业遗物" % major_id)
+
+	GameState.start_run("computer")
+	GameState.run_relic_ids = ["rubber_duck"]
+	var computer_player := GameState.create_battle_player()
+	var computer_battle := Battle.new(computer_player, Config.enemies["gpa_anxiety"])
+	computer_player.hand = [Config.cards["quick_script"]]
+	computer_player.draw_pile = [Config.cards["strike"], Config.cards["defend"]]
+	computer_battle.energy = 3
+	computer_battle.play_card(0)
+	assert(computer_player.hand.size() == 2, "橡皮鸭应让每回合第一张技能牌额外抽 1 张")
+
+	GameState.start_run("law")
+	GameState.run_relic_ids = ["red_pen"]
+	var law_player := GameState.create_battle_player()
+	var law_battle := Battle.new(law_player, Config.enemies["gpa_anxiety"])
+	law_player.hand = [Config.cards["burden_of_proof"]]
+	law_battle.energy = 3
+	law_battle.play_card(0)
+	assert(law_player.shield == 3, "红笔批注应在控制牌后提供 3 点护盾")
+
+	GameState.start_run("medicine")
+	GameState.run_relic_ids = ["field_kit"]
+	var medicine_player := GameState.create_battle_player()
+	var medicine_battle := Battle.new(medicine_player, Config.enemies["gpa_anxiety"])
+	medicine_player.hp = medicine_player.max_hp - 1
+	medicine_player.hand = [Config.cards["first_aid"]]
+	medicine_battle.energy = 3
+	medicine_battle.play_card(0)
+	assert(medicine_player.hp == medicine_player.max_hp and medicine_player.shield == 8, "诊疗箱应提高治疗并把 8 点溢出转为护盾")
+
+	GameState.start_run("finance")
+	GameState.run_relic_ids = ["risk_terminal"]
+	var finance_player := GameState.create_battle_player()
+	var finance_battle := Battle.new(finance_player, Config.enemies["gpa_anxiety"])
+	finance_player.gain_shield(10)
+	finance_player.hand = [Config.cards["bull_run"]]
+	finance_battle.energy = 3
+	var hp_before_risk := finance_battle.enemy.hp
+	finance_battle.play_card(0)
+	assert(hp_before_risk - finance_battle.enemy.hp == 12, "风险终端应在 10 护盾时为攻击追加 4 点伤害")
+
+	GameState.start_run("arts")
+	GameState.run_relic_ids = ["backstage_pass"]
+	var arts_player := GameState.create_battle_player()
+	var arts_battle := Battle.new(arts_player, Config.enemies["gpa_anxiety"])
+	arts_player.hand = [Config.cards["critique"]]
+	arts_battle.energy = 3
+	arts_battle.play_card(0)
+	assert(arts_battle.energy == 3, "后台通行证应为每回合第一张控制牌返还 1 点能量")
+
+
+func _test_elite_affix_variety() -> void:
+	GameState.start_run("computer")
+	var seen_affixes := {}
+	for battle_index in 64:
+		GameState.run_battles_won = battle_index
+		var elite_battle := Battle.new(GameState.create_battle_player(), Config.enemies["all_nighter_king"])
+		var affix_id := elite_battle.get_elite_affix_id()
+		assert(Battle.ELITE_AFFIXES.has(affix_id), "精英遭遇应从受控词缀表选择")
+		assert(not elite_battle.get_elite_affix_text().is_empty(), "精英词缀应提供可读名称与说明")
+		seen_affixes[affix_id] = true
+		match affix_id:
+			"iron_wall":
+				assert(elite_battle.enemy.shield == 14, "铁壁开题应提供 14 点开场护盾")
+			"rapid_fire":
+				assert(elite_battle._elite_damage_bonus == 3, "连环追问应提供 3 点直接伤害加成")
+			"high_pressure":
+				assert(elite_battle.player.get_status_stacks("pressure") == 2, "高压入场应施加 2 层玩家压力")
+			"counter_review":
+				assert(elite_battle.enemy.get_status_stacks("counter") == 2, "反制评审应提供 2 层反击")
+	assert(seen_affixes.keys().size() == 4, "不同局次应覆盖四种精英词缀")
+
+	GameState.run_battles_won = 5
+	var deterministic_a := Battle.new(GameState.create_battle_player(), Config.enemies["sports_ace"])
+	var deterministic_b := Battle.new(GameState.create_battle_player(), Config.enemies["sports_ace"])
+	assert(deterministic_a.get_elite_affix_id() == deterministic_b.get_elite_affix_id(), "同一局次与敌人的词缀应可确定复现")
 
 
 func _test_ai_decision_whitelist() -> void:
@@ -870,6 +1002,8 @@ func _test_run_save_roundtrip() -> void:
 	GameState.pending_buffs.append({"status_id": "shield", "stacks": 6})
 	GameState.run_relic_ids.clear()
 	GameState.run_relic_ids.append("mentor_letter")
+	GameState.run_event_flags.clear()
+	GameState.run_event_flags.append_array(["study_group", "event:pop_quiz"])
 	GameState.campus_player_position = Vector2(734, 488)
 	GameState.campus_visited_locations.clear()
 	GameState.campus_visited_locations.append_array(["teaching", "library"])
@@ -899,6 +1033,7 @@ func _test_run_save_roundtrip() -> void:
 	assert(GameState.permanent_stats.get("资源", 0) == 2, "永久属性应进入存档")
 	assert(GameState.pending_buffs == [{"status_id": "shield", "stacks": 6}], "待生效状态应进入存档")
 	assert(GameState.campus_player_position == Vector2(734, 488), "校园位置应进入存档")
+	assert(GameState.run_event_flags == ["study_group", "event:pop_quiz"], "事件链线索与完成标识应进入存档")
 
 
 func _test_event_defeat_does_not_revive() -> void:

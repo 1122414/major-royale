@@ -53,6 +53,36 @@ const RELICS := {
 		"desc": "战斗胜利学分与信用点额外 +50%。",
 		"rarity": "elite",
 	},
+	"rubber_duck": {
+		"name": "橡皮鸭调试器",
+		"desc": "【计算机】每回合第一张技能牌额外抽 1 张。",
+		"rarity": "uncommon",
+		"major_id": "computer",
+	},
+	"red_pen": {
+		"name": "红笔批注",
+		"desc": "【法学】每打出一张控制牌，获得 3 点护盾。",
+		"rarity": "uncommon",
+		"major_id": "law",
+	},
+	"field_kit": {
+		"name": "随身诊疗箱",
+		"desc": "【医学】卡牌治疗量 +3，溢出治疗转化为护盾。",
+		"rarity": "rare",
+		"major_id": "medicine",
+	},
+	"risk_terminal": {
+		"name": "风险模型终端",
+		"desc": "【金融】护盾不少于 10 时，攻击牌额外造成 4 点伤害。",
+		"rarity": "rare",
+		"major_id": "finance",
+	},
+	"backstage_pass": {
+		"name": "后台通行证",
+		"desc": "【艺术】每回合第一张控制牌返还 1 点能量。",
+		"rarity": "uncommon",
+		"major_id": "arts",
+	},
 }
 
 
@@ -67,10 +97,18 @@ static func all_ids() -> Array[String]:
 	return out
 
 
-static func random_relic(rng: RandomNumberGenerator, elite_pool: bool = false, excluded: Array = []) -> String:
+static func random_relic(
+	rng: RandomNumberGenerator,
+	elite_pool: bool = false,
+	excluded: Array = [],
+	major_id: String = "",
+) -> String:
 	var pool: Array[String] = []
 	for id in RELICS.keys():
 		if str(id) in excluded:
+			continue
+		var required_major := str(RELICS[id].get("major_id", ""))
+		if not required_major.is_empty() and required_major != major_id:
 			continue
 		var r: String = str(RELICS[id].get("rarity", "common"))
 		if elite_pool:
@@ -82,7 +120,10 @@ static func random_relic(rng: RandomNumberGenerator, elite_pool: bool = false, e
 	# 精英池耗尽时允许回落到未持有的普通遗物，但绝不重复发放已持有遗物。
 	if pool.is_empty() and elite_pool:
 		for id in RELICS.keys():
-			if str(id) not in excluded:
+			if str(id) in excluded:
+				continue
+			var required_major := str(RELICS[id].get("major_id", ""))
+			if required_major.is_empty() or required_major == major_id:
 				pool.append(str(id))
 	if pool.is_empty():
 		return ""

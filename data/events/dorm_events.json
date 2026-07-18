@@ -11,9 +11,25 @@
     {
       "id": "stay_up",
       "name": "熬夜刷题",
-      "description": "通宵刷题：学识 +1，精神 -5。",
+      "description": "室友也被截止日期困住。一起互助更稳，独自冲刺收益更高但代价更大。",
       "area": "dorm",
-      "effects": [{"type": "stat_up", "stat": "学识", "value": 1}, {"type": "spirit_damage", "value": 5}]
+      "choices": [
+        {
+          "text": "帮室友一起改（学识+1，精神-5，开启后续）",
+          "effects": [
+            {"type": "stat_up", "stat": "学识", "value": 1},
+            {"type": "spirit_damage", "value": 5},
+            {"type": "set_flag", "flag": "roommate_helped", "message": "室友记下了这份人情，食堂可能出现后续。"}
+          ]
+        },
+        {
+          "text": "独自极限冲刺（学识+2，精神-10）",
+          "effects": [
+            {"type": "stat_up", "stat": "学识", "value": 2},
+            {"type": "spirit_damage", "value": 10}
+          ]
+        }
+      ]
     }
   ]
 }

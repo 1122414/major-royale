@@ -14,6 +14,31 @@
       "area": "library",
       "description": "座位冲突：立刻受到 5 点伤害。",
       "effects": [{"type": "damage", "value": 5}]
+    },
+    {
+      "id": "group_research",
+      "name": "学习小组：联合研究",
+      "area": "library",
+      "description": "错题本变成了联合研究提纲。主导答辩能打开展示机会，稳妥分工则获得即时补给。",
+      "requires_flags": ["study_group"],
+      "priority_flags": ["study_group"],
+      "choices": [
+        {
+          "text": "主导提纲答辩（表达+1，信用点+25，开启后续）",
+          "effects": [
+            {"type": "stat_up", "stat": "表达", "value": 1},
+            {"type": "credit_points", "value": 25},
+            {"type": "set_flag", "flag": "published_outline", "message": "研究提纲入选校园展示，操场可能出现后续。"}
+          ]
+        },
+        {
+          "text": "稳妥完成分工（下场抗压×1，学分+20）",
+          "effects": [
+            {"type": "status", "status_id": "resistance", "status_stacks": 1, "target": "self"},
+            {"type": "credits", "value": 20}
+          ]
+        }
+      ]
     }
   ]
 }

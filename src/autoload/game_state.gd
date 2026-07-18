@@ -41,6 +41,7 @@ var deck_card_ids: Array[String] = []
 var permanent_stats: Dictionary = {}
 var pending_buffs: Array[Dictionary] = []  ## [{status_id, stacks}, ...]
 var run_relic_ids: Array[String] = []
+var run_event_flags: Array[String] = []
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
@@ -112,6 +113,7 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"permanent_stats": permanent_stats.duplicate(true),
 		"pending_buffs": pending_buffs.duplicate(true),
 		"run_relic_ids": run_relic_ids.duplicate(),
+		"run_event_flags": run_event_flags.duplicate(),
 		"credits": credits,
 		"credit_points": credit_points,
 		"day_count": day_count,
@@ -202,6 +204,11 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 		var normalized_relic_id := str(relic_id)
 		if not normalized_relic_id.is_empty() and normalized_relic_id not in run_relic_ids:
 			run_relic_ids.append(normalized_relic_id)
+	run_event_flags.clear()
+	for event_flag in data.get("run_event_flags", []):
+		var normalized_flag := str(event_flag).strip_edges()
+		if not normalized_flag.is_empty() and normalized_flag.length() <= 64 and normalized_flag not in run_event_flags:
+			run_event_flags.append(normalized_flag)
 	credits = maxi(0, int(data.get("credits", 0)))
 	credit_points = maxi(0, int(data.get("credit_points", 0)))
 	day_count = maxi(1, int(data.get("day_count", 1)))
@@ -360,6 +367,7 @@ func start_run(major_id: String) -> void:
 	permanent_stats = {}
 	pending_buffs = []
 	run_relic_ids.clear()
+	run_event_flags.clear()
 	last_reward_is_elite = false
 	credits = 120
 	credit_points = 560
@@ -391,6 +399,17 @@ func add_relic(relic_id: String) -> void:
 
 func has_relic(relic_id: String) -> bool:
 	return relic_id in run_relic_ids
+
+
+func add_event_flag(flag_id: String) -> void:
+	var normalized := flag_id.strip_edges()
+	if normalized.is_empty() or normalized.length() > 64 or normalized in run_event_flags:
+		return
+	run_event_flags.append(normalized)
+
+
+func has_event_flag(flag_id: String) -> bool:
+	return flag_id in run_event_flags
 
 
 func record_enemy_defeat(enemy_id: String, enemy_name: String, enemy_type: String) -> void:

@@ -14,6 +14,19 @@
       "area": "cafeteria",
       "description": "吃坏肚子：下场战斗开始时获得「压力」×2。",
       "effects": [{"type": "status", "status_id": "pressure", "status_stacks": 2, "target": "self"}]
+    },
+    {
+      "id": "meal_return",
+      "name": "室友回礼：隐藏菜单",
+      "area": "cafeteria",
+      "description": "被你帮助过的室友留好了热饭和勤工俭学报酬。",
+      "requires_flags": ["roommate_helped"],
+      "priority_flags": ["roommate_helped"],
+      "effects": [
+        {"type": "heal", "value": 12, "target": "self"},
+        {"type": "credits", "value": 20},
+        {"type": "set_flag", "flag": "mutual_aid", "message": "互助关系延续到了操场。"}
+      ]
     }
   ]
 }

@@ -17,6 +17,31 @@
       "area": "playground",
       "description": "压力圈推进 +1：非 Boss 敌人伤害提升（每点+5%，上限+40%）。",
       "effects": [{"type": "advance_pressure", "value": 1}]
+    },
+    {
+      "id": "research_showcase",
+      "name": "事件链终章：公开展示",
+      "area": "playground",
+      "description": "学习小组的研究提纲进入公开展示，导师愿意为你的终局答辩背书。",
+      "requires_flags": ["published_outline"],
+      "priority_flags": ["published_outline"],
+      "effects": [
+        {"type": "relic", "relic_id": "mentor_letter"},
+        {"type": "set_flag", "flag": "research_chain_complete", "message": "学习小组事件链已完成。"}
+      ]
+    },
+    {
+      "id": "relay_support",
+      "name": "事件链终章：互助接力",
+      "area": "playground",
+      "description": "室友和同学来为你加油，把一副降噪耳机塞进了装备包。",
+      "requires_flags": ["mutual_aid"],
+      "priority_flags": ["mutual_aid"],
+      "effects": [
+        {"type": "heal", "value": 6, "target": "self"},
+        {"type": "relic", "relic_id": "noise_cancelling"},
+        {"type": "set_flag", "flag": "mutual_aid_chain_complete", "message": "宿舍互助事件链已完成。"}
+      ]
     }
   ]
 }

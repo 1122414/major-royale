@@ -5,9 +5,12 @@ extends Node
 func _ready() -> void:
 	var screenshot_path := ""
 	var show_event := true
+	var event_id := ""
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--screenshot="):
 			screenshot_path = argument.trim_prefix("--screenshot=")
+		elif argument.begins_with("--event="):
+			event_id = argument.trim_prefix("--event=")
 		elif argument == "--no-event":
 			show_event = false
 	GameState.start_run("computer")
@@ -16,7 +19,12 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if show_event:
 		var dorm: CampusHotspot = campus.get_node("World/Hotspots/Dorm")
-		campus._on_hotspot_activated(dorm)
+		if not event_id.is_empty() and Config.events.has(event_id):
+			campus._current_event = Config.events[event_id]
+			campus._pending_hotspot = dorm
+			campus.hud.show_event(dorm.display_name, campus._current_event)
+		else:
+			campus._on_hotspot_activated(dorm)
 	if screenshot_path.is_empty():
 		return
 	for _frame in 3:

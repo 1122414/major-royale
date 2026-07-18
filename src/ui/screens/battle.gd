@@ -317,6 +317,9 @@ func _update_ui() -> void:
 		var specialty := ""
 		if _enemy_res != null:
 			specialty = str(_enemy_res.specialty)
+		var affix_text := _battle.get_elite_affix_text()
+		if not affix_text.is_empty():
+			specialty = "%s\n词缀：%s" % [specialty, affix_text] if not specialty.is_empty() else "词缀：%s" % affix_text
 		enemy_hp_label.text = "HP: %d/%d 护盾: %d" % [_battle.enemy.hp, _battle.enemy.max_hp, _battle.enemy.shield]
 		if specialty != "":
 			enemy_intent_label.text = "特长：%s\n意图: %s" % [specialty, _battle.get_enemy_intent_text()]

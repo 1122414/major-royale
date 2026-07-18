@@ -5,10 +5,22 @@
       "id": "pop_quiz",
       "name": "随堂测验",
       "area": "classroom",
-      "description": "认真作答：学识 +1；蒙混过关：精神 -5。",
+      "description": "老师突然抽查。认真整理错题可建立学习小组；临场蒙混则用精神换取人情。",
       "choices": [
-        {"text": "认真作答（学识+1）", "effects": [{"type": "stat_up", "stat": "学识", "value": 1}]},
-        {"text": "蒙混过关（精神-5）", "effects": [{"type": "spirit_damage", "value": 5}]}
+        {
+          "text": "认真整理错题（学识+1，开启后续）",
+          "effects": [
+            {"type": "stat_up", "stat": "学识", "value": 1},
+            {"type": "set_flag", "flag": "study_group", "message": "你建立了学习小组，图书馆可能出现后续。"}
+          ]
+        },
+        {
+          "text": "请同学救场（精神-5，信用点+25）",
+          "effects": [
+            {"type": "spirit_damage", "value": 5},
+            {"type": "credit_points", "value": 25}
+          ]
+        }
       ]
     },
     {

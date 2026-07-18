@@ -20,6 +20,24 @@ signal boss_phase_changed(phase_name: String)
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
 const MAX_HAND_SIZE := 10
+const ELITE_AFFIXES := {
+	"iron_wall": {
+		"name": "铁壁开题",
+		"description": "开战获得 14 点护盾。",
+	},
+	"rapid_fire": {
+		"name": "连环追问",
+		"description": "所有直接伤害 +3。",
+	},
+	"high_pressure": {
+		"name": "高压入场",
+		"description": "玩家开战获得 2 层压力。",
+	},
+	"counter_review": {
+		"name": "反制评审",
+		"description": "开战获得 2 层反击。",
+	},
+}
 const DEFENSE_WINDOW_ACTIONS: Array[String] = [
 	"attack",
 	"heavy_attack",
@@ -62,12 +80,15 @@ var _defense_window_open := false
 var _defense_outcome := "miss"
 var _incoming_damage_multiplier := 1.0
 var _next_energy_bonus := 0
+var _elite_affix_id := ""
+var _elite_damage_bonus := 0
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	player = p_player
 	enemy_resource = p_enemy_resource
 	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, p_enemy_resource.hp)
+	_select_and_apply_elite_affix()
 	_effect_processor = CardEffectProcessor.new(self)
 	# 专注≥8：最大能量 +1；精英徽章再 +1
 	max_energy = BASE_ENERGY + (1 if GameState.get_effective_stat("专注") >= 8 else 0)
@@ -101,6 +122,7 @@ func play_card(card_index: int) -> bool:
 
 	var card: Resource = player.hand[card_index]
 	var cost := get_card_cost(card_index)
+	var shield_before_card := player.shield
 
 	energy -= cost
 	if GameState.has_relic("thesis_clip") and _thesis_clip_ready and card.cost > 0:
@@ -118,6 +140,14 @@ func play_card(card_index: int) -> bool:
 	# 科学计算器：攻击额外伤害
 	if GameState.has_relic("scientific_calculator") and str(card.type) == "attack":
 		GameState.run_damage_dealt += enemy.take_damage(2)
+	if GameState.has_relic("risk_terminal") and str(card.type) == "attack" and shield_before_card >= 10:
+		GameState.run_damage_dealt += enemy.take_damage(4)
+	if GameState.has_relic("red_pen") and str(card.type) == "control":
+		player.gain_shield(3)
+	if GameState.has_relic("rubber_duck") and str(card.type) == "skill" and _turn_card_types.count("skill") == 1:
+		player.draw_cards(1, MAX_HAND_SIZE)
+	if GameState.has_relic("backstage_pass") and str(card.type) == "control" and _turn_card_types.count("control") == 1:
+		energy += 1
 
 	# 医学被动：攻击有概率弱点打击
 	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
@@ -419,6 +449,7 @@ func _enemy_control_connects() -> bool:
 
 
 func _apply_damage_to_player(damage: int) -> void:
+	damage += _elite_damage_bonus
 	# 敌人压力会削弱其所有直接伤害，每层 10%，最多 50%。
 	var enemy_pressure := enemy.get_status_stacks("pressure")
 	if enemy_pressure > 0:
@@ -679,6 +710,39 @@ func get_cards_played_this_turn() -> int:
 
 func get_bug_failure_chance() -> float:
 	return clampf(float(enemy.get_status_stacks("bug")) * 0.15, 0.0, 0.75)
+
+
+func get_elite_affix_id() -> String:
+	return _elite_affix_id
+
+
+func get_elite_affix_text() -> String:
+	if _elite_affix_id.is_empty():
+		return ""
+	var info: Dictionary = ELITE_AFFIXES.get(_elite_affix_id, {})
+	return "%s：%s" % [info.get("name", _elite_affix_id), info.get("description", "")]
+
+
+func _select_and_apply_elite_affix() -> void:
+	if str(enemy_resource.enemy_type) != "elite":
+		return
+	var affix_ids: Array = ELITE_AFFIXES.keys()
+	affix_ids.sort()
+	var key := "%s:%s:%d" % [enemy.id, GameState.player_major_id, GameState.run_battles_won]
+	_apply_elite_affix(str(affix_ids[absi(hash(key)) % affix_ids.size()]))
+
+
+func _apply_elite_affix(affix_id: String) -> void:
+	_elite_affix_id = affix_id
+	match affix_id:
+		"iron_wall":
+			enemy.gain_shield(14)
+		"rapid_fire":
+			_elite_damage_bonus = 3
+		"high_pressure":
+			player.add_status("pressure", 2)
+		"counter_review":
+			enemy.add_status("counter", 2)
 
 
 func reveal_intent() -> void:

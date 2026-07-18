@@ -44,7 +44,7 @@ def test_content_baseline():
     assert len(_json_files("majors")) == 5
     assert len(_load_all_cards()) == 108
     assert len(_load_all_enemies()) == 10
-    assert sum(1 for _ in _all_records("events", "events")) == 10
+    assert sum(1 for _ in _all_records("events", "events")) == 14
 
 
 def test_majors_have_required_fields():

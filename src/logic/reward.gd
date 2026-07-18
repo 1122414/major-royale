@@ -82,7 +82,7 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 
 	# 遗物：普通战低概率；精英战必出且可选多件
 	if is_elite:
-		var relic_a := RelicCat.random_relic(rng, true, GameState.run_relic_ids)
+		var relic_a := RelicCat.random_relic(rng, true, GameState.run_relic_ids, major_id)
 		if not relic_a.is_empty():
 			rewards.append({
 				"type": RewardType.RELIC,
@@ -92,7 +92,7 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 		var relic_exclusions := GameState.run_relic_ids.duplicate()
 		if not relic_a.is_empty():
 			relic_exclusions.append(relic_a)
-		var relic_b := RelicCat.random_relic(rng, true, relic_exclusions)
+		var relic_b := RelicCat.random_relic(rng, true, relic_exclusions, major_id)
 		if not relic_b.is_empty():
 			rewards.append({
 				"type": RewardType.RELIC,
@@ -100,7 +100,7 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 				"relic_id": relic_b,
 			})
 	elif rng.randf() < 0.35:
-		var relic_id := RelicCat.random_relic(rng, false, GameState.run_relic_ids)
+		var relic_id := RelicCat.random_relic(rng, false, GameState.run_relic_ids, major_id)
 		if not relic_id.is_empty():
 			rewards.append({
 				"type": RewardType.RELIC,

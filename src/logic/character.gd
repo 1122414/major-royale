@@ -57,10 +57,12 @@ func take_damage(amount: int) -> int:
 	return hp_before - hp
 
 
-func heal(amount: int) -> void:
+func heal(amount: int) -> int:
 	if amount <= 0:
-		return
+		return 0
+	var before := hp
 	hp = mini(hp + amount, max_hp)
+	return hp - before
 
 
 func gain_shield(amount: int) -> void:

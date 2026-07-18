@@ -1,9 +1,10 @@
 extends Node
 ## 独立整局回归：让控制器常驻 SceneTree 根节点，驱动真实场景切换直到通关。
 
-const SCENE_TIMEOUT_FRAMES := 360
+const SCENE_TIMEOUT_MSEC := 8000
 
 var _previous_ai_enabled := false
+var _previous_run_save_enabled := true
 
 
 func _ready() -> void:
@@ -14,6 +15,8 @@ func _ready() -> void:
 func _run_full_game() -> void:
 	_previous_ai_enabled = Settings.ai_enabled
 	Settings.ai_enabled = false
+	_previous_run_save_enabled = GameState.run_save_enabled
+	GameState.run_save_enabled = false
 
 	var menu := (load("res://src/ui/screens/menu.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(menu)
@@ -59,6 +62,7 @@ func _run_full_game() -> void:
 
 	print("TEST: 新游戏到唯一上岸者整局回归通过")
 	Settings.ai_enabled = _previous_ai_enabled
+	GameState.run_save_enabled = _previous_run_save_enabled
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)
@@ -85,6 +89,8 @@ func _win_current_battle(expected_enemy_id: String) -> void:
 	assert(str(screen._enemy_res.id) == expected_enemy_id, "战斗敌人与热点流程不一致")
 	var battle: Battle = screen._battle
 	battle.enemy.hp = 1
+	battle.enemy.shield = 0
+	battle.enemy.statuses.clear()
 	battle.player.hand = [Config.cards["strike"]]
 	battle.energy = 3
 	screen._on_card_clicked(0)
@@ -111,10 +117,13 @@ func _claim_reward_and_return() -> Node:
 
 
 func _wait_for_scene(scene_name: String) -> Node:
-	for _frame in SCENE_TIMEOUT_FRAMES:
+	var deadline := Time.get_ticks_msec() + SCENE_TIMEOUT_MSEC
+	while Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 		var current := get_tree().current_scene
 		if current != null and current.name == scene_name:
 			return current
 	assert(false, "等待场景超时：%s" % scene_name)
+	get_tree().quit(1)
+	await get_tree().process_frame
 	return null
