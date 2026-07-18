@@ -8,6 +8,7 @@ ROOT = Path(__file__).parent.parent
 GODOT_PATH = ROOT / "tools" / "Godot.app" / "Contents" / "MacOS" / "Godot"
 TEST_SCENE = ROOT / "tests" / "test_runner.tscn"
 FULL_RUN_SCENE = ROOT / "tests" / "full_run_runner.tscn"
+PERFORMANCE_SCENE = ROOT / "tests" / "performance_runner.tscn"
 
 
 def _run_godot_scene(scene: Path) -> subprocess.CompletedProcess[str]:
@@ -37,3 +38,10 @@ def test_full_run_automation():
     result = _run_godot_scene(FULL_RUN_SCENE)
 
     assert "新游戏到唯一上岸者整局回归通过" in result.stdout
+
+
+def test_performance_regression():
+    """验证重复战斗切场景后节点与静态内存不会持续爬升。"""
+    result = _run_godot_scene(PERFORMANCE_SCENE)
+
+    assert "次战斗场景循环通过" in result.stdout

@@ -4,6 +4,7 @@ extends Control
 const CARD_VIEW_SCENE := preload("res://src/ui/widgets/card_view.tscn")
 const STATUS_ICON_SCENE := preload("res://src/ui/widgets/status_icon.tscn")
 const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
+const RelicCatalog := preload("res://src/logic/relic.gd")
 
 @onready var enemy_name_label: Label = $EnemyPanel/VBoxContainer/EnemyNameLabel
 @onready var enemy_hp_label: Label = $EnemyPanel/VBoxContainer/EnemyHPLabel
@@ -57,6 +58,8 @@ var _defense_active := false
 var _defense_context: Dictionary = {}
 var _defense_elapsed := 0.0
 var _defense_lane := 1
+var _ui_update_queued := false
+var _last_ai_actions_selected := "__uninitialized__"
 
 
 func _ready() -> void:
@@ -70,8 +73,8 @@ func _ready() -> void:
 	var player := _create_player()
 	_battle = Battle.new(player, enemy_res)
 	GameState.player_stats["battle_player"] = player
-	_battle.hand_updated.connect(_update_ui)
-	_battle.energy_updated.connect(_update_ui)
+	_battle.hand_updated.connect(_request_ui_update)
+	_battle.energy_updated.connect(_request_ui_update)
 	_battle.turn_changed.connect(_on_turn_changed)
 	_battle.battle_ended.connect(_on_battle_ended)
 	_battle.skill_used.connect(_on_skill_used)
@@ -145,8 +148,8 @@ func _exit_tree() -> void:
 
 func _disconnect_battle_signals() -> void:
 	var connections := [
-		[_battle.hand_updated, _update_ui],
-		[_battle.energy_updated, _update_ui],
+		[_battle.hand_updated, _request_ui_update],
+		[_battle.energy_updated, _request_ui_update],
 		[_battle.turn_changed, _on_turn_changed],
 		[_battle.battle_ended, _on_battle_ended],
 		[_battle.skill_used, _on_skill_used],
@@ -208,6 +211,9 @@ func _setup_ai_native_ui(enemy_id: String, enemy_res: EnemyResource) -> void:
 func _refresh_ai_actions(selected_id: String) -> void:
 	if not _is_ai_battle or _enemy_res == null:
 		return
+	if selected_id == _last_ai_actions_selected and ai_actions_list.get_child_count() == _enemy_res.actions.size():
+		return
+	_last_ai_actions_selected = selected_id
 	for child in ai_actions_list.get_children():
 		ai_actions_list.remove_child(child)
 		child.queue_free()
@@ -291,6 +297,20 @@ func _create_player() -> Character:
 	return GameState.create_battle_player()
 
 
+func _request_ui_update() -> void:
+	if _ui_update_queued:
+		return
+	_ui_update_queued = true
+	call_deferred("_flush_ui_update")
+
+
+func _flush_ui_update() -> void:
+	_ui_update_queued = false
+	if not is_inside_tree() or _battle == null:
+		return
+	_update_ui()
+
+
 func _update_ui() -> void:
 	if not _is_ai_battle:
 		enemy_name_label.text = _battle.enemy.display_name
@@ -324,11 +344,10 @@ func _update_ui() -> void:
 	deck_total_label.text = "牌库 %d" % deck_total
 	draw_pile_label.tooltip_text = "开局会先抽到手牌；抽完后从弃牌堆洗回。"
 	discard_pile_label.text = "弃牌堆 %d" % _battle.player.discard_pile.size()
-	var RelicCat = preload("res://src/logic/relic.gd")
-	relic_label.text = RelicCat.format_list(GameState.run_relic_ids)
+	relic_label.text = RelicCatalog.format_list(GameState.run_relic_ids)
 	relic_label.tooltip_text = relic_label.text
 	for rid in GameState.run_relic_ids:
-		var info: Dictionary = RelicCat.get_info(str(rid))
+		var info: Dictionary = RelicCatalog.get_info(str(rid))
 		relic_label.tooltip_text += "\n【%s】%s" % [info.get("name", rid), info.get("desc", "")]
 
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
@@ -374,9 +393,19 @@ func _rebuild_hand() -> void:
 
 
 func _update_status_icons(container: Control, statuses: Dictionary) -> void:
+	var status_ids := statuses.keys()
+	status_ids.sort()
+	var signature_parts: PackedStringArray = []
+	for status_id in status_ids:
+		signature_parts.append("%s:%s" % [status_id, statuses[status_id]])
+	var signature := "|".join(signature_parts)
+	if str(container.get_meta("status_signature", "__uninitialized__")) == signature:
+		return
+	container.set_meta("status_signature", signature)
 	for child in container.get_children():
+		container.remove_child(child)
 		child.queue_free()
-	for status_id in statuses:
+	for status_id in status_ids:
 		var icon: Control = STATUS_ICON_SCENE.instantiate()
 		container.add_child(icon)
 		icon.setup(status_id, statuses[status_id])
