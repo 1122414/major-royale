@@ -46,6 +46,8 @@ func _render_rewards() -> void:
 		_style_reward_button(btn, int(reward.type))
 		btn.pressed.connect(_on_reward_selected.bind(i))
 		rewards_container.add_child(btn)
+	if rewards_container.get_child_count() > 0:
+		(rewards_container.get_child(0) as Control).grab_focus()
 
 
 func _format_reward(reward: Dictionary) -> String:
@@ -135,6 +137,8 @@ func _show_card_picker(reward: Dictionary) -> void:
 		view.set_affordable(true)
 		view.card_clicked.connect(_on_card_view_picked.bind(str(card.id)))
 		rewards_container.add_child(view)
+	if rewards_container.get_child_count() > 0:
+		(rewards_container.get_child(0) as Control).grab_focus()
 
 
 func _on_card_view_picked(_index: int, card_id: String) -> void:
@@ -219,5 +223,9 @@ func _clear_rewards() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+	if event.is_action_pressed("pause_game"):
+		get_viewport().set_input_as_handled()
+		_on_settings()
+	elif _chosen and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
 		_return_to_map()

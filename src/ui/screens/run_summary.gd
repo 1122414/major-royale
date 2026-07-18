@@ -24,6 +24,7 @@ func _ready() -> void:
 
 	body_label.text = _build_summary(is_clear)
 	continue_button.pressed.connect(_on_continue)
+	continue_button.grab_focus()
 
 
 func _build_summary(is_clear: bool) -> String:

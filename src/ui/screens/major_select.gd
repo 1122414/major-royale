@@ -192,12 +192,28 @@ func _on_settings() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is not InputEventKey or not event.pressed or event.echo:
-		return
 	if custom_panel.visible:
-		if event.keycode == KEY_ESCAPE:
+		if event.is_action_pressed("ui_cancel"):
 			get_viewport().set_input_as_handled()
 			_on_custom_cancel()
+		return
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_back_pressed()
+		return
+	if event.is_action_pressed("pause_game"):
+		get_viewport().set_input_as_handled()
+		_on_settings()
+		return
+	if event.is_action_pressed("move_left"):
+		get_viewport().set_input_as_handled()
+		_select_relative(-1)
+		return
+	if event.is_action_pressed("move_right"):
+		get_viewport().set_input_as_handled()
+		_select_relative(1)
+		return
+	if event is not InputEventKey or not event.pressed or event.echo:
 		return
 	if event.keycode not in [KEY_LEFT, KEY_A, KEY_RIGHT, KEY_D, KEY_ENTER, KEY_KP_ENTER, KEY_S, KEY_ESCAPE]:
 		return

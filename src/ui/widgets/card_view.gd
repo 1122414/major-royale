@@ -84,9 +84,12 @@ func setup(card: Resource, index: int) -> void:
 
 
 func _ready() -> void:
+	focus_mode = Control.FOCUS_ALL
 	gui_input.connect(_on_gui_input)
 	mouse_entered.connect(_on_hover)
 	mouse_exited.connect(_on_unhover)
+	focus_entered.connect(_on_hover)
+	focus_exited.connect(_on_unhover)
 	if _card != null:
 		_refresh()
 	_animate_draw()
@@ -227,6 +230,8 @@ func _on_hover() -> void:
 
 
 func _on_unhover() -> void:
+	if has_focus():
+		return
 	if _hover_tween and _hover_tween.is_valid():
 		_hover_tween.kill()
 	_hover_tween = create_tween()
@@ -246,7 +251,11 @@ func _type_name(card_type: String) -> String:
 
 
 func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	var activated := event.is_action_pressed("ui_accept")
+	if event is InputEventMouseButton:
+		activated = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	if activated:
+		accept_event()
 		if _affordable:
 			card_clicked.emit(card_index)
 		else:

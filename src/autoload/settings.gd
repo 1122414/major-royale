@@ -9,6 +9,9 @@ var master_volume: float = 1.0
 var sfx_volume: float = 1.0
 var music_volume: float = 1.0
 var fullscreen: bool = false
+var action_window_scale: float = 1.0
+var reduced_motion: bool = false
+var controller_vibration: bool = true
 
 
 func _ready() -> void:
@@ -28,6 +31,9 @@ func load_settings() -> void:
 	sfx_volume = cfg.get_value("audio", "sfx_volume", sfx_volume)
 	music_volume = cfg.get_value("audio", "music_volume", music_volume)
 	fullscreen = cfg.get_value("display", "fullscreen", fullscreen)
+	action_window_scale = float(cfg.get_value("accessibility", "action_window_scale", action_window_scale))
+	reduced_motion = bool(cfg.get_value("accessibility", "reduced_motion", reduced_motion))
+	controller_vibration = bool(cfg.get_value("accessibility", "controller_vibration", controller_vibration))
 
 
 func save_settings() -> void:
@@ -38,6 +44,9 @@ func save_settings() -> void:
 	cfg.set_value("audio", "sfx_volume", sfx_volume)
 	cfg.set_value("audio", "music_volume", music_volume)
 	cfg.set_value("display", "fullscreen", fullscreen)
+	cfg.set_value("accessibility", "action_window_scale", action_window_scale)
+	cfg.set_value("accessibility", "reduced_motion", reduced_motion)
+	cfg.set_value("accessibility", "controller_vibration", controller_vibration)
 
 	var err := cfg.save(SETTINGS_PATH)
 	if err != OK:

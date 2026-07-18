@@ -7,6 +7,9 @@ extends Control
 @onready var sfx_slider: HSlider = $VBoxContainer/SFXSlider
 @onready var music_slider: HSlider = $VBoxContainer/MusicSlider
 @onready var fullscreen_check: CheckBox = $VBoxContainer/FullscreenCheck
+@onready var action_window_option: OptionButton = $VBoxContainer/ActionWindowOption
+@onready var reduced_motion_check: CheckBox = $VBoxContainer/ReducedMotionCheck
+@onready var vibration_check: CheckBox = $VBoxContainer/VibrationCheck
 @onready var save_button: Button = $VBoxContainer/SaveButton
 @onready var back_button: Button = $VBoxContainer/BackButton
 @onready var message_label: Label = $VBoxContainer/MessageLabel
@@ -19,6 +22,9 @@ func _ready() -> void:
 	sfx_slider.value = Settings.sfx_volume
 	music_slider.value = Settings.music_volume
 	fullscreen_check.button_pressed = Settings.fullscreen
+	_setup_action_window_options()
+	reduced_motion_check.button_pressed = Settings.reduced_motion
+	vibration_check.button_pressed = Settings.controller_vibration
 
 	master_slider.value_changed.connect(_on_master_changed)
 	sfx_slider.value_changed.connect(_on_sfx_changed)
@@ -27,6 +33,24 @@ func _ready() -> void:
 	save_button.pressed.connect(_on_save)
 	back_button.pressed.connect(_on_back)
 	message_label.text = "拖动滑条可实时预听；点「保存设置」写入本地。"
+	ai_enabled_check.grab_focus()
+
+
+func _setup_action_window_options() -> void:
+	var options := [
+		{"label": "快速（0.75×）", "value": 0.75},
+		{"label": "标准（1.0×）", "value": 1.0},
+		{"label": "宽松（1.5×）", "value": 1.5},
+		{"label": "辅助（2.0×）", "value": 2.0},
+	]
+	action_window_option.clear()
+	var selected_index := 1
+	for i in options.size():
+		action_window_option.add_item(str(options[i].label))
+		action_window_option.set_item_metadata(i, float(options[i].value))
+		if is_equal_approx(float(options[i].value), Settings.action_window_scale):
+			selected_index = i
+	action_window_option.select(selected_index)
 
 
 func _on_master_changed(v: float) -> void:
@@ -52,6 +76,9 @@ func _on_save() -> void:
 	Settings.sfx_volume = sfx_slider.value
 	Settings.music_volume = music_slider.value
 	Settings.fullscreen = fullscreen_check.button_pressed
+	Settings.action_window_scale = float(action_window_option.get_selected_metadata())
+	Settings.reduced_motion = reduced_motion_check.button_pressed
+	Settings.controller_vibration = vibration_check.button_pressed
 	Settings.save_settings()
 
 	AudioManager.set_master_volume(Settings.master_volume)
@@ -70,7 +97,7 @@ func _on_back() -> void:
 	GameState.return_from_settings()
 
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_on_back()

@@ -45,12 +45,12 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -250.0
-offset_top = -240.0
+offset_top = -270.0
 offset_right = 250.0
-offset_bottom = 240.0
+offset_bottom = 330.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 6
 
 [node name="AIEnabledCheck" type="CheckBox" parent="VBoxContainer"]
 layout_mode = 2
@@ -98,14 +98,35 @@ value = 1.0
 layout_mode = 2
 text = "全屏显示"
 
+[node name="AccessibilityTitle" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.427, 0.969, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "可访问性与手柄"
+
+[node name="ActionWindowLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "答辩窗口反应时间"
+
+[node name="ActionWindowOption" type="OptionButton" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ReducedMotionCheck" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 2
+text = "减少动态效果（关闭待机晃动与冲刺）"
+
+[node name="VibrationCheck" type="CheckBox" parent="VBoxContainer"]
+layout_mode = 2
+text = "启用手柄震动反馈"
+
 [node name="SaveButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 42)
 text = "保存设置"
 
 [node name="BackButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 42)
 text = "返回"
 
 [node name="MessageLabel" type="Label" parent="VBoxContainer"]

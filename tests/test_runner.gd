@@ -59,6 +59,7 @@ func _ready() -> void:
 	_test_all_preset_majors_startable()
 	_test_run_state_persistence()
 	_test_ai_first_turn_request()
+	await _test_accessibility_and_controller_inputs()
 	await _test_event_defeat_does_not_revive()
 	print("TEST: 局内状态回归测试通过")
 
@@ -198,8 +199,16 @@ func _test_professional_asset_coverage() -> void:
 	var card_view := card_packed.instantiate() as PanelContainer
 	card_view.setup(Config.cards["trial_delay"], 0)
 	add_child(card_view)
+	assert(card_view.focus_mode == Control.FOCUS_ALL, "卡牌应可通过键盘或手柄焦点选中")
 	var icon_texture: TextureRect = card_view.get_node("Margin/VBox/IconTex")
 	assert(icon_texture.texture.resource_path == "res://assets/sprites/cards/law_search.png", "未单独绘制的法学牌应回退到法学核心插画")
+	var controller_activations: Array[int] = []
+	card_view.card_clicked.connect(func(index: int) -> void: controller_activations.append(index))
+	var accept_event := InputEventAction.new()
+	accept_event.action = "ui_accept"
+	accept_event.pressed = true
+	card_view._on_gui_input(accept_event)
+	assert(controller_activations == [0], "焦点卡牌应响应手柄确认操作")
 	card_view.queue_free()
 
 	var major_packed := load("res://src/ui/widgets/major_card.tscn") as PackedScene
@@ -763,3 +772,37 @@ func _test_ai_first_turn_request() -> void:
 	assert(requests.size() == 1, "AI Native 首回合应在连接后补发决策请求")
 	assert(not requests[0].get("allowed_actions", []).is_empty(), "AI 请求必须包含允许行动")
 	Settings.ai_enabled = previous_ai_enabled
+
+
+func _test_accessibility_and_controller_inputs() -> void:
+	for action_name in ["move_left", "move_right", "move_up", "move_down", "interact", "pause_game"]:
+		assert(InputMap.has_action(action_name), "缺少输入动作: %s" % action_name)
+		var has_controller_event := false
+		for input_event in InputMap.action_get_events(action_name):
+			if input_event is InputEventJoypadButton or input_event is InputEventJoypadMotion:
+				has_controller_event = true
+				break
+		assert(has_controller_event, "输入动作应包含手柄映射: %s" % action_name)
+
+	var previous_scale := Settings.action_window_scale
+	GameState.start_run("computer")
+	Settings.action_window_scale = 0.75
+	var fast_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	fast_battle._enemy_intent = {"id": "attack", "value": 5}
+	var fast_duration := float(fast_battle.begin_defense_window().get("duration", 0.0))
+	GameState.start_run("computer")
+	Settings.action_window_scale = 2.0
+	var assisted_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	assisted_battle._enemy_intent = {"id": "attack", "value": 5}
+	var assisted_duration := float(assisted_battle.begin_defense_window().get("duration", 0.0))
+	assert(assisted_duration > fast_duration * 2.0, "辅助模式应显著延长答辩窗口反应时间")
+	Settings.action_window_scale = previous_scale
+
+	var settings_scene := (load("res://src/ui/screens/settings.tscn") as PackedScene).instantiate()
+	add_child(settings_scene)
+	await get_tree().process_frame
+	assert(settings_scene.action_window_option.item_count == 4, "设置应提供四档答辩窗口时长")
+	assert(settings_scene.reduced_motion_check is CheckBox, "设置应提供减少动态效果开关")
+	assert(settings_scene.vibration_check is CheckBox, "设置应提供手柄震动开关")
+	settings_scene.queue_free()
+	await get_tree().process_frame

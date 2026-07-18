@@ -116,7 +116,7 @@ func set_area(display_name: String) -> void:
 func set_interaction(hotspot: CampusHotspot) -> void:
 	interaction_prompt.visible = hotspot != null
 	if hotspot != null:
-		interaction_label.text = "E  交互 · %s" % hotspot.display_name
+		interaction_label.text = "E / 手柄 A  交互 · %s" % hotspot.display_name
 
 
 func show_message(message: String) -> void:
@@ -263,14 +263,17 @@ func _on_shade_input(event: InputEvent) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is not InputEventKey or not event.pressed or event.echo:
-		return
 	if event_panel.visible:
-		get_viewport().set_input_as_handled()
 		return
-	if utility_panel.visible and event.keycode == KEY_ESCAPE:
+	if utility_panel.visible and event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_close_utility()
+		return
+	if event.is_action_pressed("pause_game"):
+		get_viewport().set_input_as_handled()
+		settings_requested.emit()
+		return
+	if event is not InputEventKey or not event.pressed or event.echo:
 		return
 	if event.keycode not in [KEY_I, KEY_C, KEY_M, KEY_ESCAPE]:
 		return

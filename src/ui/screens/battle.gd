@@ -380,8 +380,11 @@ func _rebuild_hand() -> void:
 	hand_container.offset_bottom = 708.0
 
 	hand_container.add_theme_constant_override("separation", int(sep))
+	var first_card_view: Control = null
 	for i in n:
 		var card_view: Control = CARD_VIEW_SCENE.instantiate()
+		if first_card_view == null:
+			first_card_view = card_view
 		card_view.custom_minimum_size = Vector2(card_w, 200)
 		card_view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		card_view.setup(_battle.player.hand[i], i)
@@ -390,6 +393,8 @@ func _rebuild_hand() -> void:
 		card_view.card_clicked.connect(_on_card_clicked)
 		card_view.card_rejected.connect(_on_card_rejected)
 		hand_container.add_child(card_view)
+	if first_card_view != null and not Input.get_connected_joypads().is_empty():
+		first_card_view.call_deferred("grab_focus")
 
 
 func _update_status_icons(container: Control, statuses: Dictionary) -> void:
@@ -545,7 +550,7 @@ func _refresh_defense_lane_buttons() -> void:
 	for i in buttons.size():
 		var button := buttons[i] as Button
 		button.modulate = UIColors.ACCENT_GOLD if i == _defense_lane else Color.WHITE
-		button.text = ["A  左位", "中位", "D  右位"][i]
+		button.text = ["A / ←  左位", "中位", "D / →  右位"][i]
 		if i == int(_defense_context.get("danger_lane", 1)):
 			button.text += "  ⚠"
 
@@ -588,6 +593,7 @@ func _show_enemy_turn_feedback(intent_id: String, before: Dictionary, after: Dic
 	var damage_taken := int(before.player_hp) - int(after.player_hp)
 	if damage_taken > 0 and is_instance_valid(battle_stage):
 		battle_stage.show_feedback("-%d" % damage_taken, false, UIColors.DANGER_RED)
+		_vibrate_controllers(0.25, 0.65, 0.18)
 	var counter_damage := int(before.enemy_hp) - int(after.enemy_hp)
 	if counter_damage > 0 and outcome == "perfect":
 		battle_stage.show_feedback("反驳 -%d" % counter_damage, true, UIColors.ACCENT_GOLD)
@@ -595,6 +601,7 @@ func _show_enemy_turn_feedback(intent_id: String, before: Dictionary, after: Dic
 		"perfect":
 			message_label.text = "精准反驳：打断行动并反击，下回合 +1 能量"
 			AudioManager.play_sfx("attack")
+			_vibrate_controllers(0.45, 0.35, 0.16)
 		"dodge":
 			message_label.text = "换位成功：伤害减半并避开控制效果"
 		"brace":
@@ -691,6 +698,10 @@ func _on_settings() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause_game"):
+		_on_settings()
+		get_viewport().set_input_as_handled()
+		return
 	if not _defense_active:
 		return
 	if event.is_action_pressed("move_left"):
@@ -702,6 +713,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+func _vibrate_controllers(weak: float, strong: float, duration: float) -> void:
+	if not Settings.controller_vibration:
+		return
+	for device_id in Input.get_connected_joypads():
+		Input.start_joy_vibration(device_id, weak, strong, duration)
 
 
 func _intent_short_name(intent_id: String) -> String:

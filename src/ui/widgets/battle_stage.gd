@@ -15,8 +15,9 @@ var _player_base_position := Vector2.ZERO
 
 func _ready() -> void:
 	_player_base_position = player_figure.position
-	_start_idle(player_figure, -0.012)
-	_start_idle(enemy_figure, 0.012)
+	if not Settings.reduced_motion:
+		_start_idle(player_figure, -0.012)
+		_start_idle(enemy_figure, 0.012)
 
 
 func setup_art(player_path: String, enemy_path: String) -> void:
@@ -61,8 +62,11 @@ func hide_defense_lanes(outcome: String = "") -> void:
 	$LaneZones.visible = false
 	if _lane_tween and _lane_tween.is_valid():
 		_lane_tween.kill()
-	_lane_tween = create_tween()
-	_lane_tween.tween_property(player_figure, "position", _player_base_position, 0.12).set_trans(Tween.TRANS_SINE)
+	if Settings.reduced_motion:
+		player_figure.position = _player_base_position
+	else:
+		_lane_tween = create_tween()
+		_lane_tween.tween_property(player_figure, "position", _player_base_position, 0.12).set_trans(Tween.TRANS_SINE)
 	if outcome == "perfect":
 		pulse_figure(false, Color(1.35, 1.18, 0.5))
 	elif outcome == "dodge":
@@ -73,6 +77,9 @@ func _move_player_to_lane(player_lane: int) -> void:
 	if _lane_tween and _lane_tween.is_valid():
 		_lane_tween.kill()
 	var target := _player_base_position + Vector2(float(clampi(player_lane, 0, 2) - 1) * 72.0, 0)
+	if Settings.reduced_motion:
+		player_figure.position = target
+		return
 	_lane_tween = create_tween()
 	_lane_tween.tween_property(player_figure, "position", target, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
@@ -88,6 +95,9 @@ func play_attack(from_player: bool) -> void:
 	var attacker: Control = player_figure if from_player else enemy_figure
 	var defender: Control = enemy_figure if from_player else player_figure
 	if not is_instance_valid(attacker) or not is_instance_valid(defender):
+		return
+	if Settings.reduced_motion:
+		pulse_figure(not from_player, Color(1.35, 0.65, 0.65))
 		return
 	attacker.pivot_offset = attacker.size * 0.5
 	defender.pivot_offset = defender.size * 0.5
@@ -146,6 +156,10 @@ func pulse_figure(on_enemy: bool, color: Color) -> void:
 func play_outcome(player_won: bool) -> void:
 	var winner: Control = player_figure if player_won else enemy_figure
 	var loser: Control = enemy_figure if player_won else player_figure
+	if Settings.reduced_motion:
+		winner.modulate = Color(1.25, 1.2, 0.72)
+		loser.modulate = Color(0.35, 0.35, 0.42, 0.25)
+		return
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(winner, "scale", Vector2(1.1, 1.1), 0.38).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(winner, "modulate", Color(1.25, 1.2, 0.72), 0.38)

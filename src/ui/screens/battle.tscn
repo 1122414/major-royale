@@ -260,25 +260,25 @@ theme_override_constants/separation = 6
 alignment = 1
 
 [node name="LeftLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
-custom_minimum_size = Vector2(116, 38)
+custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
-text = "A  左移"
+text = "A / ←  左移"
 
 [node name="CenterLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
-custom_minimum_size = Vector2(116, 38)
+custom_minimum_size = Vector2(90, 38)
 layout_mode = 2
 text = "中线"
 
 [node name="RightLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
-custom_minimum_size = Vector2(116, 38)
+custom_minimum_size = Vector2(130, 38)
 layout_mode = 2
-text = "D  右移"
+text = "D / →  右移"
 
 [node name="ConfirmButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
-custom_minimum_size = Vector2(142, 38)
+custom_minimum_size = Vector2(160, 38)
 layout_mode = 2
 theme_type_variation = &"PrimaryButton"
-text = "Space  应对"
+text = "Space / A  应对"
 
 [node name="Hint" type="Label" parent="DefenseWindow/Margin/VBox"]
 layout_mode = 2

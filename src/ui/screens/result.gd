@@ -39,6 +39,7 @@ func _ready() -> void:
 		AudioManager.play_bgm_for_phase("menu")
 
 	continue_button.pressed.connect(_on_continue.bind(is_run_end))
+	continue_button.grab_focus()
 
 
 func _ending_text(flag: String) -> String:

@@ -245,6 +245,7 @@ func begin_defense_window() -> Dictionary:
 	var focus := GameState.get_effective_stat("专注")
 	var pressure := player.get_status_stacks("pressure")
 	var duration := clampf(1.45 + float(expression) * 0.055 + float(control_cards) * 0.12 - float(pressure) * 0.055, 0.85, 2.5)
+	duration = clampf(duration * clampf(Settings.action_window_scale, 0.75, 2.0), 0.75, 5.0)
 	var perfect_width := clampf(0.055 + float(focus) * 0.006 + float(control_cards) * 0.022, 0.07, 0.22)
 	var danger_lane := absi(hash("%s:%s:%d" % [enemy.id, intent_id, turn_count])) % 3
 	_defense_window_open = true

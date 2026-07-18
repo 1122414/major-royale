@@ -25,6 +25,8 @@ func _ready() -> void:
 		btn.pressed.connect(_select_diff.bind(d.id))
 		tabs.add_child(btn)
 	_select_diff("easy")
+	if tabs.get_child_count() > 0:
+		(tabs.get_child(0) as Button).grab_focus()
 	AudioManager.play_bgm_for_phase("menu")
 
 
@@ -64,3 +66,9 @@ func _diff_name(diff: String) -> String:
 func _on_back() -> void:
 	AudioManager.play_sfx("click")
 	GameState.change_screen(GameState.Screen.MENU)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_back()
