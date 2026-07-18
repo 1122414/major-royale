@@ -692,10 +692,10 @@ func _test_difficulty_ladder_rules() -> void:
 	hard_battle._enemy_intent = {"id": "attack", "value": 5}
 	var hard_window := hard_battle.begin_defense_window()
 	assert(
-		hard_battle.enemy.max_hp == int(round(float(Config.enemies["gpa_anxiety"].hp) * 1.5)),
-		"唯一席位应把敌人生命提高 50%"
+		hard_battle.enemy.max_hp == int(round(float(Config.enemies["gpa_anxiety"].hp) * 2.0)),
+		"唯一席位应把敌人生命提高 100%"
 	)
-	assert(hard_player.get_status_stacks("pressure") == 2, "唯一席位应从 2 层压力开战")
+	assert(hard_player.get_status_stacks("pressure") == 3, "唯一席位应从 3 层压力开战")
 	assert(
 		float(hard_window.get("duration", 0.0)) < float(standard_window.get("duration", 0.0)),
 		"高阶挑战应压缩答辩反应时间"
@@ -712,7 +712,7 @@ func _test_difficulty_ladder_rules() -> void:
 	damage_battle._enemy_intent = {"id": "attack", "value": 5}
 	var hp_before := damage_player.hp
 	damage_battle.end_player_turn()
-	assert(hp_before - damage_player.hp == 8, "唯一席位应为敌人直接伤害增加 3 点")
+	assert(hp_before - damage_player.hp == 13, "唯一席位应为敌人直接伤害增加 8 点")
 
 	GameState.start_run("computer", 77, 0)
 	var standard_credits := GameState.credits
@@ -722,7 +722,9 @@ func _test_difficulty_ladder_rules() -> void:
 	var challenge_credits := GameState.credits
 	GameState.record_enemy_defeat("gpa_anxiety", "绩点焦虑者", "normal")
 	challenge_credits = GameState.credits - challenge_credits
-	assert(challenge_credits == int(round(float(standard_credits) * 1.3)), "最高挑战的战斗资源收益应提高 30%")
+	assert(challenge_credits == int(round(float(standard_credits) * 1.5)), "最高挑战的战斗资源收益应提高 50%")
+	GameState.run_hp = GameState.run_max_hp - 20
+	assert(GameState.heal_run(10) == 5, "最高挑战的校内恢复应降低 50%")
 
 	var previous_highest := Achievements.highest_cleared_difficulty
 	Achievements.highest_cleared_difficulty = -1

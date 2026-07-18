@@ -4,7 +4,7 @@
 [application]
 config/name="专业大逃杀"
 config/description="一款像素 2.5D 半开放世界肉鸽卡牌游戏。玩家选择大学专业作为战斗流派，在校园异化赛场中探索、构筑卡组、遭遇 AI Native 敌人，并在终极答辩中争夺唯一上岸者。"
-config/version="1.1.0-vertical-slice"
+config/version="1.2.0-rc1"
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 run/main_scene="res://src/ui/screens/menu.tscn"

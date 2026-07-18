@@ -9,6 +9,8 @@ GODOT_PATH = ROOT / "tools" / "Godot.app" / "Contents" / "MacOS" / "Godot"
 TEST_SCENE = ROOT / "tests" / "test_runner.tscn"
 FULL_RUN_SCENE = ROOT / "tests" / "full_run_runner.tscn"
 PERFORMANCE_SCENE = ROOT / "tests" / "performance_runner.tscn"
+BALANCE_SCENE = ROOT / "tests" / "balance_runner.tscn"
+GRACEFUL_QUIT_SCENE = ROOT / "tests" / "graceful_quit_runner.tscn"
 
 
 def _run_godot_scene(scene: Path) -> subprocess.CompletedProcess[str]:
@@ -47,3 +49,20 @@ def test_performance_regression():
     result = _run_godot_scene(PERFORMANCE_SCENE)
 
     assert "次战斗场景循环通过" in result.stdout
+
+
+def test_balance_matrix_regression():
+    """以真实战斗、事件和奖励规则完成多专业、多种子、全难度长局模拟。"""
+    result = _run_godot_scene(BALANCE_SCENE)
+
+    assert "BALANCE: 共模拟 480 局" in result.stdout
+
+
+def test_graceful_quit_releases_audio():
+    """验证菜单按钮或桌面关闭请求不会留下音频播放与 WAV 资源。"""
+    result = _run_godot_scene(GRACEFUL_QUIT_SCENE)
+    combined_output = f"{result.stdout}\n{result.stderr}"
+
+    assert "QUIT: 开始执行统一退出清理" in result.stdout
+    assert "instances leaked at exit" not in combined_output
+    assert "resources still in use at exit" not in combined_output

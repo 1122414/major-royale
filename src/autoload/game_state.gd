@@ -36,36 +36,40 @@ const DIFFICULTY_CATALOG := [
 		"starting_pressure": 0,
 		"action_window_multiplier": 1.0,
 		"reward_multiplier": 1.0,
+		"campus_healing_multiplier": 1.0,
 	},
 	{
 		"id": "high_pressure",
 		"name": "高压答辩",
-		"description": "敌人生命 +15%，直接伤害 +1，答辩窗口缩短，战斗收益 +10%。",
-		"enemy_hp_multiplier": 1.15,
-		"enemy_damage_bonus": 1,
+		"description": "敌人生命 +25%，直接伤害 +2，窗口缩短，校内恢复 -15%，收益 +10%。",
+		"enemy_hp_multiplier": 1.25,
+		"enemy_damage_bonus": 2,
 		"starting_pressure": 0,
-		"action_window_multiplier": 0.94,
+		"action_window_multiplier": 0.9,
 		"reward_multiplier": 1.1,
+		"campus_healing_multiplier": 0.85,
 	},
 	{
 		"id": "closing_circle",
 		"name": "红圈收缩",
-		"description": "敌人生命 +30%，直接伤害 +2，每战从 1 层压力开始，收益 +20%。",
-		"enemy_hp_multiplier": 1.3,
-		"enemy_damage_bonus": 2,
-		"starting_pressure": 1,
-		"action_window_multiplier": 0.88,
+		"description": "敌人生命 +55%，直接伤害 +5，每战 2 层压力，校内恢复 -35%，收益 +20%。",
+		"enemy_hp_multiplier": 1.55,
+		"enemy_damage_bonus": 5,
+		"starting_pressure": 2,
+		"action_window_multiplier": 0.78,
 		"reward_multiplier": 1.2,
+		"campus_healing_multiplier": 0.65,
 	},
 	{
 		"id": "last_seat",
 		"name": "唯一席位",
-		"description": "敌人生命 +50%，直接伤害 +3，每战从 2 层压力开始，收益 +30%。",
-		"enemy_hp_multiplier": 1.5,
-		"enemy_damage_bonus": 3,
-		"starting_pressure": 2,
-		"action_window_multiplier": 0.82,
-		"reward_multiplier": 1.3,
+		"description": "敌人生命 +100%，直接伤害 +8，每战 3 层压力，校内恢复 -50%，收益 +50%。",
+		"enemy_hp_multiplier": 2.0,
+		"enemy_damage_bonus": 8,
+		"starting_pressure": 3,
+		"action_window_multiplier": 0.65,
+		"reward_multiplier": 1.5,
+		"campus_healing_multiplier": 0.5,
 	},
 ]
 
@@ -583,6 +587,8 @@ func create_battle_player() -> Character:
 
 
 func heal_run(amount: int) -> int:
+	var healing_multiplier := float(get_difficulty_info().get("campus_healing_multiplier", 1.0))
+	amount = maxi(0, int(round(float(amount) * healing_multiplier)))
 	var before := run_hp
 	run_hp = mini(run_hp + amount, run_max_hp)
 	return run_hp - before

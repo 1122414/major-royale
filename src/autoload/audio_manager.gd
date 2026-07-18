@@ -21,9 +21,11 @@ var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_sfx_voice := 0
 var _menu_track_index: int = 0
 var _current_bgm_id: String = ""
+var _shutdown_requested := false
 
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
 	add_child(sfx_player)
 	_sfx_players.append(sfx_player)
 	for _voice_index in range(1, SFX_VOICE_COUNT):
@@ -41,6 +43,20 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	prepare_shutdown()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		request_application_quit()
+
+
+func request_application_quit() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
+	prepare_shutdown()
+	var timer := get_tree().create_timer(0.2, true)
+	timer.timeout.connect(func(): get_tree().quit(), CONNECT_ONE_SHOT)
 
 
 func stop_all() -> void:

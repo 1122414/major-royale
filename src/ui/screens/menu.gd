@@ -43,9 +43,7 @@ func _on_settings_pressed() -> void:
 
 
 func _on_quit_pressed() -> void:
-	AudioManager.prepare_shutdown()
-	await get_tree().create_timer(0.2).timeout
-	get_tree().quit()
+	AudioManager.request_application_quit()
 
 
 func _on_bgm_pressed() -> void:
