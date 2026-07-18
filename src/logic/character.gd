@@ -22,6 +22,7 @@ var draw_pile: Array[Resource] = [] ## 抽牌堆
 var hand: Array[Resource] = []      ## 手牌
 var discard_pile: Array[Resource] = [] ## 弃牌堆
 var exhaust_pile: Array[Resource] = [] ## 本场战斗已消耗的卡牌
+var _rng: RandomNumberGenerator = null
 
 
 func _init(p_id: String, p_name: String, p_max_hp: int, p_is_player: bool = false) -> void:
@@ -116,8 +117,19 @@ func is_alive() -> bool:
 	return hp > 0
 
 
+func set_rng(rng: RandomNumberGenerator) -> void:
+	_rng = rng
+
+
 func shuffle_draw_pile() -> void:
-	draw_pile.shuffle()
+	if _rng == null:
+		draw_pile.shuffle()
+		return
+	for i in range(draw_pile.size() - 1, 0, -1):
+		var swap_index := _rng.randi_range(0, i)
+		var card := draw_pile[i]
+		draw_pile[i] = draw_pile[swap_index]
+		draw_pile[swap_index] = card
 
 
 func draw_cards(amount: int, max_hand: int = 10) -> void:

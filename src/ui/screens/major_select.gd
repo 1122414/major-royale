@@ -18,6 +18,8 @@ const TOTAL_POINTS := 48
 @onready var footer_name: Label = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol/NameLabel
 @onready var footer_desc: Label = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol/DescLabel
 @onready var footer_skill: Label = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/InfoCol/SkillLabel
+@onready var difficulty_option: OptionButton = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/RunConfigCol/DifficultyOption
+@onready var seed_edit: LineEdit = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/RunConfigCol/SeedEdit
 @onready var start_selected_button: Button = $SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/StartSelectedButton
 @onready var custom_shade: ColorRect = $CustomShade
 @onready var custom_panel: PanelContainer = $CustomPanel
@@ -33,6 +35,7 @@ func _ready() -> void:
 	sidebar_start_button.pressed.connect(_start_selected_major)
 	start_selected_button.pressed.connect(_start_selected_major)
 	custom_button.pressed.connect(_on_custom_pressed)
+	_init_run_config()
 
 	for major_id in PRESET_ORDER:
 		if not Config.majors.has(major_id):
@@ -51,6 +54,46 @@ func _ready() -> void:
 	_init_custom_panel()
 	_set_custom_visible(false)
 	sidebar_start_button.grab_focus()
+
+
+func _init_run_config() -> void:
+	difficulty_option.clear()
+	var max_unlocked := Achievements.get_max_unlocked_difficulty()
+	for i in GameState.DIFFICULTY_CATALOG.size():
+		var info: Dictionary = GameState.get_difficulty_info(i)
+		var locked := i > max_unlocked
+		var label := "%d · %s%s" % [i + 1, info.get("name", "挑战"), "（未解锁）" if locked else ""]
+		difficulty_option.add_item(label, i)
+		difficulty_option.set_item_disabled(i, locked)
+	difficulty_option.select(0)
+	difficulty_option.item_selected.connect(_on_difficulty_selected)
+	seed_edit.text_changed.connect(_on_seed_text_changed)
+	_on_difficulty_selected(0)
+
+
+func _on_difficulty_selected(index: int) -> void:
+	var difficulty_id := difficulty_option.get_item_id(index)
+	var info := GameState.get_difficulty_info(difficulty_id)
+	difficulty_option.tooltip_text = str(info.get("description", ""))
+
+
+func _on_seed_text_changed(_value: String) -> void:
+	seed_edit.remove_theme_color_override("font_color")
+
+
+func _get_run_seed() -> int:
+	var seed := GameState.seed_from_text(seed_edit.text)
+	if seed >= 0:
+		return seed
+	seed_edit.add_theme_color_override("font_color", UIColors.DANGER_RED)
+	seed_edit.tooltip_text = "种子只能填写数字，或留空使用随机种子。"
+	seed_edit.grab_focus()
+	return -1
+
+
+func _get_selected_difficulty() -> int:
+	var selected := difficulty_option.get_selected_id()
+	return clampi(selected, 0, Achievements.get_max_unlocked_difficulty())
 
 
 func _init_custom_panel() -> void:
@@ -126,8 +169,11 @@ func _select_relative(delta: int) -> void:
 func _start_selected_major() -> void:
 	if _selected_id.is_empty() or not Config.majors.has(_selected_id):
 		return
+	var seed := _get_run_seed()
+	if seed < 0:
+		return
 	AudioManager.play_sfx("click")
-	GameState.start_run(_selected_id)
+	GameState.start_run(_selected_id, seed, _get_selected_difficulty())
 	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
 
 
@@ -157,6 +203,9 @@ func _on_custom_confirm() -> void:
 		used += int(value)
 	if used > TOTAL_POINTS:
 		return
+	var seed := _get_run_seed()
+	if seed < 0:
+		return
 
 	var name_edit: LineEdit = custom_panel.get_node("Margin/VBox/NameEdit")
 	var major_name := name_edit.text.strip_edges()
@@ -177,7 +226,7 @@ func _on_custom_confirm() -> void:
 	]
 
 	Config.majors[custom_major.id] = custom_major
-	GameState.start_run(custom_major.id)
+	GameState.start_run(custom_major.id, seed, _get_selected_difficulty())
 	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
 
 

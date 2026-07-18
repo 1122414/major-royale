@@ -82,12 +82,24 @@ var _incoming_damage_multiplier := 1.0
 var _next_energy_bonus := 0
 var _elite_affix_id := ""
 var _elite_damage_bonus := 0
+var _difficulty_damage_bonus := 0
+var _rng: RandomNumberGenerator
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	player = p_player
 	enemy_resource = p_enemy_resource
-	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, p_enemy_resource.hp)
+	var encounter_index := GameState.run_battles_won
+	_rng = GameState.make_run_rng("battle:%s" % p_enemy_resource.id, encounter_index)
+	var difficulty := GameState.get_difficulty_info()
+	var scaled_enemy_hp := maxi(1, int(round(
+		float(p_enemy_resource.hp) * float(difficulty.get("enemy_hp_multiplier", 1.0))
+	)))
+	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, scaled_enemy_hp)
+	_difficulty_damage_bonus = maxi(0, int(difficulty.get("enemy_damage_bonus", 0)))
+	var starting_pressure := maxi(0, int(difficulty.get("starting_pressure", 0)))
+	if starting_pressure > 0:
+		player.add_status("pressure", starting_pressure)
 	_select_and_apply_elite_affix()
 	_effect_processor = CardEffectProcessor.new(self)
 	# 专注≥8：最大能量 +1；精英徽章再 +1
@@ -150,11 +162,11 @@ func play_card(card_index: int) -> bool:
 		energy += 1
 
 	# 医学被动：攻击有概率弱点打击
-	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
+	if player.major_id == "medicine" and card.type == "attack" and _rng.randf() < 0.3:
 		GameState.run_damage_dealt += enemy.take_damage(3)
 
 	# 艺术被动：控制牌概率额外抽牌
-	if player.major_id == "arts" and str(card.type) == "control" and randf() < 0.3:
+	if player.major_id == "arts" and str(card.type) == "control" and _rng.randf() < 0.3:
 		player.draw_cards(1, MAX_HAND_SIZE)
 
 	# 敌人反击姿态
@@ -280,9 +292,11 @@ func begin_defense_window() -> Dictionary:
 	var focus := GameState.get_effective_stat("专注")
 	var pressure := player.get_status_stacks("pressure")
 	var duration := clampf(1.45 + float(expression) * 0.055 + float(control_cards) * 0.12 - float(pressure) * 0.055, 0.85, 2.5)
-	duration = clampf(duration * clampf(Settings.action_window_scale, 0.75, 2.0), 0.75, 5.0)
+	var challenge_scale := float(GameState.get_difficulty_info().get("action_window_multiplier", 1.0))
+	duration = clampf(duration * challenge_scale * clampf(Settings.action_window_scale, 0.75, 2.0), 0.65, 5.0)
 	var perfect_width := clampf(0.055 + float(focus) * 0.006 + float(control_cards) * 0.022, 0.07, 0.22)
-	var danger_lane := absi(hash("%s:%s:%d" % [enemy.id, intent_id, turn_count])) % 3
+	perfect_width = clampf(perfect_width * challenge_scale, 0.055, 0.22)
+	var danger_lane := _rng.randi_range(0, 2)
 	_defense_window_open = true
 	return {
 		"enabled": true,
@@ -342,7 +356,7 @@ func _execute_enemy_turn() -> void:
 		return
 
 	# 被眩晕或 Bug 导致行动失败；Bug 叠层会真实提高失败率。
-	if _enemy_intent.get("id", "") == "stunned" or (enemy.has_status("bug") and randf() < get_bug_failure_chance()):
+	if _enemy_intent.get("id", "") == "stunned" or (enemy.has_status("bug") and _rng.randf() < get_bug_failure_chance()):
 		_enemy_intent = {}
 		_end_enemy_turn()
 		return
@@ -449,7 +463,7 @@ func _enemy_control_connects() -> bool:
 
 
 func _apply_damage_to_player(damage: int) -> void:
-	damage += _elite_damage_bonus
+	damage += _elite_damage_bonus + _difficulty_damage_bonus
 	# 敌人压力会削弱其所有直接伤害，每层 10%，最多 50%。
 	var enemy_pressure := enemy.get_status_stacks("pressure")
 	if enemy_pressure > 0:
@@ -524,7 +538,7 @@ func _start_player_turn() -> void:
 
 	# 创造：额外抽牌概率
 	var create_stat := GameState.get_effective_stat("创造")
-	if not has_draw_override and randf() < float(create_stat) * 0.03:
+	if not has_draw_override and _rng.randf() < float(create_stat) * 0.03:
 		draw_amount += 1
 
 	var hand_limit := _next_hand_limit
@@ -565,8 +579,8 @@ func _pick_weighted_action(actions: Array) -> Dictionary:
 	for action in actions:
 		total_weight += maxi(0, int((action as Dictionary).get("weight", 1)))
 	if total_weight <= 0:
-		return actions[randi() % actions.size()] as Dictionary
-	var roll := randi_range(1, total_weight)
+		return actions[_rng.randi() % actions.size()] as Dictionary
+	var roll := _rng.randi_range(1, total_weight)
 	for action in actions:
 		roll -= maxi(0, int((action as Dictionary).get("weight", 1)))
 		if roll <= 0:
@@ -728,8 +742,8 @@ func _select_and_apply_elite_affix() -> void:
 		return
 	var affix_ids: Array = ELITE_AFFIXES.keys()
 	affix_ids.sort()
-	var key := "%s:%s:%d" % [enemy.id, GameState.player_major_id, GameState.run_battles_won]
-	_apply_elite_affix(str(affix_ids[absi(hash(key)) % affix_ids.size()]))
+	var affix_rng := GameState.make_run_rng("elite_affix:%s:%s" % [enemy.id, GameState.player_major_id], GameState.run_battles_won)
+	_apply_elite_affix(str(affix_ids[affix_rng.randi() % affix_ids.size()]))
 
 
 func _apply_elite_affix(affix_id: String) -> void:

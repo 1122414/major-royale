@@ -131,8 +131,10 @@ func _open_hotspot_event(hotspot: CampusHotspot) -> void:
 		"cafeteria": "cafeteria",
 		"sports": "playground",
 	}
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(hotspot.location_id) + GameState.run_events_resolved * 31 + GameState.day_count * 101
+	var rng := GameState.make_run_rng(
+		"campus_event:%s" % hotspot.location_id,
+		GameState.run_events_resolved + GameState.day_count * 100
+	)
 	_current_event = EventHandler.pick_random_event(str(area_map.get(hotspot.location_id, "")), rng)
 	if _current_event == null:
 		if _pending_battle_after_event:

@@ -85,7 +85,8 @@ func refresh() -> void:
 	}.get(GameState.player_major_id, "res://assets/sprites/chars/player_cs.png")
 	if ResourceLoader.exists(player_art):
 		avatar.texture = load(player_art)
-	day_label.text = "第 %d 天" % GameState.day_count
+	day_label.text = "第%d天 · %s" % [GameState.day_count, GameState.get_difficulty_name()]
+	day_label.tooltip_text = "本局种子：%d\n固定种子可复现事件、奖励、牌序与敌人行动。" % GameState.run_seed
 	credits_label.text = "▣ 学分  %d" % GameState.credits
 	points_label.text = "● 信用点  %d" % GameState.credit_points
 	_hp_bar.set_values(GameState.run_hp, GameState.run_max_hp)

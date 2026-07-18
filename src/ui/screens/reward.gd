@@ -20,8 +20,10 @@ func _ready() -> void:
 	continue_button.pressed.connect(_return_to_map)
 	settings_button.pressed.connect(_on_settings)
 
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(GameState.player_major_id) + GameState.run_progress + GameState.day_count
+	var rng := GameState.make_run_rng(
+		"reward:%s" % GameState.player_major_id,
+		GameState.run_battles_won
+	)
 	var is_elite: bool = GameState.last_reward_is_elite
 	_rewards = RewardGenerator.generate_rewards(GameState.player_major_id, rng, is_elite)
 	if is_elite:

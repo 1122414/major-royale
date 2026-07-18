@@ -8,6 +8,7 @@ const RelicCatalog := preload("res://src/logic/relic.gd")
 const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 func _ready() -> void:
+	Achievements.save_enabled = false
 	print("TEST: 开始 Godot 数据加载测试")
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
@@ -55,6 +56,8 @@ func _ready() -> void:
 	_test_rule_integrity_regressions()
 	_test_defense_window_core()
 	_test_reward_determinism_and_uniqueness()
+	_test_seeded_run_reproducibility()
+	_test_difficulty_ladder_rules()
 	await _test_ai_native_presentation()
 	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -63,6 +66,7 @@ func _ready() -> void:
 	_test_all_preset_majors_startable()
 	_test_run_state_persistence()
 	_test_run_save_roundtrip()
+	await _test_run_config_ui()
 	_test_ai_first_turn_request()
 	await _test_accessibility_and_controller_inputs()
 	await _test_event_defeat_does_not_revive()
@@ -625,6 +629,111 @@ func _test_reward_determinism_and_uniqueness() -> void:
 			assert(str(reward.get("relic_id", "")) == "mentor_letter", "遗物奖励不得重复发放已持有遗物")
 
 
+func _test_seeded_run_reproducibility() -> void:
+	var snapshot_a := _seeded_run_snapshot(20260718)
+	var snapshot_b := _seeded_run_snapshot(20260718)
+	var snapshot_c := _seeded_run_snapshot(20260719)
+	assert(snapshot_a == snapshot_b, "相同局种子应复现牌序、事件、奖励、词缀与敌人意图")
+	assert(snapshot_a != snapshot_c, "不同局种子应至少改变一项可观察的随机结果")
+	assert(GameState.seed_from_text("") == 0, "空种子输入应请求随机开局")
+	assert(GameState.seed_from_text("314159") == 314159, "数字种子应可直接分享复现")
+	assert(GameState.seed_from_text("seed") == -1, "非数字种子应被输入校验拒绝")
+
+
+func _seeded_run_snapshot(seed: int) -> Dictionary:
+	GameState.start_run("computer", seed, 0)
+	GameState.player_stats["current_enemy_id"] = "all_nighter_king"
+	var player := GameState.create_battle_player()
+	var deck_order: Array[String] = []
+	for card in player.draw_pile:
+		deck_order.append(str(card.id))
+	var battle := Battle.new(player, Config.enemies["all_nighter_king"])
+	var event_rng := GameState.make_run_rng("campus_event:dorm", 100)
+	var event := EventHandler.pick_random_event("dorm", event_rng)
+	var reward_rng := GameState.make_run_rng("reward:computer", 0)
+	var rewards := RewardGenerator.generate_rewards("computer", reward_rng, false)
+	var reward_signature: Array[String] = []
+	for reward in rewards:
+		var card_ids: Array[String] = []
+		for card in reward.get("options", []):
+			card_ids.append(str(card.id))
+		reward_signature.append("%s|%s|%s|%s|%s|%s|%s" % [
+			reward.get("type", -1),
+			",".join(card_ids),
+			reward.get("stat", ""),
+			reward.get("status_id", ""),
+			reward.get("relic_id", ""),
+			reward.get("value", 0),
+			reward.get("credits", 0),
+		])
+	return {
+		"deck_order": deck_order,
+		"intent": battle.get_enemy_intent_id(),
+		"elite_affix": battle.get_elite_affix_id(),
+		"event": event.id if event != null else "",
+		"rewards": reward_signature,
+	}
+
+
+func _test_difficulty_ladder_rules() -> void:
+	GameState.start_run("computer", 77, 0)
+	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var standard_player := GameState.create_battle_player()
+	var standard_battle := Battle.new(standard_player, Config.enemies["gpa_anxiety"])
+	standard_battle._enemy_intent = {"id": "attack", "value": 5}
+	var standard_window := standard_battle.begin_defense_window()
+	assert(standard_battle.enemy.max_hp == Config.enemies["gpa_anxiety"].hp, "标准生存不应缩放敌人生命")
+	assert(not standard_player.has_status("pressure"), "标准生存不应附加开场压力")
+
+	GameState.start_run("computer", 77, 3)
+	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var hard_player := GameState.create_battle_player()
+	var hard_battle := Battle.new(hard_player, Config.enemies["gpa_anxiety"])
+	hard_battle._enemy_intent = {"id": "attack", "value": 5}
+	var hard_window := hard_battle.begin_defense_window()
+	assert(
+		hard_battle.enemy.max_hp == int(round(float(Config.enemies["gpa_anxiety"].hp) * 1.5)),
+		"唯一席位应把敌人生命提高 50%"
+	)
+	assert(hard_player.get_status_stacks("pressure") == 2, "唯一席位应从 2 层压力开战")
+	assert(
+		float(hard_window.get("duration", 0.0)) < float(standard_window.get("duration", 0.0)),
+		"高阶挑战应压缩答辩反应时间"
+	)
+	assert(
+		float(hard_window.get("perfect_width", 0.0)) < float(standard_window.get("perfect_width", 0.0)),
+		"高阶挑战应缩小精准反驳区间"
+	)
+
+	GameState.start_run("computer", 77, 3)
+	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var damage_player := GameState.create_battle_player()
+	var damage_battle := Battle.new(damage_player, Config.enemies["gpa_anxiety"])
+	damage_battle._enemy_intent = {"id": "attack", "value": 5}
+	var hp_before := damage_player.hp
+	damage_battle.end_player_turn()
+	assert(hp_before - damage_player.hp == 8, "唯一席位应为敌人直接伤害增加 3 点")
+
+	GameState.start_run("computer", 77, 0)
+	var standard_credits := GameState.credits
+	GameState.record_enemy_defeat("gpa_anxiety", "绩点焦虑者", "normal")
+	standard_credits = GameState.credits - standard_credits
+	GameState.start_run("computer", 77, 3)
+	var challenge_credits := GameState.credits
+	GameState.record_enemy_defeat("gpa_anxiety", "绩点焦虑者", "normal")
+	challenge_credits = GameState.credits - challenge_credits
+	assert(challenge_credits == int(round(float(standard_credits) * 1.3)), "最高挑战的战斗资源收益应提高 30%")
+
+	var previous_highest := Achievements.highest_cleared_difficulty
+	Achievements.highest_cleared_difficulty = -1
+	assert(Achievements.get_max_unlocked_difficulty() == 0, "新档只应开放标准生存")
+	Achievements.highest_cleared_difficulty = 0
+	assert(Achievements.get_max_unlocked_difficulty() == 1, "通关标准生存后应开放高压答辩")
+	Achievements.highest_cleared_difficulty = 3
+	assert(Achievements.get_max_unlocked_difficulty() == 3, "挑战阶梯不得越过最高档")
+	Achievements.highest_cleared_difficulty = previous_highest
+
+
 func _test_defense_window_core() -> void:
 	GameState.start_run("computer")
 	var base_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
@@ -993,7 +1102,7 @@ func _test_run_state_persistence() -> void:
 
 
 func _test_run_save_roundtrip() -> void:
-	GameState.start_run("finance")
+	GameState.start_run("finance", 424242, 2)
 	GameState.run_hp -= 11
 	GameState.run_progress = 4
 	GameState.day_count = 3
@@ -1034,6 +1143,32 @@ func _test_run_save_roundtrip() -> void:
 	assert(GameState.pending_buffs == [{"status_id": "shield", "stacks": 6}], "待生效状态应进入存档")
 	assert(GameState.campus_player_position == Vector2(734, 488), "校园位置应进入存档")
 	assert(GameState.run_event_flags == ["study_group", "event:pop_quiz"], "事件链线索与完成标识应进入存档")
+	assert(GameState.run_seed == 424242 and GameState.run_difficulty == 2, "固定种子与挑战难度应进入安全存档")
+
+
+func _test_run_config_ui() -> void:
+	var previous_highest := Achievements.highest_cleared_difficulty
+	Achievements.highest_cleared_difficulty = -1
+	var packed := load("res://src/ui/screens/major_select.tscn") as PackedScene
+	var screen := packed.instantiate()
+	add_child(screen)
+	await get_tree().process_frame
+	var difficulty: OptionButton = screen.get_node(
+		"SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/RunConfigCol/DifficultyOption"
+	)
+	var seed: LineEdit = screen.get_node(
+		"SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/RunConfigCol/SeedEdit"
+	)
+	assert(difficulty.item_count == GameState.DIFFICULTY_CATALOG.size(), "开局页应展示四档挑战规则")
+	assert(not difficulty.is_item_disabled(0), "标准生存应默认开放")
+	assert(difficulty.is_item_disabled(1), "未通关标准生存前不得选择下一阶挑战")
+	seed.text = "8080"
+	assert(screen._get_run_seed() == 8080, "开局页应接受可分享的数字种子")
+	seed.text = "错误种子"
+	assert(screen._get_run_seed() == -1, "开局页应拒绝非数字种子")
+	screen.queue_free()
+	await get_tree().process_frame
+	Achievements.highest_cleared_difficulty = previous_highest
 
 
 func _test_event_defeat_does_not_revive() -> void:

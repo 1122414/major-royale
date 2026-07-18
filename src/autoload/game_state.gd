@@ -25,6 +25,49 @@ const SAVED_PLAYER_STAT_KEYS := [
 	"last_ending_flag",
 ]
 const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
+const RUN_SEED_MODULUS := 2147483647
+const DIFFICULTY_CATALOG := [
+	{
+		"id": "standard",
+		"name": "标准生存",
+		"description": "完整规则体验，适合首次上手。",
+		"enemy_hp_multiplier": 1.0,
+		"enemy_damage_bonus": 0,
+		"starting_pressure": 0,
+		"action_window_multiplier": 1.0,
+		"reward_multiplier": 1.0,
+	},
+	{
+		"id": "high_pressure",
+		"name": "高压答辩",
+		"description": "敌人生命 +15%，直接伤害 +1，答辩窗口缩短，战斗收益 +10%。",
+		"enemy_hp_multiplier": 1.15,
+		"enemy_damage_bonus": 1,
+		"starting_pressure": 0,
+		"action_window_multiplier": 0.94,
+		"reward_multiplier": 1.1,
+	},
+	{
+		"id": "closing_circle",
+		"name": "红圈收缩",
+		"description": "敌人生命 +30%，直接伤害 +2，每战从 1 层压力开始，收益 +20%。",
+		"enemy_hp_multiplier": 1.3,
+		"enemy_damage_bonus": 2,
+		"starting_pressure": 1,
+		"action_window_multiplier": 0.88,
+		"reward_multiplier": 1.2,
+	},
+	{
+		"id": "last_seat",
+		"name": "唯一席位",
+		"description": "敌人生命 +50%，直接伤害 +3，每战从 2 层压力开始，收益 +30%。",
+		"enemy_hp_multiplier": 1.5,
+		"enemy_damage_bonus": 3,
+		"starting_pressure": 2,
+		"action_window_multiplier": 0.82,
+		"reward_multiplier": 1.3,
+	},
+]
 
 var current_screen: Screen = Screen.MENU
 var settings_return_screen: Screen = Screen.MENU
@@ -58,6 +101,8 @@ var run_events_resolved: int = 0
 var run_perfect_rebuttals: int = 0
 var run_successful_dodges: int = 0
 var run_started_at: int = 0
+var run_seed: int = 1
+var run_difficulty: int = 0
 
 var _settings_overlay: Control = null
 var _settings_previous_pause_state := false
@@ -128,6 +173,8 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"run_perfect_rebuttals": run_perfect_rebuttals,
 		"run_successful_dodges": run_successful_dodges,
 		"run_started_at": run_started_at,
+		"run_seed": run_seed,
+		"run_difficulty": run_difficulty,
 	}
 	if player_major_id.begins_with("custom_") and Config.majors.has(player_major_id):
 		var major: MajorResource = Config.majors[player_major_id]
@@ -231,6 +278,8 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 	run_perfect_rebuttals = maxi(0, int(data.get("run_perfect_rebuttals", 0)))
 	run_successful_dodges = maxi(0, int(data.get("run_successful_dodges", 0)))
 	run_started_at = maxi(0, int(data.get("run_started_at", 0)))
+	run_seed = maxi(1, int(data.get("run_seed", 1)) % RUN_SEED_MODULUS)
+	run_difficulty = clampi(int(data.get("run_difficulty", 0)), 0, DIFFICULTY_CATALOG.size() - 1)
 	current_screen = _save_name_to_screen(str(data.get("screen", "")))
 	return current_screen != Screen.MENU
 
@@ -360,7 +409,7 @@ func _save_name_to_screen(screen_name: String) -> Screen:
 	return Screen.MENU
 
 
-func start_run(major_id: String) -> void:
+func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0) -> void:
 	player_major_id = major_id
 	player_stats = {}
 	run_progress = 0
@@ -382,9 +431,46 @@ func start_run(major_id: String) -> void:
 	run_perfect_rebuttals = 0
 	run_successful_dodges = 0
 	run_started_at = int(Time.get_unix_time_from_system())
+	run_seed = _normalize_run_seed(seed_override)
+	run_difficulty = clampi(difficulty, 0, DIFFICULTY_CATALOG.size() - 1)
 	_init_run_from_major(major_id)
 	current_screen = Screen.CAMPUS_EXPLORE
 	save_run_checkpoint(Screen.CAMPUS_EXPLORE)
+
+
+func _normalize_run_seed(seed_override: int) -> int:
+	if seed_override != 0:
+		return maxi(1, absi(seed_override) % RUN_SEED_MODULUS)
+	var generated := int(Time.get_unix_time_from_system()) + Time.get_ticks_usec()
+	return maxi(1, generated % RUN_SEED_MODULUS)
+
+
+func seed_from_text(text: String) -> int:
+	var normalized := text.strip_edges()
+	if normalized.is_empty():
+		return 0
+	if not normalized.is_valid_int():
+		return -1
+	return maxi(1, absi(int(normalized)) % RUN_SEED_MODULUS)
+
+
+func make_run_rng(stream: String, index: int = 0) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	var value := (run_seed + absi(index) * 1103515245) % RUN_SEED_MODULUS
+	for byte in stream.to_utf8_buffer():
+		value = (value * 48271 + int(byte) + 1) % RUN_SEED_MODULUS
+	rng.seed = maxi(1, value)
+	return rng
+
+
+func get_difficulty_info(difficulty: int = -1) -> Dictionary:
+	var index := run_difficulty if difficulty < 0 else difficulty
+	index = clampi(index, 0, DIFFICULTY_CATALOG.size() - 1)
+	return (DIFFICULTY_CATALOG[index] as Dictionary).duplicate(true)
+
+
+func get_difficulty_name(difficulty: int = -1) -> String:
+	return str(get_difficulty_info(difficulty).get("name", "标准生存"))
 
 
 func add_relic(relic_id: String) -> void:
@@ -431,6 +517,9 @@ func record_enemy_defeat(enemy_id: String, enemy_name: String, enemy_type: Strin
 	if has_relic("mentor_letter"):
 		credit_gain = int(credit_gain * 1.5)
 		point_gain = int(point_gain * 1.5)
+	var reward_multiplier := float(get_difficulty_info().get("reward_multiplier", 1.0))
+	credit_gain = int(round(float(credit_gain) * reward_multiplier))
+	point_gain = int(round(float(point_gain) * reward_multiplier))
 	credits += credit_gain
 	credit_points += point_gain
 	var was_elite := last_reward_is_elite
@@ -486,6 +575,8 @@ func create_battle_player() -> Character:
 			player.add_status(status_id, stacks)
 	pending_buffs.clear()
 
+	var enemy_id := str(player_stats.get("current_enemy_id", "unassigned"))
+	player.set_rng(make_run_rng("deck:%s" % enemy_id, run_battles_won))
 	player.draw_pile = player.deck.duplicate()
 	player.shuffle_draw_pile()
 	return player

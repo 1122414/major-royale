@@ -15,6 +15,7 @@ func _ready() -> void:
 func _run_full_game() -> void:
 	_previous_ai_enabled = Settings.ai_enabled
 	Settings.ai_enabled = false
+	Achievements.save_enabled = false
 	_previous_run_save_enabled = GameState.run_save_enabled
 	GameState.run_save_enabled = false
 

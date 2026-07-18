@@ -18,6 +18,9 @@ const DIFFS := [
 
 func _ready() -> void:
 	back_button.pressed.connect(_on_back)
+	var max_difficulty := Achievements.get_max_unlocked_difficulty()
+	title_label.text = "成就 · 挑战阶梯 %d/%d" % [max_difficulty + 1, GameState.DIFFICULTY_CATALOG.size()]
+	title_label.tooltip_text = "最高可选：%s。挑战阶梯只解锁新规则与徽记，不提供永久数值加成。" % GameState.get_difficulty_name(max_difficulty)
 	for d in DIFFS:
 		var btn := Button.new()
 		btn.text = d.name
@@ -34,7 +37,9 @@ func _select_diff(diff: String) -> void:
 	_current_diff = diff
 	for child in list.get_children():
 		child.queue_free()
-	detail.text = "点击成就查看详情"
+	detail.text = "点击成就查看详情\n\n最高可选挑战：%s\n挑战通关只解锁下一阶规则，不增加永久属性。" % GameState.get_difficulty_name(
+		Achievements.get_max_unlocked_difficulty()
+	)
 	for a in Achievements.get_by_difficulty(diff):
 		var unlocked: bool = Achievements.is_unlocked(a.id)
 		var btn := Button.new()

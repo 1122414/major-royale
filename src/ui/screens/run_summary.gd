@@ -33,7 +33,10 @@ func _build_summary(is_clear: bool) -> String:
 		major_name = Config.majors[major_name].name
 
 	var lines: PackedStringArray = []
-	lines.append("专业：%s　　天数：第%d天　　压力圈：%d" % [major_name, GameState.day_count, GameState.run_progress])
+	lines.append("专业：%s　　挑战：%s　　种子：%d" % [
+		major_name, GameState.get_difficulty_name(), GameState.run_seed
+	])
+	lines.append("天数：第%d天　　压力圈：%d" % [GameState.day_count, GameState.run_progress])
 	lines.append("生命 %d/%d　　精神 %d/%d" % [GameState.run_hp, GameState.run_max_hp, GameState.run_spirit, GameState.run_max_spirit])
 	lines.append("学分 %d　　信用点 %d　　牌库 %d 张" % [GameState.credits, GameState.credit_points, GameState.deck_card_ids.size()])
 	var RelicCat = preload("res://src/logic/relic.gd")
@@ -60,6 +63,12 @@ func _build_summary(is_clear: bool) -> String:
 	if is_clear:
 		lines.append("")
 		lines.append("你通过了终极答辩。成就已结算，可在主页「成就」查看。")
+		if GameState.run_difficulty >= GameState.DIFFICULTY_CATALOG.size() - 1:
+			lines.append("最高挑战「唯一席位」已完成。")
+		else:
+			lines.append("下一阶挑战「%s」现已可选；挑战解锁不提供永久数值加成。" % GameState.get_difficulty_name(
+				GameState.run_difficulty + 1
+			))
 	return "\n".join(lines)
 
 

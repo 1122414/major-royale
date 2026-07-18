@@ -27,6 +27,8 @@ const CATALOG := [
 var unlocked: Dictionary = {}  # id -> unix time
 var cleared_majors: Array[String] = []
 var defeated_ai_ids: Array[String] = []
+var highest_cleared_difficulty: int = -1
+var save_enabled := true
 
 
 func _ready() -> void:
@@ -46,14 +48,22 @@ func load_achievements() -> void:
 	defeated_ai_ids.clear()
 	for a in cfg.get_value("meta", "defeated_ai", []):
 		defeated_ai_ids.append(str(a))
+	highest_cleared_difficulty = clampi(
+		int(cfg.get_value("meta", "highest_cleared_difficulty", -1)),
+		-1,
+		GameState.DIFFICULTY_CATALOG.size() - 1
+	)
 
 
 func save_achievements() -> void:
+	if not save_enabled:
+		return
 	var cfg := ConfigFile.new()
 	for id in unlocked:
 		cfg.set_value("unlocked", id, unlocked[id])
 	cfg.set_value("meta", "cleared_majors", cleared_majors)
 	cfg.set_value("meta", "defeated_ai", defeated_ai_ids)
+	cfg.set_value("meta", "highest_cleared_difficulty", highest_cleared_difficulty)
 	cfg.save(SAVE_PATH)
 
 
@@ -100,6 +110,9 @@ func try_after_defense_window(outcome: String) -> void:
 
 
 func try_after_clear() -> void:
+	if GameState.run_difficulty > highest_cleared_difficulty:
+		highest_cleared_difficulty = GameState.run_difficulty
+		save_achievements()
 	unlock("sole_survivor")
 	if GameState.run_spirit >= int(GameState.run_max_spirit * 0.5):
 		unlock("no_spirit_break")
@@ -113,6 +126,10 @@ func try_after_clear() -> void:
 		save_achievements()
 	if cleared_majors.size() >= 5:
 		unlock("all_majors")
+
+
+func get_max_unlocked_difficulty() -> int:
+	return clampi(highest_cleared_difficulty + 1, 0, GameState.DIFFICULTY_CATALOG.size() - 1)
 
 
 func get_by_difficulty(diff: String) -> Array:
