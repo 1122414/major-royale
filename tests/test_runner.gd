@@ -24,6 +24,7 @@ func _ready() -> void:
 	assert(Config.cards.size() == 108, "卡牌数量应为 108")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
+	_test_card_archetype_coverage()
 
 	assert(not Config.enemies.is_empty(), "敌人数据未加载")
 	assert(Config.enemies.has("gpa_anxiety"), "缺少普通敌人")
@@ -47,6 +48,7 @@ func _ready() -> void:
 	_test_battle_presentation()
 	_test_professional_asset_coverage()
 	_test_card_effect_and_cost_feedback()
+	_test_specialization_rules()
 	_test_ai_decision_whitelist()
 	_test_rule_integrity_regressions()
 	_test_defense_window_core()
@@ -240,6 +242,145 @@ func _test_card_effect_and_cost_feedback() -> void:
 	assert(battle.play_card(0), "重构应可正常结算")
 	assert(player.shield >= 6, "重构应获得至少 6 点护盾")
 	assert(not player.has_status("pressure"), "重构应移除 1 个负面状态")
+
+
+func _test_card_archetype_coverage() -> void:
+	var expected := {
+		"computer": ["Bug 爆破", "防火墙", "高速循环"],
+		"law": ["举证审判", "庭审控场", "辩护反击"],
+		"medicine": ["急救续航", "外科爆发", "防疫抗压"],
+		"finance": ["对冲护盾", "做空压制", "杠杆轮转"],
+		"arts": ["锐评控场", "灵感连锁", "舞台爆发"],
+	}
+	for major_id in expected:
+		var archetype_counts := {}
+		for card in Config.cards.values():
+			if str(card.major_id) != major_id:
+				continue
+			var archetype := str(card.archetype)
+			archetype_counts[archetype] = int(archetype_counts.get(archetype, 0)) + 1
+		assert(archetype_counts.keys().size() == 3, "%s 应有且仅有三条构筑流派" % major_id)
+		for archetype in expected[major_id]:
+			assert(int(archetype_counts.get(archetype, 0)) >= 3, "%s 的 %s 流派至少需要 3 张支持牌" % [major_id, archetype])
+		var options := RewardGenerator._spread_card_candidates(RewardGenerator._get_card_pool(major_id), 3)
+		var option_archetypes := {}
+		for card in options:
+			option_archetypes[str(card.archetype)] = true
+		assert(option_archetypes.keys().size() == 3, "%s 的卡牌奖励应同时展示三条流派方向" % major_id)
+
+
+func _test_specialization_rules() -> void:
+	GameState.start_run("computer")
+	var exhaust_player := GameState.create_battle_player()
+	var exhaust_battle := Battle.new(exhaust_player, Config.enemies["employment_pressure"])
+	exhaust_player.hand = [Config.cards["quick_script"]]
+	exhaust_player.draw_pile = [Config.cards["strike"]]
+	exhaust_player.discard_pile.clear()
+	exhaust_player.exhaust_pile.clear()
+	exhaust_battle.energy = 3
+	assert(Config.cards["quick_script"].exhausts, "0 费循环牌应具备消耗关键词")
+	assert(exhaust_battle.play_card(0), "0 费循环牌应可打出")
+	assert(Config.cards["quick_script"] in exhaust_player.exhaust_pile, "消耗牌不应返回弃牌堆形成无限循环")
+	assert(Config.cards["quick_script"] not in exhaust_player.discard_pile, "消耗牌不得进入弃牌堆")
+
+	GameState.start_run("medicine")
+	var adrenaline_player := GameState.create_battle_player()
+	var adrenaline_battle := Battle.new(adrenaline_player, Config.enemies["employment_pressure"])
+	adrenaline_player.hand = [Config.cards["adrenaline"], Config.cards["bug_generate"], Config.cards["scalpel"]]
+	adrenaline_battle.energy = 3
+	assert(adrenaline_battle.play_card(0), "医学肾上腺素应可打出")
+	assert(adrenaline_player.get_status_stacks("adrenaline") == 3, "肾上腺素应施加给玩家")
+	assert(not adrenaline_battle.enemy.has_status("adrenaline"), "肾上腺素不得错误施加给敌人")
+	var hp_before_skill := adrenaline_battle.enemy.hp
+	assert(adrenaline_battle.play_card(0), "带伤害的技能牌应可打出")
+	assert(hp_before_skill - adrenaline_battle.enemy.hp == 6, "肾上腺素只应强化攻击牌，不应强化技能伤害")
+	# 单独验证肾上腺素固定增益，避免医学 30% 弱点被动让断言随机波动。
+	adrenaline_player.major_id = "test_without_random_passive"
+	var hp_before_attack := adrenaline_battle.enemy.hp
+	assert(adrenaline_battle.play_card(0), "医学攻击牌应可打出")
+	assert(hp_before_attack - adrenaline_battle.enemy.hp == 12, "医学攻击牌应获得 3 点肾上腺素伤害")
+	adrenaline_battle._enemy_intent = {"id": "shield", "value": 1}
+	adrenaline_battle.end_player_turn()
+	assert(not adrenaline_player.has_status("adrenaline"), "肾上腺素应在玩家回合结束时清除")
+
+	GameState.start_run("arts")
+	var pressure_player := GameState.create_battle_player()
+	var pressure_battle := Battle.new(pressure_player, Config.enemies["employment_pressure"])
+	pressure_battle.enemy.add_status("pressure", 2)
+	pressure_battle._enemy_intent = {"id": "attack", "value": 10}
+	var hp_before_pressure := pressure_player.hp
+	pressure_battle.end_player_turn()
+	assert(hp_before_pressure - pressure_player.hp == 8, "敌人 2 层压力应把直接伤害降低 20%")
+	assert(pressure_battle.enemy.get_status_stacks("pressure") == 1, "敌人压力应在每个敌方回合后衰减 1 层")
+
+	GameState.start_run("computer")
+	var bug_battle := Battle.new(GameState.create_battle_player(), Config.enemies["employment_pressure"])
+	bug_battle.enemy.add_status("bug", 4)
+	assert(is_equal_approx(bug_battle.get_bug_failure_chance(), 0.6), "4 层 Bug 应提供 60% 行动失败率")
+	bug_battle.enemy.add_status("bug", 10)
+	assert(is_equal_approx(bug_battle.get_bug_failure_chance(), 0.75), "Bug 行动失败率应封顶 75%")
+
+	_test_scaled_finishers()
+
+
+func _test_scaled_finishers() -> void:
+	GameState.start_run("computer")
+	var computer_player := GameState.create_battle_player()
+	var computer_battle := Battle.new(computer_player, Config.enemies["employment_pressure"])
+	computer_player.hand = [
+		Config.cards["kernel_panic"],
+		Config.cards["strike"],
+		Config.cards["defend"],
+		Config.cards["quick_script"],
+		Config.cards["refactor"],
+	]
+	computer_battle.energy = 3
+	var hp_before_kernel := computer_battle.enemy.hp
+	assert(computer_battle.play_card(0), "内核恐慌应可打出")
+	assert(hp_before_kernel - computer_battle.enemy.hp == 20, "内核恐慌应按其他手牌数量放大")
+
+	GameState.start_run("law")
+	var law_player := GameState.create_battle_player()
+	var law_battle := Battle.new(law_player, Config.enemies["employment_pressure"])
+	law_player.hand = [Config.cards["closing"]]
+	law_battle.energy = 3
+	law_battle.delay_enemy(2)
+	var hp_before_closing := law_battle.enemy.hp
+	assert(law_battle.play_card(0), "结案陈词应可打出")
+	assert(hp_before_closing - law_battle.enemy.hp == 22, "结案陈词应按拖延回合放大")
+	assert(law_battle.get_enemy_delay() == 0, "结案陈词应消耗全部拖延")
+
+	GameState.start_run("medicine")
+	var medicine_player := GameState.create_battle_player()
+	var medicine_battle := Battle.new(medicine_player, Config.enemies["employment_pressure"])
+	medicine_player.hand = [Config.cards["crisis_or"]]
+	medicine_battle.energy = 3
+	medicine_battle.enemy.add_status("bleed", 2)
+	var hp_before_surgery := medicine_battle.enemy.hp
+	assert(medicine_battle.play_card(0), "急诊开刀应可打出")
+	assert(hp_before_surgery - medicine_battle.enemy.hp == 24, "急诊开刀应按流血层数放大")
+	assert(not medicine_battle.enemy.has_status("bleed"), "急诊开刀应消耗全部流血")
+
+	GameState.start_run("finance")
+	var finance_player := GameState.create_battle_player()
+	var finance_battle := Battle.new(finance_player, Config.enemies["employment_pressure"])
+	finance_player.hand = [Config.cards["ipo"]]
+	finance_player.gain_shield(10)
+	finance_battle.energy = 3
+	var hp_before_ipo := finance_battle.enemy.hp
+	assert(finance_battle.play_card(0), "上市敲钟应可打出")
+	assert(hp_before_ipo - finance_battle.enemy.hp == 20, "上市敲钟应把当前护盾转化为伤害")
+	assert(finance_player.shield == 0, "上市敲钟应消耗全部护盾")
+
+	GameState.start_run("arts")
+	var arts_player := GameState.create_battle_player()
+	var arts_battle := Battle.new(arts_player, Config.enemies["employment_pressure"])
+	arts_player.hand = [Config.cards["masterpiece"]]
+	arts_battle._turn_card_types = ["skill", "control", "attack"]
+	arts_battle.energy = 3
+	var hp_before_masterpiece := arts_battle.enemy.hp
+	assert(arts_battle.play_card(0), "代表作应可打出")
+	assert(hp_before_masterpiece - arts_battle.enemy.hp == 18, "代表作应按本回合出牌数放大")
 
 
 func _test_ai_decision_whitelist() -> void:

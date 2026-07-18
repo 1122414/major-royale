@@ -23,15 +23,20 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 	var rewards: Array[Dictionary] = []
 
 	var card_pool := _get_card_pool(major_id, is_elite)
-	_shuffle_with_rng(card_pool, rng)
-	var card_candidates := card_pool.slice(0, mini(3, card_pool.size()))
+	_shuffle_card_pool(card_pool, rng, is_elite)
+	var card_candidates := _spread_card_candidates(card_pool, 3)
 	rewards.append({
 		"type": RewardType.CARD,
 		"label": "精选新卡" if is_elite else "获得新卡",
 		"options": card_candidates,
 	})
 	if is_elite or (card_pool.size() > 3 and rng.randf() < 0.7):
-		var more := card_pool.slice(3, mini(6, card_pool.size()))
+		var remaining_cards := []
+		for card in card_pool:
+			if card not in card_candidates:
+				remaining_cards.append(card)
+		# 第二组保留洗牌后的混合池，让通用牌与同流派补强仍有真实出现路径。
+		var more := remaining_cards.slice(0, mini(3, remaining_cards.size()))
 		if not more.is_empty():
 			rewards.append({
 				"type": RewardType.CARD,
@@ -145,3 +150,41 @@ static func _shuffle_with_rng(items: Array, rng: RandomNumberGenerator) -> void:
 		var item = items[i]
 		items[i] = items[swap_index]
 		items[swap_index] = item
+
+
+static func _shuffle_card_pool(pool: Array, rng: RandomNumberGenerator, prefer_rare: bool) -> void:
+	if not prefer_rare:
+		_shuffle_with_rng(pool, rng)
+		return
+	var advanced := []
+	var common := []
+	for card in pool:
+		if str(card.rarity) in ["uncommon", "rare"]:
+			advanced.append(card)
+		else:
+			common.append(card)
+	_shuffle_with_rng(advanced, rng)
+	_shuffle_with_rng(common, rng)
+	pool.clear()
+	pool.append_array(advanced)
+	pool.append_array(common)
+
+
+static func _spread_card_candidates(pool: Array, count: int) -> Array:
+	var output := []
+	var used_archetypes := {}
+	for card in pool:
+		var archetype := str(card.archetype)
+		if archetype.is_empty() or used_archetypes.has(archetype):
+			continue
+		output.append(card)
+		used_archetypes[archetype] = true
+		if output.size() >= count:
+			return output
+	for card in pool:
+		if card in output:
+			continue
+		output.append(card)
+		if output.size() >= count:
+			break
+	return output

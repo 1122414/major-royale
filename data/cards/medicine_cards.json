@@ -68,7 +68,8 @@
         {
           "type": "buff",
           "status_id": "adrenaline",
-          "status_stacks": 3
+          "status_stacks": 3,
+          "target": "self"
         }
       ]
     },
@@ -291,11 +292,17 @@
       "cost": 2,
       "rarity": "rare",
       "major_id": "medicine",
-      "description": "造成 15 点伤害。",
+      "description": "造成 10 点伤害；敌人每层流血使伤害 +6，并消耗全部流血。",
       "effects": [
         {
-          "type": "damage",
-          "value": 15
+          "type": "scaled_damage",
+          "value": 10,
+          "params": {
+            "scaling": "status",
+            "status_id": "bleed",
+            "per": 6,
+            "consume": true
+          }
         }
       ]
     },

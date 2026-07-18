@@ -171,11 +171,15 @@
       "cost": 2,
       "rarity": "rare",
       "major_id": "arts",
-      "description": "造成 15 点伤害。",
+      "description": "造成 5 点伤害；本回合每打出 1 张牌，伤害 +3。",
       "effects": [
         {
-          "type": "damage",
-          "value": 15
+          "type": "scaled_damage",
+          "value": 5,
+          "params": {
+            "scaling": "cards_played",
+            "per": 3
+          }
         }
       ]
     },

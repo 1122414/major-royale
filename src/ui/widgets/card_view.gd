@@ -115,7 +115,8 @@ func _refresh() -> void:
 	type_label.text = "— %s —" % _type_name(_card.type)
 	desc_label.text = _effective_description(_card)
 	var major_id := str(_card.major_id)
-	major_label.text = MAJOR_NAMES.get(major_id, "通用")
+	var major_name := str(MAJOR_NAMES.get(major_id, "通用"))
+	major_label.text = "%s · %s" % [major_name, _card.archetype] if not str(_card.archetype).is_empty() else major_name
 	major_label.add_theme_color_override("font_color", MAJOR_COLORS.get(major_id, UIColors.TEXT_MUTED))
 	var rarity := str(_card.rarity)
 	rarity_label.text = RARITY_NAMES.get(rarity, rarity)
@@ -185,6 +186,8 @@ func _frame_color(card_type: String, rarity: String) -> Color:
 
 func _effective_description(card: Resource) -> String:
 	var description := str(card.description)
+	if bool(card.exhausts):
+		description += "\n消耗：本场仅用一次"
 	var total_base_damage := 0
 	for effect in card.effects:
 		if str(effect.type) == "damage":

@@ -21,6 +21,7 @@ var deck: Array[Resource] = []      ## 全部卡牌
 var draw_pile: Array[Resource] = [] ## 抽牌堆
 var hand: Array[Resource] = []      ## 手牌
 var discard_pile: Array[Resource] = [] ## 弃牌堆
+var exhaust_pile: Array[Resource] = [] ## 本场战斗已消耗的卡牌
 
 
 func _init(p_id: String, p_name: String, p_max_hp: int, p_is_player: bool = false) -> void:

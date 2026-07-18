@@ -12,20 +12,22 @@ func _init(battle: Battle) -> void:
 
 func process_card(card: Resource, caster: Character, target: Character) -> void:
 	for effect in card.effects:
-		_process_effect(effect, caster, target)
+		_process_effect(effect, caster, target, str(card.type))
 
 
-func _process_effect(effect: Resource, caster: Character, target: Character) -> void:
+func _process_effect(effect: Resource, caster: Character, target: Character, card_type: String) -> void:
 	var type: String = effect.type
 	var value: int = effect.value
 	var effect_target: String = effect.target
 
 	var actual_target := _resolve_target(effect_target, caster, target)
+	if type == "buff" and effect_target.is_empty():
+		actual_target = caster
 
 	match type:
 		"damage":
 			var damage := value
-			if caster.has_status("adrenaline"):
+			if card_type == "attack" and caster.has_status("adrenaline"):
 				damage += caster.get_status_stacks("adrenaline")
 			if caster.is_player:
 				damage += int(GameState.get_effective_stat("学识") / 3)
@@ -76,6 +78,8 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			var actual_damage := actual_target.take_damage(real_value)
 			if caster.is_player:
 				GameState.run_damage_dealt += actual_damage
+		"scaled_damage":
+			_process_scaled_damage(effect, caster, actual_target)
 		"damage_per_debuff":
 			var debuff_count := _count_debuffs(actual_target)
 			var total := debuff_count * value
@@ -86,6 +90,41 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 			var battle := _get_battle()
 			if battle != null:
 				battle.delay_enemy(value)
+
+
+func _process_scaled_damage(effect: Resource, caster: Character, target: Character) -> void:
+	if target == null:
+		return
+	var battle := _get_battle()
+	var scaling := str(_get_effect_param(effect, "scaling", ""))
+	var source_value := 0
+	match scaling:
+		"cards_played":
+			source_value = battle.get_cards_played_this_turn() if battle != null else 0
+		"hand":
+			source_value = caster.hand.size()
+		"shield":
+			source_value = caster.shield
+		"status":
+			source_value = target.get_status_stacks(str(_get_effect_param(effect, "status_id", "")))
+		"delay":
+			source_value = battle.get_enemy_delay() if battle != null else 0
+	var damage: int = int(effect.value) + source_value * int(_get_effect_param(effect, "per", 1))
+	if caster.is_player:
+		damage += int(GameState.get_effective_stat("学识") / 3)
+	var actual_damage: int = target.take_damage(maxi(0, damage))
+	if caster.is_player:
+		GameState.run_damage_dealt += actual_damage
+	if not bool(_get_effect_param(effect, "consume", false)):
+		return
+	match scaling:
+		"shield":
+			caster.shield = 0
+		"status":
+			target.remove_status(str(_get_effect_param(effect, "status_id", "")))
+		"delay":
+			if battle != null:
+				battle.consume_enemy_delay()
 
 
 func _get_battle() -> Battle:

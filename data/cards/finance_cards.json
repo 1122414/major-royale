@@ -167,11 +167,17 @@
       "cost": 2,
       "rarity": "rare",
       "major_id": "finance",
-      "description": "造成 16 点伤害。",
+      "archetype": "对冲护盾",
+      "description": "造成 8 点伤害并追加等同当前护盾的伤害，随后消耗全部护盾。",
       "effects": [
         {
-          "type": "damage",
-          "value": 16
+          "type": "scaled_damage",
+          "value": 8,
+          "params": {
+            "scaling": "shield",
+            "per": 1,
+            "consume": true
+          }
         }
       ]
     },

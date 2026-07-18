@@ -106,7 +106,10 @@ func play_card(card_index: int) -> bool:
 	if GameState.has_relic("thesis_clip") and _thesis_clip_ready and card.cost > 0:
 		_thesis_clip_ready = false
 	player.hand.remove_at(card_index)
-	player.discard_pile.append(card)
+	if bool(card.exhausts):
+		player.exhaust_pile.append(card)
+	else:
+		player.discard_pile.append(card)
 	GameState.run_cards_played += 1
 	_turn_card_types.append(str(card.type))
 
@@ -220,6 +223,8 @@ func end_player_turn() -> void:
 		return
 
 	_defense_window_open = false
+	# 肾上腺素是本回合攻击强化，不得跨回合永久累积。
+	player.remove_status("adrenaline")
 	player.discard_hand()
 	state = BattleState.ENEMY_TURN
 	turn_changed.emit(false)
@@ -306,8 +311,8 @@ func _execute_enemy_turn() -> void:
 		_end_enemy_turn()
 		return
 
-	# 被眩晕或 Bug 导致行动失败
-	if _enemy_intent.get("id", "") == "stunned" or (enemy.has_status("bug") and randf() < 0.25):
+	# 被眩晕或 Bug 导致行动失败；Bug 叠层会真实提高失败率。
+	if _enemy_intent.get("id", "") == "stunned" or (enemy.has_status("bug") and randf() < get_bug_failure_chance()):
 		_enemy_intent = {}
 		_end_enemy_turn()
 		return
@@ -414,6 +419,11 @@ func _enemy_control_connects() -> bool:
 
 
 func _apply_damage_to_player(damage: int) -> void:
+	# 敌人压力会削弱其所有直接伤害，每层 10%，最多 50%。
+	var enemy_pressure := enemy.get_status_stacks("pressure")
+	if enemy_pressure > 0:
+		damage = int(round(float(damage) * (1.0 - minf(0.5, float(enemy_pressure) * 0.1))))
+
 	# 压力圈：每点进度 +5% 敌伤，上限 +40%（Boss 不受此加成）
 	var enemy_id := str(GameState.player_stats.get("current_enemy_id", ""))
 	var is_boss := enemy_id == "employment_pressure"
@@ -439,6 +449,8 @@ func _apply_damage_to_player(damage: int) -> void:
 
 
 func _end_enemy_turn() -> void:
+	if enemy.has_status("pressure"):
+		enemy.remove_status("pressure", 1)
 	_defense_outcome = "miss"
 	_incoming_damage_multiplier = 1.0
 	turn_count += 1
@@ -649,6 +661,24 @@ func get_enemy_intent_id() -> String:
 
 func delay_enemy(turns: int) -> void:
 	_enemy_delay += turns
+
+
+func get_enemy_delay() -> int:
+	return _enemy_delay
+
+
+func consume_enemy_delay() -> int:
+	var consumed := _enemy_delay
+	_enemy_delay = 0
+	return consumed
+
+
+func get_cards_played_this_turn() -> int:
+	return _turn_card_types.size()
+
+
+func get_bug_failure_chance() -> float:
+	return clampf(float(enemy.get_status_stacks("bug")) * 0.15, 0.0, 0.75)
 
 
 func reveal_intent() -> void:

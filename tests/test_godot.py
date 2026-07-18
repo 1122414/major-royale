@@ -19,9 +19,11 @@ def _run_godot_scene(scene: Path) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
     print(result.stdout)
-    if result.returncode != 0:
+    combined_output = f"{result.stdout}\n{result.stderr}"
+    fatal_markers = ("SCRIPT ERROR:", "Assertion failed:", "Parse Error:", "Compile Error:")
+    if result.returncode != 0 or any(marker in combined_output for marker in fatal_markers):
         print(result.stderr, file=sys.stderr)
-        raise AssertionError(f"Godot 测试失败，返回码: {result.returncode}")
+        raise AssertionError(f"Godot 测试失败或日志含断言/编译错误，返回码: {result.returncode}")
     return result
 
 

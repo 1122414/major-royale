@@ -268,11 +268,15 @@
       "cost": 2,
       "rarity": "rare",
       "major_id": "computer",
-      "description": "造成 16 点伤害。",
+      "description": "造成 6 点伤害，其他每张手牌使伤害 +3。",
       "effects": [
         {
-          "type": "damage",
-          "value": 16
+          "type": "scaled_damage",
+          "value": 6,
+          "params": {
+            "scaling": "hand",
+            "per": 3
+          }
         }
       ]
     },

@@ -286,11 +286,17 @@
       "cost": 2,
       "rarity": "rare",
       "major_id": "law",
-      "description": "造成 14 点伤害。",
+      "archetype": "庭审控场",
+      "description": "造成 8 点伤害；敌人每有 1 回合拖延，伤害 +6 并消耗全部拖延。",
       "effects": [
         {
-          "type": "damage",
-          "value": 14
+          "type": "scaled_damage",
+          "value": 8,
+          "params": {
+            "scaling": "delay",
+            "per": 6,
+            "consume": true
+          }
         }
       ]
     },

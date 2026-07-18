@@ -6,7 +6,7 @@ extends RefCounted
 const STATUS_DATABASE := {
 	"bug": {
 		"name": "Bug",
-		"description": "叠层后触发额外伤害或行动失败。",
+		"description": "每层提高 15% 行动失败率，最多 75%；也可被终结牌利用。",
 		"is_debuff": true,
 	},
 	"举证失败": {
@@ -28,7 +28,7 @@ const STATUS_DATABASE := {
 	},
 	"pressure": {
 		"name": "压力",
-		"description": "精神下降，影响抽牌或事件判定。",
+		"description": "玩家压力压缩抽牌与答辩窗口；敌人压力每层降低 10% 伤害并逐回合衰减。",
 		"is_debuff": true,
 	},
 	"shield": {
