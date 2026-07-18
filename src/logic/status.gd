@@ -22,7 +22,7 @@ const STATUS_DATABASE := {
 	},
 	"bleed": {
 		"name": "流血",
-		"description": "每回合损失 3 点生命。",
+		"description": "每回合损失 3 点生命，结算后减少 1 层。",
 		"is_debuff": true,
 		"tick_damage": 3,
 	},
@@ -38,7 +38,7 @@ const STATUS_DATABASE := {
 	},
 	"resistance": {
 		"name": "抗压",
-		"description": "负面状态抵抗。",
+		"description": "每层抵消下一次负面状态施加。",
 		"is_debuff": false,
 	},
 	"adrenaline": {

@@ -23,7 +23,7 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 	var rewards: Array[Dictionary] = []
 
 	var card_pool := _get_card_pool(major_id, is_elite)
-	card_pool.shuffle()
+	_shuffle_with_rng(card_pool, rng)
 	var card_candidates := card_pool.slice(0, mini(3, card_pool.size()))
 	rewards.append({
 		"type": RewardType.CARD,
@@ -54,7 +54,7 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 		"type": RewardType.BUFF,
 		"label": "临时强化",
 		"status_id": buff,
-		"stacks": 3 if is_elite and buff == "shield" else (2 if buff == "shield" else 1),
+		"stacks": 12 if is_elite and buff == "shield" else (8 if buff == "shield" else 1),
 	})
 
 	rewards.append({
@@ -77,27 +77,33 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 
 	# 遗物：普通战低概率；精英战必出且可选多件
 	if is_elite:
-		var relic_a := RelicCat.random_relic(rng, true)
-		rewards.append({
-			"type": RewardType.RELIC,
-			"label": "精英遗物",
-			"relic_id": relic_a,
-		})
-		var relic_b := RelicCat.random_relic(rng, true)
-		if relic_b != relic_a:
+		var relic_a := RelicCat.random_relic(rng, true, GameState.run_relic_ids)
+		if not relic_a.is_empty():
+			rewards.append({
+				"type": RewardType.RELIC,
+				"label": "精英遗物",
+				"relic_id": relic_a,
+			})
+		var relic_exclusions := GameState.run_relic_ids.duplicate()
+		if not relic_a.is_empty():
+			relic_exclusions.append(relic_a)
+		var relic_b := RelicCat.random_relic(rng, true, relic_exclusions)
+		if not relic_b.is_empty():
 			rewards.append({
 				"type": RewardType.RELIC,
 				"label": "精英遗物",
 				"relic_id": relic_b,
 			})
 	elif rng.randf() < 0.35:
-		rewards.append({
-			"type": RewardType.RELIC,
-			"label": "获得遗物",
-			"relic_id": RelicCat.random_relic(rng, false),
-		})
+		var relic_id := RelicCat.random_relic(rng, false, GameState.run_relic_ids)
+		if not relic_id.is_empty():
+			rewards.append({
+				"type": RewardType.RELIC,
+				"label": "获得遗物",
+				"relic_id": relic_id,
+			})
 
-	rewards.shuffle()
+	_shuffle_with_rng(rewards, rng)
 	var count := mini(rewards.size(), 6 if is_elite else 5 + rng.randi_range(0, 1))
 	# 精英战保证至少有一个遗物选项在展示里
 	if is_elite:
@@ -125,5 +131,17 @@ static func _get_card_pool(major_id: String, prefer_rare: bool = false) -> Array
 			rares.append(card)
 		pool.append(card)
 	if prefer_rare and not rares.is_empty():
-		return rares + pool
+		var commons := []
+		for card in pool:
+			if card not in rares:
+				commons.append(card)
+		return rares + commons
 	return pool
+
+
+static func _shuffle_with_rng(items: Array, rng: RandomNumberGenerator) -> void:
+	for i in range(items.size() - 1, 0, -1):
+		var swap_index := rng.randi_range(0, i)
+		var item = items[i]
+		items[i] = items[swap_index]
+		items[swap_index] = item

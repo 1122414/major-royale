@@ -4,6 +4,7 @@ extends Node
 const MajorResource := preload("res://src/resources/major_resource.gd")
 const CardResource := preload("res://src/resources/card_resource.gd")
 const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
+const RelicCatalog := preload("res://src/logic/relic.gd")
 
 func _ready() -> void:
 	print("TEST: 开始 Godot 数据加载测试")
@@ -45,6 +46,8 @@ func _ready() -> void:
 	_test_professional_asset_coverage()
 	_test_card_effect_and_cost_feedback()
 	_test_ai_decision_whitelist()
+	_test_rule_integrity_regressions()
+	_test_reward_determinism_and_uniqueness()
 	await _test_ai_native_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
 
@@ -52,6 +55,7 @@ func _ready() -> void:
 	_test_all_preset_majors_startable()
 	_test_run_state_persistence()
 	_test_ai_first_turn_request()
+	await _test_event_defeat_does_not_revive()
 	print("TEST: 局内状态回归测试通过")
 
 	print("TEST: 开始自定义专业测试")
@@ -220,6 +224,104 @@ func _test_ai_decision_whitelist() -> void:
 	assert(battle.get_enemy_intent_id() in allowed_ids, "非法行动应回落到白名单策略")
 	assert(battle.set_ai_decision("ask_algorithm", "准备算法追问。", ""), "白名单行动应被接受")
 	assert(battle.get_enemy_intent_id() == "ask_algorithm", "合法行动应成为当前意图")
+
+
+func _test_rule_integrity_regressions() -> void:
+	var status_target := Character.new("target", "测试目标", 30)
+	status_target.add_status("resistance", 1)
+	status_target.add_status("pressure", 3)
+	assert(not status_target.has_status("pressure"), "抗压应抵消下一次完整的负面状态施加")
+	assert(not status_target.has_status("resistance"), "抗压生效后应消耗一层")
+
+	GameState.start_run("computer")
+	GameState.add_pending_buff("shield", 8)
+	GameState.add_pending_buff("resistance", 1)
+	var buffed_player := GameState.create_battle_player()
+	var buffed_battle := Battle.new(buffed_player, Config.enemies["gpa_anxiety"])
+	assert(buffed_player.shield == 8, "临时护盾应作为真实护盾带入下一场战斗")
+	assert(buffed_player.get_status_stacks("resistance") == 1, "临时抗压应带入下一场战斗")
+	buffed_battle = null
+
+	GameState.start_run("computer")
+	var bleeding_player := GameState.create_battle_player()
+	var bleeding_battle := Battle.new(bleeding_player, Config.enemies["gpa_anxiety"])
+	bleeding_player.add_status("bleed", 2)
+	bleeding_battle._enemy_intent = {"id": "shield", "value": 1}
+	var hp_before_bleed := bleeding_player.hp
+	bleeding_battle.end_player_turn()
+	assert(hp_before_bleed - bleeding_player.hp == 6, "玩家流血应在下个玩家回合造成每层 3 点伤害")
+	assert(bleeding_player.get_status_stacks("bleed") == 1, "玩家流血结算后应减少一层")
+
+	GameState.start_run("computer")
+	var limited_player := GameState.create_battle_player()
+	limited_player.deck.clear()
+	limited_player.draw_pile.clear()
+	limited_player.discard_pile.clear()
+	limited_player.hand.clear()
+	for _i in 10:
+		limited_player.draw_pile.append(Config.cards["strike"])
+	var boss_battle := Battle.new(limited_player, Config.enemies["employment_pressure"])
+	boss_battle._enemy_intent = {"id": "hand_limit", "value": 3}
+	boss_battle.end_player_turn()
+	assert(limited_player.hand.size() == 3, "Boss 手牌限制应约束下一玩家回合的实际抽牌")
+
+	GameState.start_run("computer")
+	var revision_player := GameState.create_battle_player()
+	var reviewer_battle := Battle.new(revision_player, Config.enemies["paper_reviewer"])
+	reviewer_battle._enemy_intent = {"id": "demand_revision"}
+	reviewer_battle.end_player_turn()
+	assert(revision_player.hand.size() == 2, "要求大修应把下一回合抽牌限制为 2 张")
+
+	GameState.start_run("computer")
+	GameState.run_damage_dealt = 0
+	var damage_player := GameState.create_battle_player()
+	var damage_battle := Battle.new(damage_player, Config.enemies["gpa_anxiety"])
+	damage_battle.enemy.gain_shield(4)
+	damage_player.hand = [Config.cards["strike"]]
+	damage_battle.energy = 3
+	var enemy_hp_before := damage_battle.enemy.hp
+	assert(damage_battle.play_card(0), "伤害统计回归测试应能正常出牌")
+	var actual_hp_loss := enemy_hp_before - damage_battle.enemy.hp
+	assert(GameState.run_damage_dealt == actual_hp_loss, "伤害统计应只记录护盾结算后的实际生命损失")
+
+	var previous_ai_enabled := Settings.ai_enabled
+	Settings.ai_enabled = true
+	GameState.start_run("computer")
+	var ai_battle := Battle.new(GameState.create_battle_player(), Config.enemies["ai_interviewer"])
+	var old_token := ai_battle.get_pending_ai_request_token()
+	ai_battle._enemy_intent = {"id": "silent_observe"}
+	ai_battle.end_player_turn()
+	var current_token := ai_battle.get_pending_ai_request_token()
+	var current_intent := ai_battle.get_enemy_intent_id()
+	assert(current_token > old_token, "AI 每个回合应生成递增的请求标识")
+	assert(not ai_battle.set_ai_decision("ask_algorithm", "过期响应", "", old_token), "过期 AI 响应不得覆盖当前回合")
+	assert(ai_battle.get_enemy_intent_id() == current_intent, "拒绝过期 AI 响应后应保留当前安全意图")
+	Settings.ai_enabled = previous_ai_enabled
+
+
+func _test_reward_determinism_and_uniqueness() -> void:
+	GameState.start_run("computer")
+	var rng_a := RandomNumberGenerator.new()
+	var rng_b := RandomNumberGenerator.new()
+	rng_a.seed = 20260718
+	rng_b.seed = 20260718
+	var rewards_a := RewardGenerator.generate_rewards("computer", rng_a, true)
+	var rewards_b := RewardGenerator.generate_rewards("computer", rng_b, true)
+	assert(rewards_a == rewards_b, "相同种子应生成完全一致的奖励候选")
+
+	var elite_card_pool := RewardGenerator._get_card_pool("computer", true)
+	var card_ids := {}
+	for card in elite_card_pool:
+		assert(not card_ids.has(card.id), "精英卡池不应重复加入稀有卡: %s" % card.id)
+		card_ids[card.id] = true
+
+	GameState.run_relic_ids = RelicCatalog.all_ids()
+	GameState.run_relic_ids.erase("mentor_letter")
+	var relic_rng := RandomNumberGenerator.new()
+	relic_rng.seed = 17
+	for reward in RewardGenerator.generate_rewards("computer", relic_rng, true):
+		if int(reward.get("type", -1)) == RewardGenerator.RewardType.RELIC:
+			assert(str(reward.get("relic_id", "")) == "mentor_letter", "遗物奖励不得重复发放已持有遗物")
 
 
 func _test_ai_native_presentation() -> void:
@@ -490,6 +592,31 @@ func _test_run_state_persistence() -> void:
 	var second_player := GameState.create_battle_player()
 	assert(second_player.max_hp == expected_max_hp, "跨战斗最大生命不应继续增长")
 	assert(second_player.max_spirit == expected_max_spirit, "跨战斗最大精神不应继续增长")
+
+
+func _test_event_defeat_does_not_revive() -> void:
+	GameState.start_run("computer")
+	GameState.run_hp = 1
+	var packed := load("res://src/ui/screens/campus_explore.tscn") as PackedScene
+	var campus := packed.instantiate()
+	add_child(campus)
+	await get_tree().process_frame
+	var lethal_event := EventResource.new()
+	lethal_event.id = "test_lethal_event"
+	lethal_event.name = "致死事件"
+	lethal_event.description = "用于验证事件失败闭环。"
+	lethal_event.effects = [{"type": "damage", "value": 2}]
+	campus._current_event = lethal_event
+	campus._pending_battle_after_event = true
+	campus._on_event_choice_selected(-1)
+	assert(GameState.run_hp == 0, "事件伤害应允许生命降至 0")
+	assert(campus._pending_run_end_after_event, "事件致死后应进入本局结束流程")
+	assert(not campus._pending_battle_after_event, "事件致死后不得继续进入已排队战斗")
+	assert(GameState.create_battle_player().hp == 0, "创建战斗角色不得把 0 生命复活为 1")
+	var continue_button := campus.hud.event_choices.get_child(0) as Button
+	assert(continue_button != null and "查看本局总结" in continue_button.text, "事件致死结果应明确通向本局总结")
+	campus.queue_free()
+	await get_tree().process_frame
 
 
 func _test_all_preset_majors_startable() -> void:

@@ -39,6 +39,9 @@ var _law_passive_used: bool = false
 var _boss_current_phase: int = 0
 var _thesis_clip_ready: bool = true
 var _pending_ai_context: Dictionary = {}
+var _ai_request_serial: int = 0
+var _next_hand_limit: int = MAX_HAND_SIZE
+var _next_draw_override: int = -1
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -52,6 +55,9 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 		max_energy += 1
 	energy = max_energy
 	_apply_battle_start_relics()
+	if not player.is_alive():
+		state = BattleState.PLAYER_LOST
+		return
 	_start_player_turn()
 	# 表达≥7：开局揭示意图
 	if GameState.get_effective_stat("表达") >= 7:
@@ -87,12 +93,11 @@ func play_card(card_index: int) -> bool:
 
 	# 科学计算器：攻击额外伤害
 	if GameState.has_relic("scientific_calculator") and str(card.type) == "attack":
-		enemy.take_damage(2)
-		GameState.run_damage_dealt += 2
+		GameState.run_damage_dealt += enemy.take_damage(2)
 
 	# 医学被动：攻击有概率弱点打击
 	if player.major_id == "medicine" and card.type == "attack" and randf() < 0.3:
-		enemy.take_damage(3)
+		GameState.run_damage_dealt += enemy.take_damage(3)
 
 	# 艺术被动：控制牌概率额外抽牌
 	if player.major_id == "arts" and str(card.type) == "control" and randf() < 0.3:
@@ -217,7 +222,9 @@ func _execute_enemy_turn() -> void:
 
 	# 结算流血等持续伤害
 	if enemy.has_status("bleed"):
-		enemy.take_damage(enemy.get_status_stacks("bleed") * Status.STATUS_DATABASE["bleed"].get("tick_damage", 3))
+		var bleed_damage := enemy.get_status_stacks("bleed") * int(Status.STATUS_DATABASE["bleed"].get("tick_damage", 3))
+		GameState.run_damage_dealt += enemy.take_damage(bleed_damage)
+		enemy.remove_status("bleed", 1)
 		_check_end_conditions()
 		if state != BattleState.ENEMY_TURN:
 			return
@@ -262,8 +269,8 @@ func _execute_enemy_turn() -> void:
 		"reject_core_card":
 			player.add_status("pressure", 2)
 		"demand_revision":
-			player.discard_hand()
-			player.draw_cards(2)
+			# 敌方行动发生在玩家弃牌之后，改为限制下一回合抽牌才会真实生效。
+			_next_draw_override = 2
 		"question_method":
 			player.add_status("pressure", 2)
 			_apply_damage_to_player(3)
@@ -280,11 +287,9 @@ func _execute_enemy_turn() -> void:
 		"defend":
 			enemy.gain_shield(action.get("value", 8))
 		"hand_limit":
-			# 群面混战：限制手牌，弃掉多余牌
+			# 敌方行动发生在玩家弃牌之后，限制下一回合的实际手牌上限。
 			var limit: int = int(action.get("value", 3))
-			while player.hand.size() > limit:
-				var card = player.hand.pop_back()
-				player.discard_pile.append(card)
+			_next_hand_limit = mini(_next_hand_limit, maxi(1, limit))
 			player.add_status("pressure", 1)
 		"bleed_attack":
 			_apply_damage_to_player(action.get("value", 4))
@@ -317,7 +322,7 @@ func _apply_damage_to_player(damage: int) -> void:
 
 	# 敌人反击
 	if player.has_status("counter"):
-		enemy.take_damage(player.get_status_stacks("counter") * 3)
+		GameState.run_damage_dealt += enemy.take_damage(player.get_status_stacks("counter") * 3)
 		player.remove_status("counter")
 
 
@@ -329,8 +334,18 @@ func _end_enemy_turn() -> void:
 func _start_player_turn() -> void:
 	state = BattleState.PLAYER_TURN
 	energy = max_energy
-	player.reset_shield()
+	# 首回合保留事件或奖励带入的开场护盾，此后护盾按回合正常清空。
+	if turn_count > 1:
+		player.reset_shield()
 	_thesis_clip_ready = true
+
+	if player.has_status("bleed"):
+		var bleed_damage := player.get_status_stacks("bleed") * int(Status.STATUS_DATABASE["bleed"].get("tick_damage", 3))
+		player.take_damage(bleed_damage)
+		player.remove_status("bleed", 1)
+		_check_end_conditions()
+		if state != BattleState.PLAYER_TURN:
+			return
 
 	if GameState.has_relic("coffee_thermos"):
 		player.gain_shield(2)
@@ -338,7 +353,8 @@ func _start_player_turn() -> void:
 		player.gain_shield(5)
 
 	# 计算机被动：生命低于 40% 时额外抽 1 张（不再扣精神）
-	var draw_amount := BASE_DRAW
+	var draw_amount := _next_draw_override if _next_draw_override >= 0 else BASE_DRAW
+	_next_draw_override = -1
 	if player.major_id == "computer" and player.hp < player.max_hp * 0.4:
 		draw_amount += 1
 
@@ -351,7 +367,9 @@ func _start_player_turn() -> void:
 	if randf() < float(create_stat) * 0.03:
 		draw_amount += 1
 
-	player.draw_cards(draw_amount, MAX_HAND_SIZE)
+	var hand_limit := _next_hand_limit
+	_next_hand_limit = MAX_HAND_SIZE
+	player.draw_cards(draw_amount, hand_limit)
 	_decide_enemy_intent()
 	_update_boss_phase()
 	turn_changed.emit(true)
@@ -362,7 +380,9 @@ func _start_player_turn() -> void:
 func _decide_enemy_intent() -> void:
 	if enemy_resource.is_ai_native and Settings.ai_enabled:
 		# 使用本地兜底作为默认意图，并触发 AI 请求
+		_ai_request_serial += 1
 		var context := _build_ai_context()
+		context["request_token"] = _ai_request_serial
 		_pending_ai_context = context
 		var fallback := FallbackAI.decide(context)
 		_enemy_intent = fallback
@@ -375,9 +395,23 @@ func _decide_enemy_intent() -> void:
 		_enemy_intent = {"id": "attack", "value": 5}
 		return
 
-	var action := actions[randi() % actions.size()] as Dictionary
+	var action := _pick_weighted_action(actions)
 	_enemy_intent = action.duplicate()
 	_reveal_intent = false
+
+
+func _pick_weighted_action(actions: Array) -> Dictionary:
+	var total_weight := 0
+	for action in actions:
+		total_weight += maxi(0, int((action as Dictionary).get("weight", 1)))
+	if total_weight <= 0:
+		return actions[randi() % actions.size()] as Dictionary
+	var roll := randi_range(1, total_weight)
+	for action in actions:
+		roll -= maxi(0, int((action as Dictionary).get("weight", 1)))
+		if roll <= 0:
+			return action as Dictionary
+	return actions.back() as Dictionary
 
 
 func request_current_ai_decision() -> void:
@@ -386,8 +420,10 @@ func request_current_ai_decision() -> void:
 	ai_decision_requested.emit(_pending_ai_context.duplicate(true))
 
 
-func set_ai_decision(action_id: String, intent_text: String, ending_flag: String) -> bool:
+func set_ai_decision(action_id: String, intent_text: String, ending_flag: String, request_token: int = -1) -> bool:
 	if state != BattleState.PLAYER_TURN:
+		return false
+	if request_token >= 0 and request_token != get_pending_ai_request_token():
 		return false
 	var allowed_actions: Array[String] = []
 	for action in _get_current_enemy_actions():
@@ -413,6 +449,17 @@ func set_ai_decision(action_id: String, intent_text: String, ending_flag: String
 	}
 	_reveal_intent = true
 	return true
+
+
+func fail_ai_decision(request_token: int) -> bool:
+	if request_token < 0 or request_token != get_pending_ai_request_token():
+		return false
+	_pending_ai_context.clear()
+	return true
+
+
+func get_pending_ai_request_token() -> int:
+	return int(_pending_ai_context.get("request_token", -1))
 
 
 func _build_ai_context() -> Dictionary:

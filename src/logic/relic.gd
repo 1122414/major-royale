@@ -67,9 +67,11 @@ static func all_ids() -> Array[String]:
 	return out
 
 
-static func random_relic(rng: RandomNumberGenerator, elite_pool: bool = false) -> String:
+static func random_relic(rng: RandomNumberGenerator, elite_pool: bool = false, excluded: Array = []) -> String:
 	var pool: Array[String] = []
 	for id in RELICS.keys():
+		if str(id) in excluded:
+			continue
 		var r: String = str(RELICS[id].get("rarity", "common"))
 		if elite_pool:
 			if r in ["uncommon", "rare", "elite"]:
@@ -77,8 +79,13 @@ static func random_relic(rng: RandomNumberGenerator, elite_pool: bool = false) -
 		else:
 			if r != "elite":
 				pool.append(str(id))
+	# 精英池耗尽时允许回落到未持有的普通遗物，但绝不重复发放已持有遗物。
+	if pool.is_empty() and elite_pool:
+		for id in RELICS.keys():
+			if str(id) not in excluded:
+				pool.append(str(id))
 	if pool.is_empty():
-		pool = all_ids()
+		return ""
 	return pool[rng.randi() % pool.size()]
 
 

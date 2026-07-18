@@ -33,24 +33,27 @@ func _init(p_id: String, p_name: String, p_max_hp: int, p_is_player: bool = fals
 	is_player = p_is_player
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> int:
 	if amount <= 0:
-		return
+		return 0
 
 	# 易伤加成
 	if statuses.has("vulnerable"):
 		amount = int(amount * 1.5)
 
+	var hp_before := hp
+
 	# 护盾抵消
 	if shield > 0:
 		if shield >= amount:
 			shield -= amount
-			return
+			return 0
 		else:
 			amount -= shield
 			shield = 0
 
 	hp = maxi(hp - amount, 0)
+	return hp_before - hp
 
 
 func heal(amount: int) -> void:
@@ -73,6 +76,10 @@ func lose_spirit(amount: int) -> void:
 
 func add_status(status_id: String, stacks: int) -> void:
 	if status_id.is_empty() or stacks <= 0:
+		return
+	# 抗压抵消下一次完整的负面状态施加，避免同一次多层状态重复消耗。
+	if Status.is_debuff(status_id) and has_status("resistance"):
+		remove_status("resistance", 1)
 		return
 	if not statuses.has(status_id):
 		statuses[status_id] = 0

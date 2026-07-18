@@ -10,6 +10,7 @@ extends Node2D
 var _current_hotspot: CampusHotspot = null
 var _current_event: EventResource = null
 var _pending_battle_after_event := false
+var _pending_run_end_after_event := false
 var _pending_hotspot: CampusHotspot = null
 
 
@@ -75,6 +76,7 @@ func _on_hotspot_activated(hotspot: CampusHotspot) -> void:
 	AudioManager.play_sfx("click")
 	player.controls_enabled = false
 	_pending_hotspot = hotspot
+	_pending_run_end_after_event = false
 	_pending_battle_after_event = _prepare_hotspot_activation(hotspot)
 	_open_hotspot_event(hotspot)
 
@@ -150,7 +152,14 @@ func _on_event_choice_selected(choice_index: int) -> void:
 	GameState.run_events_resolved += 1
 	GameState.day_count = maxi(GameState.day_count, 1 + int(GameState.run_events_resolved / 3))
 	var continue_label := "进入战斗 ▶" if _pending_battle_after_event else "返回校园"
-	if _pending_hotspot != null and _pending_hotspot.location_id == "sports" and not _pending_battle_after_event:
+	if GameState.run_hp <= 0:
+		_pending_run_end_after_event = true
+		_pending_battle_after_event = false
+		GameState.player_stats["last_battle_victory"] = false
+		GameState.player_stats["last_enemy_was_ai"] = false
+		result += "\n\n体力已经耗尽，本次校园生存结束。"
+		continue_label = "查看本局总结"
+	if not _pending_run_end_after_event and _pending_hotspot != null and _pending_hotspot.location_id == "sports" and not _pending_battle_after_event:
 		result += "\n\n终局尚未开启：先完成教学楼、图书馆、宿舍和食堂的准备。"
 	hud.show_event_result(result, continue_label)
 	hud.refresh()
@@ -161,6 +170,10 @@ func _on_event_continue_requested() -> void:
 	hud.close_event()
 	_current_event = null
 	_pending_hotspot = null
+	if _pending_run_end_after_event:
+		_pending_run_end_after_event = false
+		GameState.change_screen(GameState.Screen.RUN_SUMMARY)
+		return
 	if _pending_battle_after_event:
 		_pending_battle_after_event = false
 		GameState.change_screen(GameState.Screen.BATTLE)

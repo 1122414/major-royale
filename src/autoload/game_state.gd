@@ -137,7 +137,7 @@ func create_battle_player() -> Character:
 	var player := Character.new("player", "玩家", run_max_hp, true)
 	player.major_id = player_major_id
 	player.max_hp = run_max_hp
-	player.hp = clampi(run_hp, 1, run_max_hp)
+	player.hp = clampi(run_hp, 0, run_max_hp)
 	player.max_spirit = run_max_spirit
 	player.spirit = clampi(run_spirit, 0, run_max_spirit)
 
@@ -150,7 +150,12 @@ func create_battle_player() -> Character:
 			player.deck.append(card)
 
 	for buff in pending_buffs:
-		player.add_status(str(buff.get("status_id", "")), int(buff.get("stacks", 1)))
+		var status_id := str(buff.get("status_id", ""))
+		var stacks := int(buff.get("stacks", 1))
+		if status_id == "shield":
+			player.gain_shield(stacks)
+		else:
+			player.add_status(status_id, stacks)
 	pending_buffs.clear()
 
 	player.draw_pile = player.deck.duplicate()

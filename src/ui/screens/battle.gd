@@ -83,6 +83,8 @@ func _ready() -> void:
 	_battle.request_current_ai_decision()
 
 	_update_ui()
+	if _battle.state == Battle.BattleState.PLAYER_LOST:
+		call_deferred("_on_battle_ended", false)
 	AudioManager.play_sfx("click")
 	if _enemy_res != null and (str(_enemy_res.enemy_type) == "boss" or str(_enemy_res.id) == "employment_pressure"):
 		AudioManager.play_bgm_for_phase("boss")
@@ -459,8 +461,10 @@ func _on_ai_decision_requested(context: Dictionary) -> void:
 	AIClient.request_decision(context)
 
 
-func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String, source: String) -> void:
-	var accepted := _battle.set_ai_decision(action_id, intent_text, ending_flag)
+func _on_ai_decision_received(action_id: String, intent_text: String, ending_flag: String, source: String, request_token: int = -1) -> void:
+	if request_token >= 0 and request_token != _battle.get_pending_ai_request_token():
+		return
+	var accepted := _battle.set_ai_decision(action_id, intent_text, ending_flag, request_token)
 	GameState.player_stats["last_ending_flag"] = ending_flag
 	var selected_id := _battle.get_enemy_intent_id()
 	_refresh_ai_actions(selected_id)
@@ -473,8 +477,10 @@ func _on_ai_decision_received(action_id: String, intent_text: String, ending_fla
 	_update_ui()
 
 
-func _on_ai_decision_failed() -> void:
+func _on_ai_decision_failed(request_token: int = -1) -> void:
 	if _is_ai_battle:
+		if request_token >= 0 and not _battle.fail_ai_decision(request_token):
+			return
 		var selected_id := _battle.get_enemy_intent_id()
 		_refresh_ai_actions(selected_id)
 		_set_ai_strategy_ui("离线策略已就绪", _battle.get_enemy_intent_text(), UIColors.AI_PURPLE)

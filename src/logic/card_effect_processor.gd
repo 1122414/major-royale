@@ -34,9 +34,9 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 				var er = Config.enemies.get(eid)
 				if er is EnemyResource and (er as EnemyResource).spirit_weak:
 					damage = int(round(float(damage) * 1.3))
-			actual_target.take_damage(damage)
+			var actual_damage := actual_target.take_damage(damage)
 			if caster.is_player:
-				GameState.run_damage_dealt += damage
+				GameState.run_damage_dealt += actual_damage
 		"shield":
 			actual_target.gain_shield(value)
 			if caster.is_player and caster.major_id == "finance":
@@ -73,15 +73,15 @@ func _process_effect(effect: Resource, caster: Character, target: Character) -> 
 				real_value = int(_get_effect_param(effect, "real_value", value * 2))
 			if caster.is_player:
 				real_value += int(GameState.get_effective_stat("学识") / 3)
-			actual_target.take_damage(real_value)
+			var actual_damage := actual_target.take_damage(real_value)
 			if caster.is_player:
-				GameState.run_damage_dealt += real_value
+				GameState.run_damage_dealt += actual_damage
 		"damage_per_debuff":
 			var debuff_count := _count_debuffs(actual_target)
 			var total := debuff_count * value
-			actual_target.take_damage(total)
+			var actual_damage := actual_target.take_damage(total)
 			if caster.is_player:
-				GameState.run_damage_dealt += total
+				GameState.run_damage_dealt += actual_damage
 		"delay":
 			var battle := _get_battle()
 			if battle != null:
