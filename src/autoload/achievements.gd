@@ -14,6 +14,7 @@ const CATALOG := [
 	{"id": "elite_slayer", "name": "精英猎手", "desc": "击败一名精英或 AI Native 敌人。", "difficulty": "normal"},
 	{"id": "full_heal", "name": "满血状态", "desc": "在补给点将生命回满。", "difficulty": "normal"},
 	{"id": "card_hoarder", "name": "卡牌收藏家", "desc": "牌组达到 15 张。", "difficulty": "normal"},
+	{"id": "first_rebuttal", "name": "妙答如流", "desc": "在答辩窗口完成一次精准反驳。", "difficulty": "normal"},
 	{"id": "no_spirit_break", "name": "精神不倒", "desc": "通关时精神仍高于 50%。", "difficulty": "hard"},
 	{"id": "speed_runner", "name": "急行军", "desc": "在第 10 天内通关。", "difficulty": "hard"},
 	{"id": "ai_conqueror", "name": "AI 征服者", "desc": "击败全部 AI Native 敌人类型。", "difficulty": "hard"},
@@ -91,6 +92,11 @@ func try_after_battle_win(enemy_id: String, was_elite_or_ai: bool) -> void:
 func try_after_rest(healed_to_full: bool) -> void:
 	if healed_to_full:
 		unlock("full_heal")
+
+
+func try_after_defense_window(outcome: String) -> void:
+	if outcome == "perfect":
+		unlock("first_rebuttal")
 
 
 func try_after_clear() -> void:

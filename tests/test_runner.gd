@@ -49,8 +49,10 @@ func _ready() -> void:
 	_test_card_effect_and_cost_feedback()
 	_test_ai_decision_whitelist()
 	_test_rule_integrity_regressions()
+	_test_defense_window_core()
 	_test_reward_determinism_and_uniqueness()
 	await _test_ai_native_presentation()
+	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
 
 	print("TEST: 开始局内状态回归测试")
@@ -351,6 +353,89 @@ func _test_reward_determinism_and_uniqueness() -> void:
 	for reward in RewardGenerator.generate_rewards("computer", relic_rng, true):
 		if int(reward.get("type", -1)) == RewardGenerator.RewardType.RELIC:
 			assert(str(reward.get("relic_id", "")) == "mentor_letter", "遗物奖励不得重复发放已持有遗物")
+
+
+func _test_defense_window_core() -> void:
+	GameState.start_run("computer")
+	var base_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	base_battle._enemy_intent = {"id": "attack", "value": 10}
+	var base_context := base_battle.begin_defense_window()
+	assert(base_context.get("enabled", false), "攻击意图应开启答辩窗口")
+	assert(base_battle.is_defense_window_open(), "答辩窗口开启后应锁定出牌")
+	assert(not base_battle.can_play_card(0), "答辩窗口中不得继续打出卡牌")
+
+	GameState.start_run("computer")
+	var control_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	control_battle._enemy_intent = {"id": "attack", "value": 10}
+	control_battle._turn_card_types = ["control", "defense"]
+	var control_context := control_battle.begin_defense_window()
+	assert(
+		float(control_context.get("perfect_width", 0.0)) > float(base_context.get("perfect_width", 0.0)),
+		"控制牌应扩大精准反驳窗口"
+	)
+	assert(int(control_context.get("brace_shield", 0)) > int(base_context.get("brace_shield", 0)), "防御牌应强化正面招架")
+
+	GameState.start_run("computer")
+	var dodge_player := GameState.create_battle_player()
+	var dodge_battle := Battle.new(dodge_player, Config.enemies["gpa_anxiety"])
+	dodge_battle._enemy_intent = {"id": "attack", "value": 10}
+	var dodge_context := dodge_battle.begin_defense_window()
+	var dodge_hp_before := dodge_player.hp
+	assert(dodge_battle.resolve_defense_window("dodge", dodge_context), "安全换位应能完成敌方回合")
+	assert(dodge_hp_before - dodge_player.hp == 5, "安全换位应把直接伤害降低 50%")
+	assert(GameState.run_successful_dodges == 1, "成功换位应写入本局动作统计")
+
+	GameState.start_run("computer")
+	var control_player := GameState.create_battle_player()
+	var pressure_battle := Battle.new(control_player, Config.enemies["gpa_anxiety"])
+	pressure_battle._enemy_intent = {"id": "stack_pressure", "value": 3}
+	var pressure_context := pressure_battle.begin_defense_window()
+	pressure_battle.resolve_defense_window("dodge", pressure_context)
+	assert(not control_player.has_status("pressure"), "安全换位应避开敌方控制效果")
+
+	GameState.start_run("computer")
+	var perfect_player := GameState.create_battle_player()
+	var perfect_battle := Battle.new(perfect_player, Config.enemies["gpa_anxiety"])
+	perfect_battle._enemy_intent = {"id": "heavy_attack", "value": 12}
+	perfect_battle._turn_card_types = ["attack", "control"]
+	var perfect_context := perfect_battle.begin_defense_window()
+	var perfect_hp_before := perfect_player.hp
+	var enemy_hp_before := perfect_battle.enemy.hp
+	perfect_battle.resolve_defense_window("perfect", perfect_context)
+	assert(perfect_player.hp == perfect_hp_before, "精准反驳应完全打断敌方行动")
+	assert(enemy_hp_before - perfect_battle.enemy.hp == int(perfect_context.get("counter_damage", 0)), "精准反驳应按本回合出牌形成反击")
+	assert(perfect_battle.energy == perfect_battle.max_energy + 1, "精准反驳应奖励下一回合 1 点能量")
+	assert(GameState.run_perfect_rebuttals == 1, "精准反驳应写入本局动作统计")
+
+	GameState.start_run("computer")
+	var passive_battle := Battle.new(GameState.create_battle_player(), Config.enemies["seat_grabber"])
+	passive_battle._enemy_intent = {"id": "shield", "value": 8}
+	assert(not passive_battle.begin_defense_window().get("enabled", false), "纯防御意图不应强制进入动作窗口")
+
+
+func _test_defense_window_presentation() -> void:
+	var previous_ai_enabled := Settings.ai_enabled
+	Settings.ai_enabled = false
+	GameState.start_run("computer")
+	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
+	var packed := load("res://src/ui/screens/battle.tscn") as PackedScene
+	var screen := packed.instantiate()
+	add_child(screen)
+	await get_tree().process_frame
+	screen._battle._enemy_intent = {"id": "attack", "value": 10, "description": "测试追问"}
+	screen._on_end_turn()
+	assert(screen.defense_window.visible, "结束回合遇到攻击意图时应展示答辩窗口")
+	assert(screen._battle.state == Battle.BattleState.PLAYER_TURN, "答辩窗口确认前不得提前结算敌方行动")
+	assert(screen.battle_stage.get_node("LaneZones").visible, "答辩窗口应在舞台显示三条站位区")
+	var danger_lane := int(screen._defense_context.get("danger_lane", 1))
+	screen._set_defense_lane((danger_lane + 1) % 3)
+	screen._resolve_defense_window(true)
+	assert(not screen.defense_window.visible, "确认站位后应关闭答辩窗口")
+	assert(not screen.battle_stage.get_node("LaneZones").visible, "动作结算后应收起站位区")
+	assert(screen._battle.state == Battle.BattleState.PLAYER_TURN, "动作结算后应正常进入下一玩家回合")
+	screen.queue_free()
+	await get_tree().process_frame
+	Settings.ai_enabled = previous_ai_enabled
 
 
 func _test_ai_native_presentation() -> void:

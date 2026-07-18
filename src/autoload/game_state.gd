@@ -41,6 +41,8 @@ var run_battles_won: int = 0
 var run_damage_dealt: int = 0
 var run_cards_played: int = 0
 var run_events_resolved: int = 0
+var run_perfect_rebuttals: int = 0
+var run_successful_dodges: int = 0
 var run_started_at: int = 0
 
 var _settings_overlay: Control = null
@@ -65,6 +67,8 @@ func start_run(major_id: String) -> void:
 	run_damage_dealt = 0
 	run_cards_played = 0
 	run_events_resolved = 0
+	run_perfect_rebuttals = 0
+	run_successful_dodges = 0
 	run_started_at = int(Time.get_unix_time_from_system())
 	_init_run_from_major(major_id)
 	current_screen = Screen.CAMPUS_EXPLORE

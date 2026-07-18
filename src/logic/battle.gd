@@ -20,6 +20,21 @@ signal boss_phase_changed(phase_name: String)
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
 const MAX_HAND_SIZE := 10
+const DEFENSE_WINDOW_ACTIONS: Array[String] = [
+	"attack",
+	"heavy_attack",
+	"stack_pressure",
+	"ask_algorithm",
+	"ask_ethics",
+	"resume_challenge",
+	"praise_then_pressure",
+	"reject_core_card",
+	"demand_revision",
+	"question_method",
+	"desk_reject",
+	"hand_limit",
+	"bleed_attack",
+]
 
 var player: Character
 var enemy: Character
@@ -42,6 +57,11 @@ var _pending_ai_context: Dictionary = {}
 var _ai_request_serial: int = 0
 var _next_hand_limit: int = MAX_HAND_SIZE
 var _next_draw_override: int = -1
+var _turn_card_types: Array[String] = []
+var _defense_window_open := false
+var _defense_outcome := "miss"
+var _incoming_damage_multiplier := 1.0
+var _next_energy_bonus := 0
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -88,6 +108,7 @@ func play_card(card_index: int) -> bool:
 	player.hand.remove_at(card_index)
 	player.discard_pile.append(card)
 	GameState.run_cards_played += 1
+	_turn_card_types.append(str(card.type))
 
 	_effect_processor.process_card(card, player, enemy)
 
@@ -117,7 +138,7 @@ func play_card(card_index: int) -> bool:
 
 
 func can_play_card(card_index: int) -> bool:
-	if state != BattleState.PLAYER_TURN:
+	if state != BattleState.PLAYER_TURN or _defense_window_open:
 		return false
 	if card_index < 0 or card_index >= player.hand.size():
 		return false
@@ -135,7 +156,7 @@ func get_card_cost(card_index: int) -> int:
 
 
 func use_active_skill() -> bool:
-	if state != BattleState.PLAYER_TURN or _skill_used_this_battle:
+	if state != BattleState.PLAYER_TURN or _skill_used_this_battle or _defense_window_open:
 		return false
 
 	var major: MajorResource = Config.majors.get(player.major_id)
@@ -198,10 +219,80 @@ func end_player_turn() -> void:
 	if state != BattleState.PLAYER_TURN:
 		return
 
+	_defense_window_open = false
 	player.discard_hand()
 	state = BattleState.ENEMY_TURN
 	turn_changed.emit(false)
 	_execute_enemy_turn()
+
+
+func begin_defense_window() -> Dictionary:
+	if state != BattleState.PLAYER_TURN or _defense_window_open:
+		return {"enabled": false}
+	var intent_id := get_enemy_intent_id()
+	if intent_id not in DEFENSE_WINDOW_ACTIONS:
+		return {"enabled": false}
+
+	var control_cards := 0
+	var defense_cards := 0
+	for card_type in _turn_card_types:
+		if card_type in ["control", "skill"]:
+			control_cards += 1
+		elif card_type == "defense":
+			defense_cards += 1
+
+	var expression := GameState.get_effective_stat("表达")
+	var focus := GameState.get_effective_stat("专注")
+	var pressure := player.get_status_stacks("pressure")
+	var duration := clampf(1.45 + float(expression) * 0.055 + float(control_cards) * 0.12 - float(pressure) * 0.055, 0.85, 2.5)
+	var perfect_width := clampf(0.055 + float(focus) * 0.006 + float(control_cards) * 0.022, 0.07, 0.22)
+	var danger_lane := absi(hash("%s:%s:%d" % [enemy.id, intent_id, turn_count])) % 3
+	_defense_window_open = true
+	return {
+		"enabled": true,
+		"intent_id": intent_id,
+		"danger_lane": danger_lane,
+		"duration": duration,
+		"perfect_center": 0.72,
+		"perfect_width": perfect_width,
+		"brace_shield": 2 + defense_cards * 2,
+		"counter_damage": 3 + _turn_card_types.size() + control_cards,
+		"control_cards": control_cards,
+		"defense_cards": defense_cards,
+	}
+
+
+func resolve_defense_window(outcome: String, context: Dictionary) -> bool:
+	if not _defense_window_open or state != BattleState.PLAYER_TURN:
+		return false
+	if outcome not in ["perfect", "dodge", "brace", "miss"]:
+		outcome = "miss"
+	_defense_window_open = false
+	_defense_outcome = outcome
+	match outcome:
+		"perfect":
+			GameState.run_perfect_rebuttals += 1
+			Achievements.try_after_defense_window(outcome)
+			_next_energy_bonus = 1
+			var counter_damage := maxi(1, int(context.get("counter_damage", 3)))
+			GameState.run_damage_dealt += enemy.take_damage(counter_damage)
+			_check_end_conditions()
+			if state != BattleState.PLAYER_TURN:
+				return true
+		"dodge":
+			GameState.run_successful_dodges += 1
+			_incoming_damage_multiplier = 0.5
+		"brace":
+			_incoming_damage_multiplier = 0.75
+			player.gain_shield(maxi(0, int(context.get("brace_shield", 2))))
+		_:
+			_incoming_damage_multiplier = 1.0
+	end_player_turn()
+	return true
+
+
+func is_defense_window_open() -> bool:
+	return _defense_window_open
 
 
 func _execute_enemy_turn() -> void:
@@ -229,6 +320,11 @@ func _execute_enemy_turn() -> void:
 		if state != BattleState.ENEMY_TURN:
 			return
 
+	# 精准反驳会完全打断本次敌方行动；反击伤害已在窗口确认时结算。
+	if _defense_outcome == "perfect":
+		_end_enemy_turn()
+		return
+
 	# 执行意图
 	var action := _enemy_intent
 	match action.get("id", ""):
@@ -252,27 +348,35 @@ func _execute_enemy_turn() -> void:
 		"heal":
 			enemy.heal(action.get("value", 5))
 		"stack_pressure":
-			player.add_status("pressure", action.get("value", 1))
+			if _enemy_control_connects():
+				player.add_status("pressure", action.get("value", 1))
 		"ask_algorithm":
-			player.add_status("pressure", 2)
+			if _enemy_control_connects():
+				player.add_status("pressure", 2)
 			_apply_damage_to_player(5)
 		"ask_ethics":
-			player.add_status("pressure", 1)
+			if _enemy_control_connects():
+				player.add_status("pressure", 1)
 		"resume_challenge":
-			player.lose_spirit(10)
+			if _enemy_control_connects():
+				player.lose_spirit(10)
 			_apply_damage_to_player(4)
 		"praise_then_pressure":
 			player.draw_cards(1)
-			player.add_status("pressure", 2)
+			if _enemy_control_connects():
+				player.add_status("pressure", 2)
 		"silent_observe":
 			enemy.gain_shield(8)
 		"reject_core_card":
-			player.add_status("pressure", 2)
+			if _enemy_control_connects():
+				player.add_status("pressure", 2)
 		"demand_revision":
 			# 敌方行动发生在玩家弃牌之后，改为限制下一回合抽牌才会真实生效。
-			_next_draw_override = 2
+			if _enemy_control_connects():
+				_next_draw_override = 2
 		"question_method":
-			player.add_status("pressure", 2)
+			if _enemy_control_connects():
+				player.add_status("pressure", 2)
 			_apply_damage_to_player(3)
 		"accept_minor":
 			enemy.gain_shield(8)
@@ -289,17 +393,23 @@ func _execute_enemy_turn() -> void:
 		"hand_limit":
 			# 敌方行动发生在玩家弃牌之后，限制下一回合的实际手牌上限。
 			var limit: int = int(action.get("value", 3))
-			_next_hand_limit = mini(_next_hand_limit, maxi(1, limit))
-			player.add_status("pressure", 1)
+			if _enemy_control_connects():
+				_next_hand_limit = mini(_next_hand_limit, maxi(1, limit))
+				player.add_status("pressure", 1)
 		"bleed_attack":
 			_apply_damage_to_player(action.get("value", 4))
-			player.add_status("bleed", 1)
+			if _enemy_control_connects():
+				player.add_status("bleed", 1)
 
 	_check_end_conditions()
 	if state == BattleState.PLAYER_WON or state == BattleState.PLAYER_LOST:
 		return
 
 	_end_enemy_turn()
+
+
+func _enemy_control_connects() -> bool:
+	return _defense_outcome != "dodge"
 
 
 func _apply_damage_to_player(damage: int) -> void:
@@ -312,6 +422,7 @@ func _apply_damage_to_player(damage: int) -> void:
 			mult = 1.0 + (mult - 1.0) * 0.5
 		damage = int(round(float(damage) * mult))
 
+	damage = maxi(0, int(round(float(damage) * _incoming_damage_multiplier)))
 	player.take_damage(damage)
 
 	# 法学被动：首次致命伤保留 1 点生命
@@ -327,13 +438,17 @@ func _apply_damage_to_player(damage: int) -> void:
 
 
 func _end_enemy_turn() -> void:
+	_defense_outcome = "miss"
+	_incoming_damage_multiplier = 1.0
 	turn_count += 1
 	_start_player_turn()
 
 
 func _start_player_turn() -> void:
 	state = BattleState.PLAYER_TURN
-	energy = max_energy
+	energy = max_energy + _next_energy_bonus
+	_next_energy_bonus = 0
+	_turn_card_types.clear()
 	# 首回合保留事件或奖励带入的开场护盾，此后护盾按回合正常清空。
 	if turn_count > 1:
 		player.reset_shield()
@@ -421,7 +536,7 @@ func request_current_ai_decision() -> void:
 
 
 func set_ai_decision(action_id: String, intent_text: String, ending_flag: String, request_token: int = -1) -> bool:
-	if state != BattleState.PLAYER_TURN:
+	if state != BattleState.PLAYER_TURN or _defense_window_open:
 		return false
 	if request_token >= 0 and request_token != get_pending_ai_request_token():
 		return false

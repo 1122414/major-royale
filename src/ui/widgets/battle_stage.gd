@@ -6,11 +6,15 @@ extends Control
 @onready var enemy_figure: TextureRect = $EnemyFigure
 @onready var ai_pressure_zone: Polygon2D = $AIPressureZone
 @onready var ai_pressure_core: Polygon2D = $AIPressureCore
+@onready var lane_zones: Array[ColorRect] = [$LaneZones/Left, $LaneZones/Center, $LaneZones/Right]
 
 var _pressure_tween: Tween
+var _lane_tween: Tween
+var _player_base_position := Vector2.ZERO
 
 
 func _ready() -> void:
+	_player_base_position = player_figure.position
 	_start_idle(player_figure, -0.012)
 	_start_idle(enemy_figure, 0.012)
 
@@ -36,6 +40,41 @@ func set_ai_mode(enabled: bool) -> void:
 	_pressure_tween.chain().set_parallel(true)
 	_pressure_tween.tween_property(ai_pressure_zone, "scale", Vector2.ONE, 0.9).set_trans(Tween.TRANS_SINE)
 	_pressure_tween.tween_property(ai_pressure_zone, "modulate:a", 1.0, 0.9)
+
+
+func show_defense_lanes(danger_lane: int, player_lane: int) -> void:
+	$LaneZones.visible = true
+	for i in lane_zones.size():
+		var zone := lane_zones[i]
+		if i == danger_lane and i == player_lane:
+			zone.color = Color(1.0, 0.45, 0.12, 0.62)
+		elif i == danger_lane:
+			zone.color = Color(0.92, 0.12, 0.15, 0.48)
+		elif i == player_lane:
+			zone.color = Color(0.0, 0.82, 0.88, 0.52)
+		else:
+			zone.color = Color(0.02, 0.15, 0.18, 0.34)
+	_move_player_to_lane(player_lane)
+
+
+func hide_defense_lanes(outcome: String = "") -> void:
+	$LaneZones.visible = false
+	if _lane_tween and _lane_tween.is_valid():
+		_lane_tween.kill()
+	_lane_tween = create_tween()
+	_lane_tween.tween_property(player_figure, "position", _player_base_position, 0.12).set_trans(Tween.TRANS_SINE)
+	if outcome == "perfect":
+		pulse_figure(false, Color(1.35, 1.18, 0.5))
+	elif outcome == "dodge":
+		pulse_figure(false, Color(0.55, 1.25, 1.35))
+
+
+func _move_player_to_lane(player_lane: int) -> void:
+	if _lane_tween and _lane_tween.is_valid():
+		_lane_tween.kill()
+	var target := _player_base_position + Vector2(float(clampi(player_lane, 0, 2) - 1) * 72.0, 0)
+	_lane_tween = create_tween()
+	_lane_tween.tween_property(player_figure, "position", target, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _set_texture(target: TextureRect, path: String) -> void:

@@ -42,6 +42,9 @@ func _build_summary(is_clear: bool) -> String:
 	lines.append("胜利场次：%d　　出牌：%d　　造成伤害：%d" % [
 		GameState.run_battles_won, GameState.run_cards_played, GameState.run_damage_dealt
 	])
+	lines.append("精准反驳：%d　　成功换位：%d" % [
+		GameState.run_perfect_rebuttals, GameState.run_successful_dodges
+	])
 	lines.append("")
 	lines.append("—— 击败敌人 ——")
 	if GameState.run_enemies_defeated.is_empty():

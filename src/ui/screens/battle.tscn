@@ -214,6 +214,79 @@ text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="DefenseWindow" type="PanelContainer" parent="."]
+visible = false
+z_index = 20
+layout_mode = 0
+offset_left = 332.0
+offset_top = 300.0
+offset_right = 948.0
+offset_bottom = 474.0
+theme_type_variation = &"PanelGold"
+
+[node name="Margin" type="MarginContainer" parent="DefenseWindow"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 9
+
+[node name="VBox" type="VBoxContainer" parent="DefenseWindow/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="DefenseWindow/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.73, 0.25, 1)
+theme_override_font_sizes/font_size = 19
+text = "答辩窗口 · 选择站位"
+horizontal_alignment = 1
+
+[node name="CountdownLabel" type="Label" parent="DefenseWindow/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.427, 0.969, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "观察红色落点，避开或在金色刻度精准反驳"
+horizontal_alignment = 1
+
+[node name="TimingBar" type="ProgressBar" parent="DefenseWindow/Margin/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+show_percentage = false
+
+[node name="LaneRow" type="HBoxContainer" parent="DefenseWindow/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="LeftLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
+custom_minimum_size = Vector2(116, 38)
+layout_mode = 2
+text = "A  左移"
+
+[node name="CenterLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
+custom_minimum_size = Vector2(116, 38)
+layout_mode = 2
+text = "中线"
+
+[node name="RightLaneButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
+custom_minimum_size = Vector2(116, 38)
+layout_mode = 2
+text = "D  右移"
+
+[node name="ConfirmButton" type="Button" parent="DefenseWindow/Margin/VBox/LaneRow"]
+custom_minimum_size = Vector2(142, 38)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "Space  应对"
+
+[node name="Hint" type="Label" parent="DefenseWindow/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.76, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "安全位：减伤并避开控制　危险位精准反驳：打断、反击、下回合 +1 能量"
+horizontal_alignment = 1
+
 [node name="DeckPanel" type="PanelContainer" parent="."]
 layout_mode = 0
 offset_left = 12.0

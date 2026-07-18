@@ -41,10 +41,22 @@ const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 @onready var ai_threat_label: Label = $AIProfilePanel/ProfileVBox/ThreatLabel
 @onready var ai_adapt_label: Label = $AIProfilePanel/ProfileVBox/AdaptLabel
 @onready var buff_panel: PanelContainer = $BuffPanel
+@onready var defense_window: PanelContainer = $DefenseWindow
+@onready var defense_title: Label = $DefenseWindow/Margin/VBox/Title
+@onready var defense_countdown: Label = $DefenseWindow/Margin/VBox/CountdownLabel
+@onready var defense_timing_bar: ProgressBar = $DefenseWindow/Margin/VBox/TimingBar
+@onready var defense_left_button: Button = $DefenseWindow/Margin/VBox/LaneRow/LeftLaneButton
+@onready var defense_center_button: Button = $DefenseWindow/Margin/VBox/LaneRow/CenterLaneButton
+@onready var defense_right_button: Button = $DefenseWindow/Margin/VBox/LaneRow/RightLaneButton
+@onready var defense_confirm_button: Button = $DefenseWindow/Margin/VBox/LaneRow/ConfirmButton
 
 var _battle: Battle
 var _is_ai_battle: bool = false
 var _enemy_res: EnemyResource = null
+var _defense_active := false
+var _defense_context: Dictionary = {}
+var _defense_elapsed := 0.0
+var _defense_lane := 1
 
 
 func _ready() -> void:
@@ -72,6 +84,10 @@ func _ready() -> void:
 	end_turn_button.pressed.connect(_on_end_turn)
 	skill_button.pressed.connect(_on_skill)
 	settings_button.pressed.connect(_on_settings)
+	defense_left_button.pressed.connect(_set_defense_lane.bind(0))
+	defense_center_button.pressed.connect(_set_defense_lane.bind(1))
+	defense_right_button.pressed.connect(_set_defense_lane.bind(2))
+	defense_confirm_button.pressed.connect(_resolve_defense_window.bind(true))
 
 	var major: MajorResource = Config.majors[GameState.player_major_id]
 	skill_button.text = major.active_skill.get("name", "技能")
@@ -90,6 +106,29 @@ func _ready() -> void:
 		AudioManager.play_bgm_for_phase("boss")
 	else:
 		AudioManager.play_bgm_for_phase("battle")
+
+
+func _process(delta: float) -> void:
+	if not _defense_active:
+		return
+	var duration := maxf(0.01, float(_defense_context.get("duration", 1.5)))
+	_defense_elapsed = minf(_defense_elapsed + delta, duration)
+	var normalized := _defense_elapsed / duration
+	defense_timing_bar.value = normalized * 100.0
+	var remaining := maxf(0.0, duration - _defense_elapsed)
+	var perfect_center := float(_defense_context.get("perfect_center", 0.72))
+	var perfect_width := float(_defense_context.get("perfect_width", 0.1))
+	var in_perfect_window := absf(normalized - perfect_center) <= perfect_width
+	if _defense_lane == int(_defense_context.get("danger_lane", 1)) and in_perfect_window:
+		defense_countdown.text = "金色刻度！现在反驳　%.1fs" % remaining
+		defense_countdown.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+		defense_timing_bar.modulate = UIColors.ACCENT_GOLD
+	else:
+		defense_countdown.text = "避开红色落点，或留在危险位等待金色刻度　%.1fs" % remaining
+		defense_countdown.add_theme_color_override("font_color", UIColors.BORDER_CYAN_BRIGHT)
+		defense_timing_bar.modulate = Color.WHITE
+	if _defense_elapsed >= duration:
+		_resolve_defense_window(false)
 
 
 func _exit_tree() -> void:
@@ -297,8 +336,8 @@ func _update_ui() -> void:
 
 	_rebuild_hand()
 
-	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
-	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN
+	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active
+	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active
 
 
 func _rebuild_hand() -> void:
@@ -344,6 +383,8 @@ func _update_status_icons(container: Control, statuses: Dictionary) -> void:
 
 
 func _on_card_clicked(index: int) -> void:
+	if _defense_active:
+		return
 	if index < 0 or index >= _battle.player.hand.size():
 		return
 	var card: Resource = _battle.player.hand[index]
@@ -425,19 +466,116 @@ func _play_attack_animation(from_player: bool) -> void:
 
 
 func _on_end_turn() -> void:
+	if _defense_active:
+		return
 	AudioManager.play_sfx("click")
+	var context := _battle.begin_defense_window()
+	if bool(context.get("enabled", false)):
+		_start_defense_window(context)
+		return
+	_complete_enemy_turn_without_window()
+
+
+func _complete_enemy_turn_without_window() -> void:
 	var intent_id: String = _battle.get_enemy_intent_id()
 	var before := _combat_snapshot()
 	_battle.end_player_turn()
 	var after := _combat_snapshot()
-	# 若本回合意图是攻击类，播敌人冲刺动画
+	_show_enemy_turn_feedback(intent_id, before, after, "")
+
+
+func _start_defense_window(context: Dictionary) -> void:
+	_defense_active = true
+	_defense_context = context
+	_defense_elapsed = 0.0
+	# 窗口总从敌方落点开始，玩家必须主动换位或承担精准反驳风险。
+	_defense_lane = int(context.get("danger_lane", 1))
+	defense_window.visible = true
+	message_label.visible = false
+	end_turn_button.disabled = true
+	skill_button.disabled = true
+	end_turn_button.text = "答辩中…"
+	defense_title.text = "答辩窗口 · %s" % _intent_short_name(str(context.get("intent_id", "")))
+	defense_timing_bar.value = 0.0
+	battle_stage.show_defense_lanes(int(context.get("danger_lane", 1)), _defense_lane)
+	_refresh_defense_lane_buttons()
+	defense_confirm_button.grab_focus()
+
+
+func _set_defense_lane(lane: int) -> void:
+	if not _defense_active:
+		return
+	_defense_lane = clampi(lane, 0, 2)
+	battle_stage.show_defense_lanes(int(_defense_context.get("danger_lane", 1)), _defense_lane)
+	_refresh_defense_lane_buttons()
+	AudioManager.play_sfx("click")
+
+
+func _refresh_defense_lane_buttons() -> void:
+	var buttons := [defense_left_button, defense_center_button, defense_right_button]
+	for i in buttons.size():
+		var button := buttons[i] as Button
+		button.modulate = UIColors.ACCENT_GOLD if i == _defense_lane else Color.WHITE
+		button.text = ["A  左位", "中位", "D  右位"][i]
+		if i == int(_defense_context.get("danger_lane", 1)):
+			button.text += "  ⚠"
+
+
+func _resolve_defense_window(confirmed: bool) -> void:
+	if not _defense_active:
+		return
+	var duration := maxf(0.01, float(_defense_context.get("duration", 1.5)))
+	var normalized := clampf(_defense_elapsed / duration, 0.0, 1.0)
+	var danger_lane := int(_defense_context.get("danger_lane", 1))
+	var perfect_center := float(_defense_context.get("perfect_center", 0.72))
+	var perfect_width := float(_defense_context.get("perfect_width", 0.1))
+	var outcome := "miss"
+	if _defense_lane != danger_lane:
+		outcome = "dodge"
+	elif confirmed and absf(normalized - perfect_center) <= perfect_width:
+		outcome = "perfect"
+	elif confirmed:
+		outcome = "brace"
+
+	var context := _defense_context.duplicate(true)
+	var intent_id := _battle.get_enemy_intent_id()
+	var before := _combat_snapshot()
+	_defense_active = false
+	_defense_context.clear()
+	defense_window.visible = false
+	message_label.visible = true
+	end_turn_button.text = "结束回合"
+	battle_stage.hide_defense_lanes(outcome)
+	if not _battle.resolve_defense_window(outcome, context):
+		return
+	var after := _combat_snapshot()
+	_show_enemy_turn_feedback(intent_id, before, after, outcome)
+
+
+func _show_enemy_turn_feedback(intent_id: String, before: Dictionary, after: Dictionary, outcome: String) -> void:
+	# 若本回合意图是攻击类，播敌人冲刺动画。
 	if intent_id in ["attack", "multi_attack", "heavy_attack", "drain", "special_attack"]:
 		_play_attack_animation(false)
 	var damage_taken := int(before.player_hp) - int(after.player_hp)
 	if damage_taken > 0 and is_instance_valid(battle_stage):
 		battle_stage.show_feedback("-%d" % damage_taken, false, UIColors.DANGER_RED)
+	var counter_damage := int(before.enemy_hp) - int(after.enemy_hp)
+	if counter_damage > 0 and outcome == "perfect":
+		battle_stage.show_feedback("反驳 -%d" % counter_damage, true, UIColors.ACCENT_GOLD)
+	match outcome:
+		"perfect":
+			message_label.text = "精准反驳：打断行动并反击，下回合 +1 能量"
+			AudioManager.play_sfx("attack")
+		"dodge":
+			message_label.text = "换位成功：伤害减半并避开控制效果"
+		"brace":
+			message_label.text = "正面招架：获得护盾并降低 25% 伤害"
+		"miss":
+			message_label.text = "答辩失误：承受完整行动"
 
 func _on_skill() -> void:
+	if _defense_active:
+		return
 	if _battle.use_active_skill():
 		AudioManager.play_sfx("heal")
 		_update_ui()
@@ -521,3 +659,36 @@ func _on_battle_ended(victory: bool) -> void:
 
 func _on_settings() -> void:
 	GameState.change_screen(GameState.Screen.SETTINGS)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _defense_active:
+		return
+	if event.is_action_pressed("move_left"):
+		_set_defense_lane(_defense_lane - 1)
+	elif event.is_action_pressed("move_right"):
+		_set_defense_lane(_defense_lane + 1)
+	elif event.is_action_pressed("ui_accept"):
+		_resolve_defense_window(true)
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _intent_short_name(intent_id: String) -> String:
+	var names := {
+		"attack": "快速追问",
+		"heavy_attack": "高压重问",
+		"stack_pressure": "压力施加",
+		"ask_algorithm": "算法追问",
+		"ask_ethics": "职业伦理",
+		"resume_challenge": "简历质疑",
+		"praise_then_pressure": "先夸后压",
+		"reject_core_card": "拒绝核心",
+		"demand_revision": "要求大修",
+		"question_method": "质疑方法",
+		"desk_reject": "直接拒稿",
+		"hand_limit": "限制表达",
+		"bleed_attack": "灵魂拷问",
+	}
+	return str(names.get(intent_id, intent_id))
