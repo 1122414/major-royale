@@ -54,11 +54,11 @@ theme_override_constants/separation = 6
 
 [node name="AIEnabledCheck" type="CheckBox" parent="VBoxContainer"]
 layout_mode = 2
-text = "启用 AI Native 敌人"
+text = "启用在线 AI 增强（默认关闭，离线玩法完整）"
 
 [node name="AIServerLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
-text = "AI 服务地址"
+text = "AI 服务地址（仅在线增强使用）"
 
 [node name="AIServerEdit" type="LineEdit" parent="VBoxContainer"]
 layout_mode = 2

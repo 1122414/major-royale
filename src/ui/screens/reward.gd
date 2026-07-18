@@ -184,6 +184,7 @@ func _apply_reward(reward: Dictionary) -> void:
 
 func _finish_choice(msg: String = "已选择奖励") -> void:
 	_chosen = true
+	GameState.save_run_checkpoint(GameState.Screen.CAMPUS_EXPLORE)
 	info_label.text = "%s\n点击下方按钮返回地图" % msg
 	for child in rewards_container.get_children():
 		if child is Button:

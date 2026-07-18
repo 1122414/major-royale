@@ -3,7 +3,7 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.cfg"
 
-var ai_enabled: bool = true
+var ai_enabled: bool = false
 var ai_server_url: String = "http://127.0.0.1:8000"
 var master_volume: float = 1.0
 var sfx_volume: float = 1.0
@@ -26,7 +26,9 @@ func load_settings() -> void:
 		return
 
 	ai_enabled = cfg.get_value("ai", "enabled", ai_enabled)
-	ai_server_url = cfg.get_value("ai", "server_url", ai_server_url)
+	var saved_server_url := normalize_ai_server_url(str(cfg.get_value("ai", "server_url", ai_server_url)))
+	if not saved_server_url.is_empty():
+		ai_server_url = saved_server_url
 	master_volume = cfg.get_value("audio", "master_volume", master_volume)
 	sfx_volume = cfg.get_value("audio", "sfx_volume", sfx_volume)
 	music_volume = cfg.get_value("audio", "music_volume", music_volume)
@@ -51,3 +53,10 @@ func save_settings() -> void:
 	var err := cfg.save(SETTINGS_PATH)
 	if err != OK:
 		push_error("无法保存设置文件: %s" % SETTINGS_PATH)
+
+
+func normalize_ai_server_url(value: String) -> String:
+	var normalized := value.strip_edges().trim_suffix("/")
+	if not normalized.begins_with("http://") and not normalized.begins_with("https://"):
+		return ""
+	return normalized

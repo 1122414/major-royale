@@ -25,10 +25,12 @@ func _ready() -> void:
 	_setup_action_window_options()
 	reduced_motion_check.button_pressed = Settings.reduced_motion
 	vibration_check.button_pressed = Settings.controller_vibration
+	_refresh_ai_server_edit(Settings.ai_enabled)
 
 	master_slider.value_changed.connect(_on_master_changed)
 	sfx_slider.value_changed.connect(_on_sfx_changed)
 	music_slider.value_changed.connect(_on_music_changed)
+	ai_enabled_check.toggled.connect(_refresh_ai_server_edit)
 
 	save_button.pressed.connect(_on_save)
 	back_button.pressed.connect(_on_back)
@@ -70,8 +72,14 @@ func _on_music_changed(v: float) -> void:
 
 
 func _on_save() -> void:
+	var server_url := Settings.normalize_ai_server_url(ai_server_edit.text)
+	if ai_enabled_check.button_pressed and server_url.is_empty():
+		message_label.text = "AI 服务地址必须以 http:// 或 https:// 开头"
+		ai_server_edit.grab_focus()
+		return
 	Settings.ai_enabled = ai_enabled_check.button_pressed
-	Settings.ai_server_url = ai_server_edit.text
+	if not server_url.is_empty():
+		Settings.ai_server_url = server_url
 	Settings.master_volume = master_slider.value
 	Settings.sfx_volume = sfx_slider.value
 	Settings.music_volume = music_slider.value
@@ -87,6 +95,11 @@ func _on_save() -> void:
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if Settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 
 	message_label.text = "设置已保存"
+
+
+func _refresh_ai_server_edit(enabled: bool) -> void:
+	ai_server_edit.editable = enabled
+	ai_server_edit.tooltip_text = "在线服务仅用于扩展敌人台词与策略；关闭时完整使用本地白名单策略。"
 
 
 func _on_back() -> void:

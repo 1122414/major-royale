@@ -7,6 +7,7 @@
 - **当前版本**：`1.1.0-vertical-slice`
 - **引擎**：Godot 4.4
 - **平台**：Windows / macOS 桌面
+- **网络**：默认完整离线；在线 AI 增强为可选项
 
 ## 技术栈
 
@@ -32,7 +33,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-> 若不填写 API Key，AI Native 敌人会自动使用规则兜底，不影响主流程。
+> 在线 AI 默认关闭。不开服务、不填写 API Key 或完全断网时，AI Native 敌人会使用本地白名单策略，不影响主流程。
 
 ## 项目结构
 
@@ -78,7 +79,7 @@ tools/Godot.app/Contents/MacOS/Godot --path .
 
 ### 3. 游戏操作
 
-- **主菜单**：开始游戏、设置、退出
+- **主菜单**：开始/继续游戏、新开一局、设置、退出；一局进度会在安全节点自动保存
 - **专业选择**：从计算机 / 法学 / 医学 / 金融 / 艺术中选择，或点买八维创建自定义专业
 - **校园探索**：WASD / 方向键 / 左摇杆移动，靠近建筑后按 `E` 或手柄 `A` 交互；顶栏查看生命、精神与压力圈
 - **战斗**：鼠标或手柄焦点选择卡牌；使用专业技能；结束回合后用 `A/D`、方向键或左摇杆换位，`Space` / 手柄 `A` 确认答辩窗口
@@ -90,20 +91,19 @@ tools/Godot.app/Contents/MacOS/Godot --path .
 
 ## 导出打包
 
-本地交付验证产物位于 `build/mac/MajorRoyale.app` 与 `build/win/MajorRoyale.exe`；`build/` 已加入忽略列表，不进入源码提交。
+本地交付验证产物位于 `build/mac/MajorRoyale.app` 与 `build/win/MajorRoyale.exe`；`build/` 已加入忽略列表，不进入源码提交。推荐使用候选包脚本，它会预检模板、导入资源、导出双平台包、附带隐私/许可文件并生成 SHA-256 摘要。
 
 1. 在 Godot 编辑器：**编辑器 → 管理导出模板**，安装与引擎版本完全匹配的 `4.4.1.stable` 模板。
 2. 打开 **项目 → 导出**，使用预设：
    - `macOS` → `build/mac/MajorRoyale.app`
    - `Windows Desktop` → `build/win/MajorRoyale.exe`
-3. 或命令行（需已安装模板）：
+3. 或运行候选包脚本（需已安装模板）：
 
 ```bash
-tools/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "macOS" build/mac/MajorRoyale.app
-tools/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "Windows Desktop" build/win/MajorRoyale.exe
+tools/export_mvp.sh
 ```
 
-导出预设见仓库根目录 `export_presets.cfg`（若被 gitignore，本地保留即可）。
+导出预设见仓库根目录 `export_presets.cfg`。Steamworks 账号、AppID、签名证书与 SteamPipe 人工步骤见 `Plan_/7.17/2026-07-18_Steam上线检查清单.md`。
 
 ## 测试
 
@@ -120,14 +120,17 @@ tools/Godot.app/Contents/MacOS/Godot --headless --path . --scene tests/test_runn
 ## 已知边界
 
 1. 角色目前使用静态立绘与程序动效，尚未制作逐帧行走/攻击动画图集。
-2. 音效与 BGM 为可替换的轻量 WAV；资源路径与循环已接通。
-3. 当前版本集中在一张校园地图和五区递进路线，已接通 9 场资格战与终局 Boss，尚未扩展为多地图世界。
-4. AI 服务失败时使用同一行动白名单的本地规则兜底，不中断战斗。
+2. 当前版本集中在一张校园地图和五区递进路线，已接通 9 场资格战与终局 Boss，尚未扩展为多地图世界。
+3. Steam 成就、Steam Cloud、真实 AppID、商店素材、签名公证与 Valve 审核需要发行方账号或证书，仓库不会伪造完成状态。
+4. Windows 最终候选包仍需在独立 Windows/Steam 环境完成从安装到通关的实机验收。
+
+隐私说明见 [PRIVACY.md](PRIVACY.md)，第三方许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 更新记录（1.1.0-vertical-slice）
 
 - 以四张参考图为锚点重做主菜单、五专业选择、自由校园探索、普通战与 AI Native 精英战
 - 补齐五专业、十名敌人、专业核心卡牌与终局战正式像素素材
 - 接通五建筑事件、奖励、牌组、属性、遗物、Boss、成就与本局总结
+- 补齐 108 张卡牌独立插画、动作答辩窗口、手柄/辅助选项与版本化安全存档
 - 移除旧线性节点地图，修复战斗引用环、音频停播与正常退出清理
 - 完成 1280×720、1600×900、1920×1080 回归与双平台导出流程

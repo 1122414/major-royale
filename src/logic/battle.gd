@@ -469,9 +469,10 @@ func _start_player_turn() -> void:
 		player.gain_shield(5)
 
 	# 计算机被动：生命低于 40% 时额外抽 1 张（不再扣精神）
-	var draw_amount := _next_draw_override if _next_draw_override >= 0 else BASE_DRAW
+	var has_draw_override := _next_draw_override >= 0
+	var draw_amount := _next_draw_override if has_draw_override else BASE_DRAW
 	_next_draw_override = -1
-	if player.major_id == "computer" and player.hp < player.max_hp * 0.4:
+	if not has_draw_override and player.major_id == "computer" and player.hp < player.max_hp * 0.4:
 		draw_amount += 1
 
 	# 压力影响：每 4 层压力少抽 1 张
@@ -480,7 +481,7 @@ func _start_player_turn() -> void:
 
 	# 创造：额外抽牌概率
 	var create_stat := GameState.get_effective_stat("创造")
-	if randf() < float(create_stat) * 0.03:
+	if not has_draw_override and randf() < float(create_stat) * 0.03:
 		draw_amount += 1
 
 	var hand_limit := _next_hand_limit

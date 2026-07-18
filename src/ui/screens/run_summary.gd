@@ -66,4 +66,5 @@ func _build_summary(is_clear: bool) -> String:
 func _on_continue() -> void:
 	AudioManager.play_sfx("click")
 	# 仅通关或失败会进入本页；之后回主菜单
+	GameState.clear_run_save()
 	GameState.change_screen(GameState.Screen.MENU)

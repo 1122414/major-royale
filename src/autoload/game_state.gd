@@ -13,6 +13,19 @@ enum Screen {
 	RUN_SUMMARY,
 }
 
+const RUN_SAVE_VERSION := 1
+const RUN_SAVE_PATH := "user://run_save.json"
+const RUN_SAVE_BACKUP_PATH := "user://run_save.backup.json"
+const RUN_SAVE_TEMP_PATH := "user://run_save.tmp.json"
+const SAVED_PLAYER_STAT_KEYS := [
+	"current_enemy_id",
+	"last_campus_hotspot",
+	"last_battle_victory",
+	"last_enemy_was_ai",
+	"last_ending_flag",
+]
+const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
+
 var current_screen: Screen = Screen.MENU
 var settings_return_screen: Screen = Screen.MENU
 var player_major_id: String = ""
@@ -47,6 +60,297 @@ var run_started_at: int = 0
 
 var _settings_overlay: Control = null
 var _settings_previous_pause_state := false
+var run_save_enabled := true
+
+
+func has_run_save() -> bool:
+	if not _is_run_save_allowed():
+		return false
+	return not _read_valid_run_save().is_empty()
+
+
+func resume_saved_run() -> bool:
+	if not _is_run_save_allowed():
+		return false
+	var data := _read_valid_run_save()
+	if data.is_empty() or not restore_run_save_snapshot(data):
+		return false
+	var error := get_tree().change_scene_to_file(_screen_to_path(current_screen))
+	return error == OK
+
+
+func save_run_checkpoint(target_screen: Screen) -> bool:
+	if not _is_run_save_allowed() or player_major_id.is_empty():
+		return false
+	var snapshot := create_run_save_snapshot(target_screen)
+	if not is_run_save_snapshot_valid(snapshot):
+		push_warning("跳过无效的一局存档快照")
+		return false
+	return _write_run_save_atomically(snapshot)
+
+
+func clear_run_save() -> void:
+	for path in [RUN_SAVE_PATH, RUN_SAVE_BACKUP_PATH, RUN_SAVE_TEMP_PATH]:
+		var absolute_path := ProjectSettings.globalize_path(path)
+		if FileAccess.file_exists(absolute_path):
+			DirAccess.remove_absolute(absolute_path)
+
+
+func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
+	var snapshot := {
+		"version": RUN_SAVE_VERSION,
+		"saved_at": int(Time.get_unix_time_from_system()),
+		"screen": _screen_to_save_name(target_screen),
+		"player_major_id": player_major_id,
+		"player_stats": _serializable_player_stats(),
+		"run_progress": run_progress,
+		"run_hp": run_hp,
+		"run_max_hp": run_max_hp,
+		"run_spirit": run_spirit,
+		"run_max_spirit": run_max_spirit,
+		"deck_card_ids": deck_card_ids.duplicate(),
+		"permanent_stats": permanent_stats.duplicate(true),
+		"pending_buffs": pending_buffs.duplicate(true),
+		"run_relic_ids": run_relic_ids.duplicate(),
+		"credits": credits,
+		"credit_points": credit_points,
+		"day_count": day_count,
+		"last_reward_is_elite": last_reward_is_elite,
+		"campus_player_position": [campus_player_position.x, campus_player_position.y],
+		"campus_visited_locations": campus_visited_locations.duplicate(),
+		"run_enemies_defeated": run_enemies_defeated.duplicate(true),
+		"run_battles_won": run_battles_won,
+		"run_damage_dealt": run_damage_dealt,
+		"run_cards_played": run_cards_played,
+		"run_events_resolved": run_events_resolved,
+		"run_perfect_rebuttals": run_perfect_rebuttals,
+		"run_successful_dodges": run_successful_dodges,
+		"run_started_at": run_started_at,
+	}
+	if player_major_id.begins_with("custom_") and Config.majors.has(player_major_id):
+		var major: MajorResource = Config.majors[player_major_id]
+		snapshot["custom_major"] = {
+			"id": major.id,
+			"name": major.name,
+			"description": major.description,
+			"stats": major.stats.duplicate(true),
+			"active_skill": major.active_skill.duplicate(true),
+			"passive_skill": major.passive_skill.duplicate(true),
+			"starter_deck": major.starter_deck.duplicate(),
+		}
+	return snapshot
+
+
+func is_run_save_snapshot_valid(data: Dictionary) -> bool:
+	if int(data.get("version", -1)) != RUN_SAVE_VERSION:
+		return false
+	var screen_name := str(data.get("screen", ""))
+	if _save_name_to_screen(screen_name) == Screen.MENU:
+		return false
+	var major_id := str(data.get("player_major_id", ""))
+	if major_id.begins_with("custom_"):
+		var custom_data = data.get("custom_major")
+		if custom_data is not Dictionary or str(custom_data.get("id", "")) != major_id:
+			return false
+	elif not Config.majors.has(major_id):
+		return false
+	var saved_player_stats = data.get("player_stats", {})
+	if saved_player_stats is not Dictionary:
+		return false
+	if screen_name in ["battle", "result"]:
+		var enemy_id := str(saved_player_stats.get("current_enemy_id", ""))
+		if not Config.enemies.has(enemy_id):
+			return false
+	var saved_deck = data.get("deck_card_ids")
+	if saved_deck is not Array or saved_deck.is_empty():
+		return false
+	for card_id in saved_deck:
+		if not Config.cards.has(str(card_id)):
+			return false
+	if int(data.get("run_max_hp", 0)) <= 0 or int(data.get("run_max_spirit", 0)) <= 0:
+		return false
+	return true
+
+
+func restore_run_save_snapshot(data: Dictionary) -> bool:
+	if not is_run_save_snapshot_valid(data):
+		return false
+	_restore_custom_major(data)
+	player_major_id = str(data.get("player_major_id", ""))
+	player_stats = (data.get("player_stats", {}) as Dictionary).duplicate(true)
+	run_progress = maxi(0, int(data.get("run_progress", 0)))
+	run_max_hp = maxi(1, int(data.get("run_max_hp", 60)))
+	run_hp = clampi(int(data.get("run_hp", run_max_hp)), 0, run_max_hp)
+	run_max_spirit = maxi(1, int(data.get("run_max_spirit", 100)))
+	run_spirit = clampi(int(data.get("run_spirit", run_max_spirit)), 0, run_max_spirit)
+	deck_card_ids.clear()
+	for card_id in data.get("deck_card_ids", []):
+		deck_card_ids.append(str(card_id))
+	permanent_stats = _sanitize_permanent_stats(data.get("permanent_stats", {}))
+	pending_buffs.clear()
+	for saved_buff in data.get("pending_buffs", []):
+		if saved_buff is not Dictionary:
+			continue
+		var status_id := str(saved_buff.get("status_id", ""))
+		if not status_id.is_empty():
+			pending_buffs.append({
+				"status_id": status_id,
+				"stacks": clampi(int(saved_buff.get("stacks", 1)), 1, 99),
+			})
+	run_relic_ids.clear()
+	for relic_id in data.get("run_relic_ids", []):
+		var normalized_relic_id := str(relic_id)
+		if not normalized_relic_id.is_empty() and normalized_relic_id not in run_relic_ids:
+			run_relic_ids.append(normalized_relic_id)
+	credits = maxi(0, int(data.get("credits", 0)))
+	credit_points = maxi(0, int(data.get("credit_points", 0)))
+	day_count = maxi(1, int(data.get("day_count", 1)))
+	last_reward_is_elite = bool(data.get("last_reward_is_elite", false))
+	var saved_position = data.get("campus_player_position", [])
+	if saved_position is Array and saved_position.size() == 2:
+		campus_player_position = Vector2(float(saved_position[0]), float(saved_position[1]))
+	else:
+		campus_player_position = Vector2(640, 620)
+	campus_visited_locations.clear()
+	for location_id in data.get("campus_visited_locations", []):
+		var normalized_location_id := str(location_id)
+		if not normalized_location_id.is_empty() and normalized_location_id not in campus_visited_locations:
+			campus_visited_locations.append(normalized_location_id)
+	_restore_defeated_enemies(data.get("run_enemies_defeated", []))
+	run_battles_won = maxi(run_enemies_defeated.size(), int(data.get("run_battles_won", 0)))
+	run_damage_dealt = maxi(0, int(data.get("run_damage_dealt", 0)))
+	run_cards_played = maxi(0, int(data.get("run_cards_played", 0)))
+	run_events_resolved = maxi(0, int(data.get("run_events_resolved", 0)))
+	run_perfect_rebuttals = maxi(0, int(data.get("run_perfect_rebuttals", 0)))
+	run_successful_dodges = maxi(0, int(data.get("run_successful_dodges", 0)))
+	run_started_at = maxi(0, int(data.get("run_started_at", 0)))
+	current_screen = _save_name_to_screen(str(data.get("screen", "")))
+	return current_screen != Screen.MENU
+
+
+func _serializable_player_stats() -> Dictionary:
+	var output := {}
+	for key in SAVED_PLAYER_STAT_KEYS:
+		if player_stats.has(key):
+			output[key] = player_stats[key]
+	return output
+
+
+func _sanitize_permanent_stats(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for stat_name in STAT_NAMES:
+		if value.has(stat_name):
+			output[stat_name] = clampi(int(value[stat_name]), -20, 100)
+	return output
+
+
+func _restore_defeated_enemies(value: Variant) -> void:
+	run_enemies_defeated.clear()
+	if value is not Array:
+		return
+	var seen := {}
+	for saved_enemy in value:
+		if saved_enemy is not Dictionary:
+			continue
+		var enemy_id := str(saved_enemy.get("id", ""))
+		if seen.has(enemy_id) or not Config.enemies.has(enemy_id):
+			continue
+		var enemy: EnemyResource = Config.enemies[enemy_id]
+		run_enemies_defeated.append({
+			"id": enemy.id,
+			"name": enemy.name,
+			"type": enemy.enemy_type,
+		})
+		seen[enemy_id] = true
+
+
+func _restore_custom_major(data: Dictionary) -> void:
+	var custom_data = data.get("custom_major")
+	if custom_data is not Dictionary:
+		return
+	var major_id := str(data.get("player_major_id", ""))
+	if not major_id.begins_with("custom_") or str(custom_data.get("id", "")) != major_id:
+		return
+	var restored := MajorResource.from_dict(custom_data) as MajorResource
+	if restored != null:
+		Config.majors[major_id] = restored
+
+
+func _write_run_save_atomically(data: Dictionary) -> bool:
+	var save_path := ProjectSettings.globalize_path(RUN_SAVE_PATH)
+	var backup_path := ProjectSettings.globalize_path(RUN_SAVE_BACKUP_PATH)
+	var temp_path := ProjectSettings.globalize_path(RUN_SAVE_TEMP_PATH)
+	DirAccess.make_dir_recursive_absolute(save_path.get_base_dir())
+	var file := FileAccess.open(temp_path, FileAccess.WRITE)
+	if file == null:
+		push_error("无法创建一局临时存档：%s" % temp_path)
+		return false
+	file.store_string(JSON.stringify(data, "\t"))
+	file.flush()
+	file.close()
+
+	if FileAccess.file_exists(save_path):
+		if FileAccess.file_exists(backup_path):
+			DirAccess.remove_absolute(backup_path)
+		var backup_error := DirAccess.rename_absolute(save_path, backup_path)
+		if backup_error != OK:
+			DirAccess.remove_absolute(temp_path)
+			push_error("无法轮换一局存档备份：%s" % error_string(backup_error))
+			return false
+	var replace_error := DirAccess.rename_absolute(temp_path, save_path)
+	if replace_error == OK:
+		return true
+	if FileAccess.file_exists(backup_path) and not FileAccess.file_exists(save_path):
+		DirAccess.rename_absolute(backup_path, save_path)
+	push_error("无法提交一局存档：%s" % error_string(replace_error))
+	return false
+
+
+func _read_valid_run_save() -> Dictionary:
+	for path in [RUN_SAVE_PATH, RUN_SAVE_BACKUP_PATH]:
+		var data := _read_run_save_file(path)
+		if not data.is_empty() and is_run_save_snapshot_valid(data):
+			return data
+	return {}
+
+
+func _read_run_save_file(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var text := file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(text)
+	return parsed as Dictionary if parsed is Dictionary else {}
+
+
+func _is_run_save_allowed() -> bool:
+	if not run_save_enabled:
+		return false
+	var scene := get_tree().current_scene
+	return scene == null or not scene.scene_file_path.begins_with("res://tests/")
+
+
+func _screen_to_save_name(screen: Screen) -> String:
+	match screen:
+		Screen.CAMPUS_EXPLORE: return "campus_explore"
+		Screen.BATTLE: return "battle"
+		Screen.REWARD: return "reward"
+		Screen.RESULT: return "result"
+		Screen.RUN_SUMMARY: return "run_summary"
+	return ""
+
+
+func _save_name_to_screen(screen_name: String) -> Screen:
+	match screen_name:
+		"campus_explore": return Screen.CAMPUS_EXPLORE
+		"battle": return Screen.BATTLE
+		"reward": return Screen.REWARD
+		"result": return Screen.RESULT
+		"run_summary": return Screen.RUN_SUMMARY
+	return Screen.MENU
 
 
 func start_run(major_id: String) -> void:
@@ -72,6 +376,7 @@ func start_run(major_id: String) -> void:
 	run_started_at = int(Time.get_unix_time_from_system())
 	_init_run_from_major(major_id)
 	current_screen = Screen.CAMPUS_EXPLORE
+	save_run_checkpoint(Screen.CAMPUS_EXPLORE)
 
 
 func add_relic(relic_id: String) -> void:
@@ -211,7 +516,11 @@ func change_screen(screen: Screen) -> void:
 		_open_settings_overlay()
 		return
 	_dismiss_settings_overlay()
+	if screen == Screen.MENU and current_screen == Screen.RUN_SUMMARY:
+		clear_run_save()
 	current_screen = screen
+	if _screen_to_save_name(screen) != "":
+		save_run_checkpoint(screen)
 	var scene_path := _screen_to_path(screen)
 	get_tree().change_scene_to_file(scene_path)
 

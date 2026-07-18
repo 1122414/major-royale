@@ -53,6 +53,8 @@ func _apply_player_art() -> void:
 func _exit_tree() -> void:
 	if is_instance_valid(player):
 		GameState.campus_player_position = player.global_position
+	if GameState.current_screen == GameState.Screen.CAMPUS_EXPLORE:
+		GameState.save_run_checkpoint(GameState.Screen.CAMPUS_EXPLORE)
 
 
 func _on_hotspot_proximity_changed(_hotspot: CampusHotspot, _is_near: bool) -> void:
@@ -161,6 +163,12 @@ func _on_event_choice_selected(choice_index: int) -> void:
 		var remaining := CampusRouteScript.remaining_enemy_ids(GameState.run_enemies_defeated)
 		if not remaining.is_empty():
 			result += "\n\n终局尚未开启：还需击败 %d 名校园竞争者。" % remaining.size()
+	var checkpoint := GameState.Screen.CAMPUS_EXPLORE
+	if _pending_run_end_after_event:
+		checkpoint = GameState.Screen.RUN_SUMMARY
+	elif _pending_battle_after_event:
+		checkpoint = GameState.Screen.BATTLE
+	GameState.save_run_checkpoint(checkpoint)
 	hud.show_event_result(result, continue_label)
 	hud.refresh()
 	_refresh_pressure_world()

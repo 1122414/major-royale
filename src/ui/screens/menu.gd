@@ -8,22 +8,31 @@ extends Control
 @onready var bgm_button: Button = $MenuSidebar/Margin/VBox/BgmButton
 @onready var achievements_button: Button = $MenuSidebar/Margin/VBox/AchievementsButton
 @onready var settings_shortcut: Button = $SettingsShortcut
+@onready var footer_tip: Label = $MenuSidebar/Margin/VBox/FooterTip
 
 
 func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
-	major_button.pressed.connect(_on_start_pressed)
+	major_button.pressed.connect(_on_new_run_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	settings_shortcut.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
 	bgm_button.pressed.connect(_on_bgm_pressed)
 	achievements_button.pressed.connect(_on_achievements_pressed)
+	_refresh_run_buttons()
 	_refresh_bgm_button()
 	AudioManager.play_bgm_for_phase("menu")
 	start_button.grab_focus()
 
 
 func _on_start_pressed() -> void:
+	AudioManager.play_sfx("click")
+	if GameState.has_run_save() and GameState.resume_saved_run():
+		return
+	GameState.change_screen(GameState.Screen.MAJOR_SELECT)
+
+
+func _on_new_run_pressed() -> void:
 	AudioManager.play_sfx("click")
 	GameState.change_screen(GameState.Screen.MAJOR_SELECT)
 
@@ -56,6 +65,18 @@ func _refresh_bgm_button(name_str: String = "") -> void:
 	bgm_button.text = "♪  BGM：%s" % name_str
 
 
+func _refresh_run_buttons() -> void:
+	var has_save := GameState.has_run_save()
+	start_button.text = "▶  继续校园生存" if has_save else "▶  开始游戏"
+	major_button.text = "🎓  新开一局 / 选择专业" if has_save else "🎓  选择专业"
+	major_button.tooltip_text = "选择专业后会覆盖当前一局进度" if has_save else "选择本局战斗专业"
+	footer_tip.text = (
+		"Enter 继续　M 新开一局　S 设置\n进度会在安全节点自动保存"
+		if has_save
+		else "Enter 开始　M 专业　S 设置\n压力圈将在开局后持续收缩"
+	)
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is not InputEventKey or not event.pressed or event.echo:
 		return
@@ -66,6 +87,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER:
 			_on_start_pressed()
 		KEY_M:
-			_on_start_pressed()
+			_on_new_run_pressed()
 		KEY_S:
 			_on_settings_pressed()

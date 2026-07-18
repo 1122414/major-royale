@@ -16,6 +16,7 @@ func _ready() -> void:
 	add_child(_http_request)
 	_http_request.request_completed.connect(_on_request_completed)
 	_http_request.timeout = TIMEOUT_SECONDS
+	_http_request.body_size_limit = 64 * 1024
 
 
 func request_decision(context: Dictionary) -> bool:

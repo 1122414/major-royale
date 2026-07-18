@@ -58,6 +58,7 @@ func _ready() -> void:
 	print("TEST: 开始局内状态回归测试")
 	_test_all_preset_majors_startable()
 	_test_run_state_persistence()
+	_test_run_save_roundtrip()
 	_test_ai_first_turn_request()
 	await _test_accessibility_and_controller_inputs()
 	await _test_event_defeat_does_not_revive()
@@ -689,6 +690,12 @@ func _test_custom_major() -> void:
 	Config.majors[custom.id] = custom
 	assert(Config.majors.has("custom_test"), "自定义专业应被加入配置")
 	assert(Config.majors["custom_test"].name == "测试专业", "自定义专业名称错误")
+	GameState.start_run(custom.id)
+	var snapshot := GameState.create_run_save_snapshot(GameState.Screen.CAMPUS_EXPLORE)
+	assert(snapshot.has("custom_major"), "自定义专业的一局存档应包含专业定义")
+	Config.majors.erase(custom.id)
+	assert(GameState.restore_run_save_snapshot(snapshot), "自定义专业应能从版本化存档恢复")
+	assert(Config.majors.has(custom.id) and Config.majors[custom.id].name == custom.name, "恢复存档时应重建自定义专业")
 
 
 func _test_run_state_persistence() -> void:
@@ -710,6 +717,47 @@ func _test_run_state_persistence() -> void:
 	var second_player := GameState.create_battle_player()
 	assert(second_player.max_hp == expected_max_hp, "跨战斗最大生命不应继续增长")
 	assert(second_player.max_spirit == expected_max_spirit, "跨战斗最大精神不应继续增长")
+
+
+func _test_run_save_roundtrip() -> void:
+	GameState.start_run("finance")
+	GameState.run_hp -= 11
+	GameState.run_progress = 4
+	GameState.day_count = 3
+	GameState.permanent_stats["资源"] = 2
+	GameState.pending_buffs.clear()
+	GameState.pending_buffs.append({"status_id": "shield", "stacks": 6})
+	GameState.run_relic_ids.clear()
+	GameState.run_relic_ids.append("mentor_letter")
+	GameState.campus_player_position = Vector2(734, 488)
+	GameState.campus_visited_locations.clear()
+	GameState.campus_visited_locations.append_array(["teaching", "library"])
+	GameState.player_stats["current_enemy_id"] = "ai_interviewer"
+	GameState.player_stats["battle_player"] = Character.new("temporary", "不可序列化对象", 10)
+	var expected_hp := GameState.run_hp
+	var expected_deck := GameState.deck_card_ids.duplicate()
+	var snapshot := GameState.create_run_save_snapshot(GameState.Screen.BATTLE)
+	assert(GameState.is_run_save_snapshot_valid(snapshot), "完整的一局快照应通过版本与内容校验")
+	assert(not snapshot.player_stats.has("battle_player"), "存档不得写入运行时战斗对象")
+
+	var future_snapshot := snapshot.duplicate(true)
+	future_snapshot["version"] = GameState.RUN_SAVE_VERSION + 1
+	assert(not GameState.is_run_save_snapshot_valid(future_snapshot), "未知未来版本存档应安全拒绝")
+	var broken_deck_snapshot := snapshot.duplicate(true)
+	broken_deck_snapshot["deck_card_ids"] = ["missing_card"]
+	assert(not GameState.is_run_save_snapshot_valid(broken_deck_snapshot), "引用未知卡牌的损坏存档应安全拒绝")
+	var broken_enemy_snapshot := snapshot.duplicate(true)
+	broken_enemy_snapshot["player_stats"]["current_enemy_id"] = "missing_enemy"
+	assert(not GameState.is_run_save_snapshot_valid(broken_enemy_snapshot), "战斗检查点引用未知敌人时应安全拒绝")
+
+	GameState.start_run("computer")
+	assert(GameState.restore_run_save_snapshot(snapshot), "版本化一局快照应可恢复")
+	assert(GameState.player_major_id == "finance", "恢复后专业应与存档一致")
+	assert(GameState.current_screen == GameState.Screen.BATTLE, "战斗前检查点应恢复为一场全新战斗")
+	assert(GameState.run_hp == expected_hp and GameState.deck_card_ids == expected_deck, "恢复后生命与牌组应保持一致")
+	assert(GameState.permanent_stats.get("资源", 0) == 2, "永久属性应进入存档")
+	assert(GameState.pending_buffs == [{"status_id": "shield", "stacks": 6}], "待生效状态应进入存档")
+	assert(GameState.campus_player_position == Vector2(734, 488), "校园位置应进入存档")
 
 
 func _test_event_defeat_does_not_revive() -> void:
@@ -791,5 +839,8 @@ func _test_accessibility_and_controller_inputs() -> void:
 	assert(settings_scene.action_window_option.item_count == 4, "设置应提供四档答辩窗口时长")
 	assert(settings_scene.reduced_motion_check is CheckBox, "设置应提供减少动态效果开关")
 	assert(settings_scene.vibration_check is CheckBox, "设置应提供手柄震动开关")
+	assert(Settings.normalize_ai_server_url(" https://example.com/ ") == "https://example.com", "在线 AI 地址应去除空格与末尾斜杠")
+	assert(Settings.normalize_ai_server_url("file:///tmp/server").is_empty(), "在线 AI 地址应拒绝非 HTTP 协议")
+	assert(AIClient._http_request.body_size_limit == 64 * 1024, "在线 AI 响应体应设置大小上限")
 	settings_scene.queue_free()
 	await get_tree().process_frame
