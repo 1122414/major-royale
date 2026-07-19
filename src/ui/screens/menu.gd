@@ -9,6 +9,7 @@ extends Control
 @onready var achievements_button: Button = $MenuSidebar/Margin/VBox/AchievementsButton
 @onready var settings_shortcut: Button = $SettingsShortcut
 @onready var footer_tip: Label = $MenuSidebar/Margin/VBox/FooterTip
+@onready var meta_gold_label: Label = $MenuSidebar/Margin/VBox/MetaGoldLabel
 
 
 func _ready() -> void:
@@ -21,6 +22,8 @@ func _ready() -> void:
 	achievements_button.pressed.connect(_on_achievements_pressed)
 	_refresh_run_buttons()
 	_refresh_bgm_button()
+	_refresh_meta_gold()
+	MetaProgression.profile_changed.connect(_refresh_meta_gold)
 	AudioManager.play_bgm_for_phase("menu")
 	start_button.grab_focus()
 
@@ -73,6 +76,10 @@ func _refresh_run_buttons() -> void:
 		if has_save
 		else "Enter 开始　M 专业　S 设置\n压力圈将在开局后持续收缩"
 	)
+
+
+func _refresh_meta_gold() -> void:
+	meta_gold_label.text = "◆  永久金币：%d" % MetaProgression.get_gold()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

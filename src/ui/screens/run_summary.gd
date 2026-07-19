@@ -12,6 +12,7 @@ func _ready() -> void:
 	var victory: bool = GameState.player_stats.get("last_battle_victory", false)
 	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
 	var is_clear: bool = victory and enemy_id == "employment_pressure"
+	var settlement := MetaProgression.settle_current_run(is_clear)
 
 	if is_clear:
 		title_label.text = "通关总结 · 唯一上岸者"
@@ -22,12 +23,12 @@ func _ready() -> void:
 	else:
 		title_label.text = "本局回顾"
 
-	body_label.text = _build_summary(is_clear)
+	body_label.text = _build_summary(is_clear, settlement)
 	continue_button.pressed.connect(_on_continue)
 	continue_button.grab_focus()
 
 
-func _build_summary(is_clear: bool) -> String:
+func _build_summary(is_clear: bool, settlement: Dictionary = {}) -> String:
 	var major_name := GameState.player_major_id
 	if Config.majors.has(major_name):
 		major_name = Config.majors[major_name].name
@@ -39,6 +40,11 @@ func _build_summary(is_clear: bool) -> String:
 	lines.append("天数：第%d天　　压力圈：%d" % [GameState.day_count, GameState.run_progress])
 	lines.append("生命 %d/%d　　精神 %d/%d" % [GameState.run_hp, GameState.run_max_hp, GameState.run_spirit, GameState.run_max_spirit])
 	lines.append("学分 %d　　信用点 %d　　牌库 %d 张" % [GameState.credits, GameState.credit_points, GameState.deck_card_ids.size()])
+	if not settlement.is_empty():
+		lines.append("本局金币 +%d　　永久余额 %d" % [
+			int(settlement.get("earned", 0)),
+			int(settlement.get("balance", MetaProgression.get_gold())),
+		])
 	var RelicCat = preload("res://src/logic/relic.gd")
 	lines.append(RelicCat.format_list(GameState.run_relic_ids))
 	lines.append("")

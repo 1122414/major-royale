@@ -9,6 +9,8 @@ const CampusRouteScript := preload("res://src/logic/campus_route.gd")
 
 func _ready() -> void:
 	Achievements.save_enabled = false
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 	print("TEST: 开始 Godot 数据加载测试")
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
@@ -58,6 +60,7 @@ func _ready() -> void:
 	_test_reward_determinism_and_uniqueness()
 	_test_seeded_run_reproducibility()
 	_test_difficulty_ladder_rules()
+	_test_meta_currency_profile()
 	await _test_ai_native_presentation()
 	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -78,9 +81,36 @@ func _ready() -> void:
 
 	Config.majors.erase("custom_test")
 	GameState.player_stats.erase("battle_player")
+	MetaProgression.reset_profile()
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)
+
+
+func _test_meta_currency_profile() -> void:
+	MetaProgression.reset_profile()
+	assert(MetaProgression.grant_gold(50) == 50, "永久金币应可安全增加")
+	assert(MetaProgression.spend_gold(18), "余额足够时应可消费永久金币")
+	assert(MetaProgression.get_gold() == 32, "永久金币消费结果错误")
+	assert(not MetaProgression.spend_gold(33), "余额不足时不得消费永久金币")
+
+	var snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(snapshot), "局外成长快照应可恢复")
+	assert(MetaProgression.get_gold() == 32, "恢复后永久金币应保持")
+
+	GameState.start_run("computer", 7717, 2)
+	GameState.run_started_at = 10001
+	GameState.run_battles_won = 3
+	GameState.run_events_resolved = 2
+	var first := MetaProgression.settle_current_run(false)
+	var expected := 4 + 3 * 3 + 2 + 2 * 4
+	assert(int(first.get("earned", -1)) == expected, "一局金币应按战斗、事件与难度结算")
+	var balance_after_first := MetaProgression.get_gold()
+	var repeated := MetaProgression.settle_current_run(false)
+	assert(bool(repeated.get("already_settled", false)), "重复进入总结页应识别已结算局")
+	assert(MetaProgression.get_gold() == balance_after_first, "同一局不得重复发放永久金币")
+	MetaProgression.reset_profile()
 
 
 func _test_battle_core() -> void:

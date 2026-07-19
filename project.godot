@@ -12,6 +12,7 @@ run/main_scene="res://src/ui/screens/menu.tscn"
 [autoload]
 Config="*res://src/autoload/config.gd"
 Settings="*res://src/autoload/settings.gd"
+MetaProgression="*res://src/autoload/meta_progression.gd"
 GameState="*res://src/autoload/game_state.gd"
 AudioManager="*res://src/autoload/audio_manager.gd"
 AIClient="*res://src/ai/client.gd"
