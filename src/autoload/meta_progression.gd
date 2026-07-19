@@ -117,6 +117,40 @@ const EQUIPMENT := {
 		"effects": {"starting_credits": 15},
 	},
 }
+const UPGRADES := {
+	"survival_training": {
+		"name": "生存训练",
+		"desc": "每级使每局最大生命 +3。",
+		"max_level": 3,
+		"base_cost": 25,
+		"cost_step": 20,
+		"effects_per_level": {"max_hp": 3},
+	},
+	"mindset_training": {
+		"name": "心态建设",
+		"desc": "每级使每局最大精神 +5。",
+		"max_level": 3,
+		"base_cost": 25,
+		"cost_step": 20,
+		"effects_per_level": {"max_spirit": 5},
+	},
+	"resource_planning": {
+		"name": "资源规划",
+		"desc": "每级使每局初始学分 +10。",
+		"max_level": 3,
+		"base_cost": 30,
+		"cost_step": 20,
+		"effects_per_level": {"starting_credits": 10},
+	},
+	"alumni_network": {
+		"name": "校友网络",
+		"desc": "每级使局末永久金币收益 +8%。",
+		"max_level": 3,
+		"base_cost": 35,
+		"cost_step": 25,
+		"effects_per_level": {"gold_bonus_percent": 8},
+	},
+}
 
 var gold: int = 0
 var settled_runs: Dictionary = {}  ## run_token -> {earned, settled_at}
@@ -124,6 +158,7 @@ var unlocked_talent_ids: Array[String] = []
 var equipped_talent_ids: Array[String] = []
 var owned_equipment_ids: Array[String] = []
 var equipped_equipment: Dictionary = {}  ## slot_id -> equipment_id
+var upgrade_levels: Dictionary = {}  ## upgrade_id -> level
 var save_enabled := true
 
 
@@ -275,6 +310,48 @@ func get_equipped_equipment() -> Dictionary:
 	return equipped_equipment.duplicate()
 
 
+func get_upgrade_info(upgrade_id: String) -> Dictionary:
+	return (UPGRADES.get(upgrade_id, {}) as Dictionary).duplicate(true)
+
+
+func get_upgrade_ids() -> Array[String]:
+	var output: Array[String] = []
+	for upgrade_id in UPGRADES:
+		output.append(str(upgrade_id))
+	return output
+
+
+func get_upgrade_level(upgrade_id: String) -> int:
+	if not UPGRADES.has(upgrade_id):
+		return 0
+	return clampi(
+		int(upgrade_levels.get(upgrade_id, 0)),
+		0,
+		int(UPGRADES[upgrade_id].get("max_level", 0)),
+	)
+
+
+func get_next_upgrade_cost(upgrade_id: String) -> int:
+	if not UPGRADES.has(upgrade_id):
+		return -1
+	var info: Dictionary = UPGRADES[upgrade_id]
+	var level := get_upgrade_level(upgrade_id)
+	if level >= int(info.get("max_level", 0)):
+		return -1
+	return int(info.get("base_cost", 0)) + level * int(info.get("cost_step", 0))
+
+
+func purchase_upgrade(upgrade_id: String) -> bool:
+	var cost := get_next_upgrade_cost(upgrade_id)
+	if cost < 0 or not can_afford(cost):
+		return false
+	gold -= cost
+	upgrade_levels[upgrade_id] = get_upgrade_level(upgrade_id) + 1
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
 func get_combined_effects() -> Dictionary:
 	var output := {}
 	for talent_id in equipped_talent_ids:
@@ -285,6 +362,11 @@ func get_combined_effects() -> Dictionary:
 		var effects: Dictionary = EQUIPMENT[equipment_id].get("effects", {})
 		for effect_id in effects:
 			output[effect_id] = int(output.get(effect_id, 0)) + int(effects[effect_id])
+	for upgrade_id in UPGRADES:
+		var level := get_upgrade_level(upgrade_id)
+		var effects: Dictionary = UPGRADES[upgrade_id].get("effects_per_level", {})
+		for effect_id in effects:
+			output[effect_id] = int(output.get(effect_id, 0)) + int(effects[effect_id]) * level
 	return output
 
 
@@ -293,6 +375,7 @@ func calculate_run_gold(
 	events_resolved: int,
 	difficulty: int,
 	is_clear: bool,
+	gold_bonus_percent: int = 0,
 ) -> int:
 	var reward := 4
 	reward += maxi(0, battles_won) * 3
@@ -300,7 +383,7 @@ func calculate_run_gold(
 	reward += maxi(0, difficulty) * 4
 	if is_clear:
 		reward += 20
-	return reward
+	return int(round(float(reward) * (1.0 + float(maxi(0, gold_bonus_percent)) / 100.0)))
 
 
 func settle_current_run(is_clear: bool) -> Dictionary:
@@ -323,6 +406,7 @@ func settle_current_run(is_clear: bool) -> Dictionary:
 		GameState.run_events_resolved,
 		GameState.run_difficulty,
 		is_clear,
+		GameState.get_meta_effect("gold_bonus_percent"),
 	)
 	gold += earned
 	settled_runs[run_token] = {
@@ -349,6 +433,7 @@ func create_profile_snapshot() -> Dictionary:
 		"equipped_talent_ids": equipped_talent_ids.duplicate(),
 		"owned_equipment_ids": owned_equipment_ids.duplicate(),
 		"equipped_equipment": equipped_equipment.duplicate(),
+		"upgrade_levels": upgrade_levels.duplicate(),
 	}
 
 
@@ -383,6 +468,15 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 			var equipment_id := str(saved_equipment.get(slot_id, ""))
 			if equipment_id in owned_equipment_ids and str(EQUIPMENT[equipment_id].get("slot", "")) == slot_id:
 				equipped_equipment[slot_id] = equipment_id
+	upgrade_levels.clear()
+	var saved_upgrade_levels = data.get("upgrade_levels", {})
+	if saved_upgrade_levels is Dictionary:
+		for upgrade_id in UPGRADES:
+			upgrade_levels[upgrade_id] = clampi(
+				int(saved_upgrade_levels.get(upgrade_id, 0)),
+				0,
+				int(UPGRADES[upgrade_id].get("max_level", 0)),
+			)
 	_trim_settled_runs()
 	profile_changed.emit()
 	return true
@@ -395,6 +489,7 @@ func reset_profile() -> void:
 	equipped_talent_ids.clear()
 	owned_equipment_ids.clear()
 	equipped_equipment.clear()
+	upgrade_levels.clear()
 	profile_changed.emit()
 
 

@@ -7,6 +7,7 @@ extends Control
 @onready var quit_button: Button = $MenuSidebar/Margin/VBox/QuitButton
 @onready var bgm_button: Button = $MenuSidebar/Margin/VBox/BgmButton
 @onready var achievements_button: Button = $MenuSidebar/Margin/VBox/AchievementsButton
+@onready var progression_button: Button = $MenuSidebar/Margin/VBox/ProgressionButton
 @onready var settings_shortcut: Button = $SettingsShortcut
 @onready var footer_tip: Label = $MenuSidebar/Margin/VBox/FooterTip
 @onready var meta_gold_label: Label = $MenuSidebar/Margin/VBox/MetaGoldLabel
@@ -20,6 +21,7 @@ func _ready() -> void:
 	quit_button.pressed.connect(_on_quit_pressed)
 	bgm_button.pressed.connect(_on_bgm_pressed)
 	achievements_button.pressed.connect(_on_achievements_pressed)
+	progression_button.pressed.connect(_on_progression_pressed)
 	_refresh_run_buttons()
 	_refresh_bgm_button()
 	_refresh_meta_gold()
@@ -58,6 +60,11 @@ func _on_bgm_pressed() -> void:
 func _on_achievements_pressed() -> void:
 	AudioManager.play_sfx("click")
 	GameState.change_screen(GameState.Screen.ACHIEVEMENTS)
+
+
+func _on_progression_pressed() -> void:
+	AudioManager.play_sfx("click")
+	GameState.change_screen(GameState.Screen.META_PROGRESSION)
 
 
 func _refresh_bgm_button(name_str: String = "") -> void:

@@ -63,6 +63,7 @@ func _ready() -> void:
 	_test_meta_currency_profile()
 	_test_persistent_talent_loadout()
 	_test_persistent_equipment_loadout()
+	_test_persistent_upgrade_tracks()
 	await _test_ai_native_presentation()
 	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -173,6 +174,37 @@ func _test_persistent_equipment_loadout() -> void:
 	assert(MetaProgression.equip_equipment("debate_medal"), "同槽装备应可自由替换")
 	assert(MetaProgression.get_equipped_equipment().get("badge") == "debate_medal", "替换后徽章槽应指向新装备")
 	assert(GameState.run_max_hp == base_hp + 5, "中途替换装备不得改变已开始的一局")
+	MetaProgression.reset_profile()
+
+
+func _test_persistent_upgrade_tracks() -> void:
+	MetaProgression.reset_profile()
+	MetaProgression.grant_gold(1000)
+	assert(MetaProgression.get_next_upgrade_cost("survival_training") == 25, "首级生存强化价格错误")
+	for expected_level in [1, 2, 3]:
+		assert(MetaProgression.purchase_upgrade("survival_training"), "生存强化应可升至 %d 级" % expected_level)
+		assert(MetaProgression.get_upgrade_level("survival_training") == expected_level, "生存强化等级未保留")
+	assert(not MetaProgression.purchase_upgrade("survival_training"), "永久强化达到 3 级后不得继续叠加")
+	assert(MetaProgression.get_next_upgrade_cost("survival_training") == -1, "满级强化不应继续报价")
+	assert(MetaProgression.purchase_upgrade("alumni_network"), "校友网络应可购买第一级")
+	assert(MetaProgression.purchase_upgrade("alumni_network"), "校友网络应可购买第二级")
+
+	var snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(snapshot), "永久强化等级应随局外档案恢复")
+	assert(MetaProgression.get_upgrade_level("survival_training") == 3, "恢复后应保持满级生存强化")
+
+	var computer: MajorResource = Config.majors["computer"]
+	var base_hp := 60 + int(computer.stats.get("体能", 5)) * 3
+	GameState.start_run("computer", 719, 1)
+	GameState.run_started_at = 20002
+	assert(GameState.run_max_hp == base_hp + 9, "三级生存强化应增加 9 点最大生命")
+	assert(GameState.get_meta_effect("gold_bonus_percent") == 16, "两级校友网络应提供 16% 金币加成")
+	GameState.run_battles_won = 2
+	GameState.run_events_resolved = 1
+	var settlement := MetaProgression.settle_current_run(false)
+	var expected_gold := MetaProgression.calculate_run_gold(2, 1, 1, false, 16)
+	assert(int(settlement.get("earned", -1)) == expected_gold, "永久金币增益应按本局锁定强化结算")
 	MetaProgression.reset_profile()
 
 
@@ -1075,8 +1107,28 @@ func _test_delivery_screen_flow() -> void:
 	await get_tree().process_frame
 	assert(menu.get_node("MenuSidebar/Margin/VBox/StartButton") is Button, "主菜单应提供开始游戏入口")
 	assert(menu.get_node("MenuSidebar/Margin/VBox/AchievementsButton") is Button, "主菜单应提供成就入口")
+	assert(menu.get_node("MenuSidebar/Margin/VBox/ProgressionButton") is Button, "主菜单应提供局外成长入口")
 	menu.queue_free()
 	await get_tree().process_frame
+
+	MetaProgression.reset_profile()
+	MetaProgression.grant_gold(500)
+	var progression := (load("res://src/ui/screens/meta_progression.tscn") as PackedScene).instantiate()
+	add_child(progression)
+	await get_tree().process_frame
+	assert(progression.talent_list.get_child_count() == MetaProgression.TALENTS.size(), "成长界面应展示全部永久天赋")
+	assert(progression.equipment_list.get_child_count() == MetaProgression.EQUIPMENT.size() + MetaProgression.EQUIPMENT_SLOTS.size(), "成长界面应按三槽展示全部装备")
+	assert(progression.upgrade_list.get_child_count() == MetaProgression.UPGRADES.size(), "成长界面应展示四条永久强化")
+	assert("500" in progression.gold_label.text, "成长界面应展示当前永久金币")
+	progression._on_talent_action("healthy_routine")
+	assert(MetaProgression.is_talent_equipped("healthy_routine"), "成长界面应能购买并自动装配天赋")
+	progression._on_equipment_action("graphing_calculator")
+	assert(MetaProgression.get_equipped_equipment().get("tool") == "graphing_calculator", "成长界面应能购买并装配装备")
+	progression._on_upgrade_action("survival_training")
+	assert(MetaProgression.get_upgrade_level("survival_training") == 1, "成长界面应能购买永久强化")
+	progression.queue_free()
+	await get_tree().process_frame
+	MetaProgression.reset_profile()
 
 	var major_select := (load("res://src/ui/screens/major_select.tscn") as PackedScene).instantiate()
 	add_child(major_select)

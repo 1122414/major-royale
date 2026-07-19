@@ -1,0 +1,216 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/ui/screens/meta_progression.gd" id="1_script"]
+[ext_resource type="Theme" path="res://src/ui/theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://src/ui/scene_background.gd" id="3_bg"]
+
+[node name="MetaProgressionScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="PixelBackground" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_bg")
+texture_path = "res://assets/sprites/bg/menu_campus.png"
+dim = 0.7
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 1256.0
+offset_bottom = 92.0
+theme_type_variation = &"PanelGold"
+
+[node name="Margin" type="MarginContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 8
+
+[node name="Row" type="HBoxContainer" parent="Header/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="Header/Margin/Row"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "◀  返回主页"
+
+[node name="TitleColumn" type="VBoxContainer" parent="Header/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Header/Margin/Row/TitleColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 25
+text = "◆ 局外成长中枢"
+
+[node name="StatusLabel" type="Label" parent="Header/Margin/Row/TitleColumn"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "配置会在开局时锁定；当前一局不会被中途换装影响。"
+
+[node name="GoldLabel" type="Label" parent="Header/Margin/Row"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 18
+text = "◆ 永久金币\n0"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Content" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 104.0
+offset_right = 1256.0
+offset_bottom = 696.0
+theme_override_constants/separation = 12
+
+[node name="TalentsPanel" type="PanelContainer" parent="Content"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="Content/TalentsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Content/TalentsPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Title" type="Label" parent="Content/TalentsPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 23
+text = "天赋  2 槽"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Content/TalentsPanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "购买后永久解锁；点击已装配项可卸下。"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="Content/TalentsPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="TalentScroll" type="ScrollContainer" parent="Content/TalentsPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TalentList" type="VBoxContainer" parent="Content/TalentsPanel/Margin/VBox/TalentScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="EquipmentPanel" type="PanelContainer" parent="Content"]
+custom_minimum_size = Vector2(402, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"PanelGold"
+
+[node name="Margin" type="MarginContainer" parent="Content/EquipmentPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Content/EquipmentPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Title" type="Label" parent="Content/EquipmentPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 23
+text = "永久装备  3 槽"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Content/EquipmentPanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "工具 / 徽章 / 纪念品；同槽换装会自动替换。"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="Content/EquipmentPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="EquipmentScroll" type="ScrollContainer" parent="Content/EquipmentPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EquipmentList" type="VBoxContainer" parent="Content/EquipmentPanel/Margin/VBox/EquipmentScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="UpgradesPanel" type="PanelContainer" parent="Content"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="Content/UpgradesPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Content/UpgradesPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="Title" type="Label" parent="Content/UpgradesPanel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
+theme_override_font_sizes/font_size = 23
+text = "永久强化  3 级"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Content/UpgradesPanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"MutedLabel"
+theme_override_font_sizes/font_size = 12
+text = "逐级消耗金币，达到上限后不再继续叠加。"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="Content/UpgradesPanel/Margin/VBox"]
+layout_mode = 2
+
+[node name="UpgradeScroll" type="ScrollContainer" parent="Content/UpgradesPanel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UpgradeList" type="VBoxContainer" parent="Content/UpgradesPanel/Margin/VBox/UpgradeScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 9

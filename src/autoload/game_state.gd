@@ -11,6 +11,7 @@ enum Screen {
 	RESULT,
 	ACHIEVEMENTS,
 	RUN_SUMMARY,
+	META_PROGRESSION,
 }
 
 const RUN_SAVE_VERSION := 1
@@ -41,6 +42,7 @@ const SAVED_META_EFFECT_KEYS := [
 	"stat_社交",
 	"stat_抗压",
 	"stat_资源",
+	"gold_bonus_percent",
 ]
 const RUN_SEED_MODULUS := 2147483647
 const DIFFICULTY_CATALOG := [
@@ -755,4 +757,5 @@ func _screen_to_path(screen: Screen) -> String:
 		Screen.RESULT: return "res://src/ui/screens/result.tscn"
 		Screen.ACHIEVEMENTS: return "res://src/ui/screens/achievements.tscn"
 		Screen.RUN_SUMMARY: return "res://src/ui/screens/run_summary.tscn"
+		Screen.META_PROGRESSION: return "res://src/ui/screens/meta_progression.tscn"
 	return "res://src/ui/screens/menu.tscn"

@@ -91,6 +91,11 @@ custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "🏅  成就档案"
 
+[node name="ProgressionButton" type="Button" parent="MenuSidebar/Margin/VBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "◆  局外成长"
+
 [node name="BgmButton" type="Button" parent="MenuSidebar/Margin/VBox"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
