@@ -118,6 +118,7 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 
 
 func _apply_battle_start_relics() -> void:
+	player.draw_cards(GameState.get_meta_effect("opening_draw"), MAX_HAND_SIZE)
 	if GameState.has_relic("flash_drive"):
 		player.draw_cards(1, MAX_HAND_SIZE)
 	if GameState.has_relic("lucky_eraser"):

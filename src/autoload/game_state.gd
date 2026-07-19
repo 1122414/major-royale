@@ -25,6 +25,15 @@ const SAVED_PLAYER_STAT_KEYS := [
 	"last_ending_flag",
 ]
 const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
+const SAVED_META_EFFECT_KEYS := [
+	"max_hp",
+	"max_spirit",
+	"starting_credits",
+	"starting_credit_points",
+	"opening_draw",
+	"opening_shield",
+	"opening_resistance",
+]
 const RUN_SEED_MODULUS := 2147483647
 const DIFFICULTY_CATALOG := [
 	{
@@ -89,6 +98,8 @@ var permanent_stats: Dictionary = {}
 var pending_buffs: Array[Dictionary] = []  ## [{status_id, stacks}, ...]
 var run_relic_ids: Array[String] = []
 var run_event_flags: Array[String] = []
+var run_meta_effects: Dictionary = {}
+var run_meta_talent_ids: Array[String] = []
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
@@ -163,6 +174,8 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"pending_buffs": pending_buffs.duplicate(true),
 		"run_relic_ids": run_relic_ids.duplicate(),
 		"run_event_flags": run_event_flags.duplicate(),
+		"run_meta_effects": run_meta_effects.duplicate(true),
+		"run_meta_talent_ids": run_meta_talent_ids.duplicate(),
 		"credits": credits,
 		"credit_points": credit_points,
 		"day_count": day_count,
@@ -260,6 +273,14 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 		var normalized_flag := str(event_flag).strip_edges()
 		if not normalized_flag.is_empty() and normalized_flag.length() <= 64 and normalized_flag not in run_event_flags:
 			run_event_flags.append(normalized_flag)
+	run_meta_effects = _sanitize_meta_effects(data.get("run_meta_effects", {}))
+	run_meta_talent_ids.clear()
+	var saved_talent_ids = data.get("run_meta_talent_ids", [])
+	if saved_talent_ids is Array:
+		for talent_id in saved_talent_ids:
+			var normalized_talent_id := str(talent_id)
+			if MetaProgression.TALENTS.has(normalized_talent_id) and normalized_talent_id not in run_meta_talent_ids:
+				run_meta_talent_ids.append(normalized_talent_id)
 	credits = maxi(0, int(data.get("credits", 0)))
 	credit_points = maxi(0, int(data.get("credit_points", 0)))
 	day_count = maxi(1, int(data.get("day_count", 1)))
@@ -303,6 +324,16 @@ func _sanitize_permanent_stats(value: Variant) -> Dictionary:
 	for stat_name in STAT_NAMES:
 		if value.has(stat_name):
 			output[stat_name] = clampi(int(value[stat_name]), -20, 100)
+	return output
+
+
+func _sanitize_meta_effects(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for effect_id in SAVED_META_EFFECT_KEYS:
+		if value.has(effect_id):
+			output[effect_id] = clampi(int(value[effect_id]), 0, 1000)
 	return output
 
 
@@ -421,9 +452,11 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0) ->
 	pending_buffs = []
 	run_relic_ids.clear()
 	run_event_flags.clear()
+	run_meta_effects = MetaProgression.get_combined_effects()
+	run_meta_talent_ids = MetaProgression.get_equipped_talent_ids()
 	last_reward_is_elite = false
-	credits = 120
-	credit_points = 560
+	credits = 120 + get_meta_effect("starting_credits")
+	credit_points = 560 + get_meta_effect("starting_credit_points")
 	day_count = 1
 	campus_player_position = Vector2(640, 620)
 	campus_visited_locations.clear()
@@ -534,6 +567,8 @@ func _init_run_from_major(major_id: String) -> void:
 	var major: MajorResource = Config.majors[major_id]
 	var base_hp := 60 + int(major.stats.get("体能", 5)) * 3
 	var base_spirit := 100 + int(major.stats.get("抗压", 5)) * 5
+	base_hp += get_meta_effect("max_hp")
+	base_spirit += get_meta_effect("max_spirit")
 	run_max_hp = base_hp
 	run_hp = base_hp
 	run_max_spirit = base_spirit
@@ -549,6 +584,10 @@ func get_effective_stat(stat_name: String) -> int:
 	return base + int(permanent_stats.get(stat_name, 0))
 
 
+func get_meta_effect(effect_id: String) -> int:
+	return maxi(0, int(run_meta_effects.get(effect_id, 0)))
+
+
 func create_battle_player() -> Character:
 	if not Config.majors.has(player_major_id):
 		push_error("无法创建战斗角色，未知专业: %s" % player_major_id)
@@ -561,6 +600,9 @@ func create_battle_player() -> Character:
 	player.hp = clampi(run_hp, 0, run_max_hp)
 	player.max_spirit = run_max_spirit
 	player.spirit = clampi(run_spirit, 0, run_max_spirit)
+	player.gain_shield(get_meta_effect("opening_shield"))
+	if get_meta_effect("opening_resistance") > 0:
+		player.add_status("resistance", get_meta_effect("opening_resistance"))
 
 	var card_ids: Array = deck_card_ids
 	if card_ids.is_empty():

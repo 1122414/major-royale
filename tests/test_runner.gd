@@ -61,6 +61,7 @@ func _ready() -> void:
 	_test_seeded_run_reproducibility()
 	_test_difficulty_ladder_rules()
 	_test_meta_currency_profile()
+	_test_persistent_talent_loadout()
 	await _test_ai_native_presentation()
 	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -110,6 +111,36 @@ func _test_meta_currency_profile() -> void:
 	var repeated := MetaProgression.settle_current_run(false)
 	assert(bool(repeated.get("already_settled", false)), "重复进入总结页应识别已结算局")
 	assert(MetaProgression.get_gold() == balance_after_first, "同一局不得重复发放永久金币")
+	MetaProgression.reset_profile()
+
+
+func _test_persistent_talent_loadout() -> void:
+	MetaProgression.reset_profile()
+	MetaProgression.grant_gold(200)
+	assert(MetaProgression.purchase_talent("healthy_routine"), "金币足够时应能永久解锁天赋")
+	assert(not MetaProgression.purchase_talent("healthy_routine"), "已解锁天赋不得重复购买")
+	assert(MetaProgression.purchase_talent("organized_notes"), "应能解锁第二个天赋")
+	assert(MetaProgression.equip_talent("healthy_routine"), "已解锁天赋应可装配")
+	assert(MetaProgression.equip_talent("organized_notes"), "第二天赋槽应可装配")
+	assert(not MetaProgression.equip_talent("pressure_drill"), "未解锁天赋不得装配")
+	assert(MetaProgression.purchase_talent("pressure_drill"), "应能购买第三个备选天赋")
+	assert(not MetaProgression.equip_talent("pressure_drill"), "两个天赋槽占满后不得继续装配")
+
+	var snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(snapshot), "天赋解锁与装配应随档案恢复")
+	assert(MetaProgression.is_talent_unlocked("pressure_drill"), "未装配的已购天赋也应永久保留")
+	assert(MetaProgression.get_equipped_talent_ids().size() == 2, "恢复后应保持两个天赋槽")
+
+	var base_hp := 60 + int(Config.majors["computer"].stats.get("体能", 5)) * 3
+	GameState.start_run("computer", 717, 0)
+	assert(GameState.run_max_hp == base_hp + 6, "规律作息应在每局开场增加 6 点最大生命")
+	var battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	assert(battle.player.hand.size() >= Battle.BASE_DRAW + 1, "笔记归档应在每场战斗额外抽 1 张牌")
+
+	MetaProgression.reset_profile()
+	var frozen_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
+	assert(frozen_battle.player.hand.size() >= Battle.BASE_DRAW + 1, "本局天赋配置应在开局后锁定")
 	MetaProgression.reset_profile()
 
 

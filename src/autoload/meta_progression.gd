@@ -8,9 +8,50 @@ const PROFILE_SAVE_PATH := "user://meta_progression.json"
 const PROFILE_SAVE_BACKUP_PATH := "user://meta_progression.backup.json"
 const PROFILE_SAVE_TEMP_PATH := "user://meta_progression.tmp.json"
 const MAX_SETTLED_RUNS := 40
+const TALENT_SLOT_LIMIT := 2
+const TALENTS := {
+	"healthy_routine": {
+		"name": "规律作息",
+		"desc": "每局最大生命 +6。",
+		"cost": 30,
+		"effects": {"max_hp": 6},
+	},
+	"calm_mind": {
+		"name": "稳定心态",
+		"desc": "每局最大精神 +10。",
+		"cost": 30,
+		"effects": {"max_spirit": 10},
+	},
+	"organized_notes": {
+		"name": "笔记归档",
+		"desc": "每场战斗开局额外抽 1 张牌。",
+		"cost": 45,
+		"effects": {"opening_draw": 1},
+	},
+	"pressure_drill": {
+		"name": "抗压演练",
+		"desc": "每场战斗开局获得 1 层抗压。",
+		"cost": 40,
+		"effects": {"opening_resistance": 1},
+	},
+	"resource_network": {
+		"name": "资源人脉",
+		"desc": "每局初始学分 +20。",
+		"cost": 35,
+		"effects": {"starting_credits": 20},
+	},
+	"emergency_review": {
+		"name": "临场复盘",
+		"desc": "每场战斗开局获得 4 点护盾。",
+		"cost": 35,
+		"effects": {"opening_shield": 4},
+	},
+}
 
 var gold: int = 0
 var settled_runs: Dictionary = {}  ## run_token -> {earned, settled_at}
+var unlocked_talent_ids: Array[String] = []
+var equipped_talent_ids: Array[String] = []
 var save_enabled := true
 
 
@@ -45,6 +86,73 @@ func spend_gold(amount: int) -> bool:
 	save_profile()
 	profile_changed.emit()
 	return true
+
+
+func get_talent_info(talent_id: String) -> Dictionary:
+	return (TALENTS.get(talent_id, {}) as Dictionary).duplicate(true)
+
+
+func get_talent_ids() -> Array[String]:
+	var output: Array[String] = []
+	for talent_id in TALENTS:
+		output.append(str(talent_id))
+	return output
+
+
+func is_talent_unlocked(talent_id: String) -> bool:
+	return talent_id in unlocked_talent_ids
+
+
+func is_talent_equipped(talent_id: String) -> bool:
+	return talent_id in equipped_talent_ids
+
+
+func purchase_talent(talent_id: String) -> bool:
+	if not TALENTS.has(talent_id) or is_talent_unlocked(talent_id):
+		return false
+	var cost := maxi(0, int(TALENTS[talent_id].get("cost", 0)))
+	if not can_afford(cost):
+		return false
+	gold -= cost
+	unlocked_talent_ids.append(talent_id)
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func equip_talent(talent_id: String) -> bool:
+	if not is_talent_unlocked(talent_id):
+		return false
+	if is_talent_equipped(talent_id):
+		return true
+	if equipped_talent_ids.size() >= TALENT_SLOT_LIMIT:
+		return false
+	equipped_talent_ids.append(talent_id)
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func unequip_talent(talent_id: String) -> bool:
+	if not is_talent_equipped(talent_id):
+		return false
+	equipped_talent_ids.erase(talent_id)
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func get_equipped_talent_ids() -> Array[String]:
+	return equipped_talent_ids.duplicate()
+
+
+func get_combined_effects() -> Dictionary:
+	var output := {}
+	for talent_id in equipped_talent_ids:
+		var effects: Dictionary = TALENTS[talent_id].get("effects", {})
+		for effect_id in effects:
+			output[effect_id] = int(output.get(effect_id, 0)) + int(effects[effect_id])
+	return output
 
 
 func calculate_run_gold(
@@ -104,6 +212,8 @@ func create_profile_snapshot() -> Dictionary:
 		"version": PROFILE_SAVE_VERSION,
 		"gold": gold,
 		"settled_runs": settled_runs.duplicate(true),
+		"unlocked_talent_ids": unlocked_talent_ids.duplicate(),
+		"equipped_talent_ids": equipped_talent_ids.duplicate(),
 	}
 
 
@@ -125,6 +235,11 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 			"earned": clampi(int(entry.get("earned", 0)), 0, 999999),
 			"settled_at": maxi(0, int(entry.get("settled_at", 0))),
 		}
+	unlocked_talent_ids = _sanitize_id_array(data.get("unlocked_talent_ids", []), TALENTS)
+	equipped_talent_ids.clear()
+	for talent_id in _sanitize_id_array(data.get("equipped_talent_ids", []), TALENTS):
+		if talent_id in unlocked_talent_ids and equipped_talent_ids.size() < TALENT_SLOT_LIMIT:
+			equipped_talent_ids.append(talent_id)
 	_trim_settled_runs()
 	profile_changed.emit()
 	return true
@@ -133,6 +248,8 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 func reset_profile() -> void:
 	gold = 0
 	settled_runs.clear()
+	unlocked_talent_ids.clear()
+	equipped_talent_ids.clear()
 	profile_changed.emit()
 
 
@@ -152,6 +269,17 @@ func save_profile() -> bool:
 
 func _make_run_token(started_at: int, seed: int, major_id: String) -> String:
 	return "%d:%d:%s" % [maxi(0, started_at), maxi(1, seed), major_id.strip_edges()]
+
+
+func _sanitize_id_array(value: Variant, catalog: Dictionary) -> Array[String]:
+	var output: Array[String] = []
+	if value is not Array:
+		return output
+	for raw_id in value:
+		var item_id := str(raw_id)
+		if catalog.has(item_id) and item_id not in output:
+			output.append(item_id)
+	return output
 
 
 func _trim_settled_runs() -> void:
