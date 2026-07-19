@@ -3,6 +3,8 @@ extends Node
 
 
 func _ready() -> void:
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 	var enemy_id := "gpa_anxiety"
 	var major_id := "computer"
 	var screenshot_path := ""

@@ -3,6 +3,8 @@ extends Node
 
 
 func _ready() -> void:
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 	var screenshot_path := ""
 	var show_event := true
 	var event_id := ""

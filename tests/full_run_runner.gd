@@ -16,6 +16,8 @@ func _run_full_game() -> void:
 	_previous_ai_enabled = Settings.ai_enabled
 	Settings.ai_enabled = false
 	Achievements.save_enabled = false
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 	_previous_run_save_enabled = GameState.run_save_enabled
 	GameState.run_save_enabled = false
 
@@ -64,6 +66,7 @@ func _run_full_game() -> void:
 	print("TEST: 新游戏到唯一上岸者整局回归通过")
 	Settings.ai_enabled = _previous_ai_enabled
 	GameState.run_save_enabled = _previous_run_save_enabled
+	MetaProgression.reset_profile()
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)

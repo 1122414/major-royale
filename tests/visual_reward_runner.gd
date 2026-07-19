@@ -3,6 +3,8 @@ extends Node
 
 
 func _ready() -> void:
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 	var screenshot_path := ""
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--screenshot="):

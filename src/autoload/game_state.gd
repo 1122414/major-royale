@@ -127,6 +127,7 @@ var run_events_resolved: int = 0
 var run_perfect_rebuttals: int = 0
 var run_successful_dodges: int = 0
 var run_started_at: int = 0
+var run_instance_id: String = ""
 var run_seed: int = 1
 var run_difficulty: int = 0
 
@@ -202,6 +203,7 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"run_perfect_rebuttals": run_perfect_rebuttals,
 		"run_successful_dodges": run_successful_dodges,
 		"run_started_at": run_started_at,
+		"run_instance_id": run_instance_id,
 		"run_seed": run_seed,
 		"run_difficulty": run_difficulty,
 	}
@@ -326,6 +328,9 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 	run_started_at = maxi(0, int(data.get("run_started_at", 0)))
 	run_seed = maxi(1, int(data.get("run_seed", 1)) % RUN_SEED_MODULUS)
 	run_difficulty = clampi(int(data.get("run_difficulty", 0)), 0, DIFFICULTY_CATALOG.size() - 1)
+	run_instance_id = str(data.get("run_instance_id", "")).strip_edges().left(96)
+	if run_instance_id.is_empty():
+		run_instance_id = "legacy-%d-%d-%s" % [run_started_at, run_seed, player_major_id]
 	current_screen = _save_name_to_screen(str(data.get("screen", "")))
 	return current_screen != Screen.MENU
 
@@ -490,6 +495,7 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0) ->
 	run_perfect_rebuttals = 0
 	run_successful_dodges = 0
 	run_started_at = int(Time.get_unix_time_from_system())
+	run_instance_id = "%d-%d" % [run_started_at, Time.get_ticks_usec()]
 	run_seed = _normalize_run_seed(seed_override)
 	run_difficulty = clampi(difficulty, 0, DIFFICULTY_CATALOG.size() - 1)
 	_init_run_from_major(major_id)

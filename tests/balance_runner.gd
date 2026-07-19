@@ -35,6 +35,8 @@ func _run() -> void:
 	Settings.action_window_scale = 1.0
 	GameState.run_save_enabled = false
 	Achievements.save_enabled = false
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 
 	var baseline_memory := int(Performance.get_monitor(Performance.MEMORY_STATIC))
 	var started_at := Time.get_ticks_usec()
@@ -102,6 +104,7 @@ func _run() -> void:
 	Settings.ai_enabled = previous_ai_enabled
 	Settings.action_window_scale = previous_action_window_scale
 	GameState.run_save_enabled = previous_save_enabled
+	MetaProgression.reset_profile()
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)

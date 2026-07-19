@@ -16,6 +16,8 @@ func _ready() -> void:
 func _run() -> void:
 	var previous_ai_enabled := Settings.ai_enabled
 	Settings.ai_enabled = false
+	MetaProgression.save_enabled = false
+	MetaProgression.reset_profile()
 
 	for _i in WARMUP_CYCLES:
 		await _run_battle_screen_cycle()
@@ -47,6 +49,7 @@ func _run() -> void:
 		elapsed_ms,
 	])
 	Settings.ai_enabled = previous_ai_enabled
+	MetaProgression.reset_profile()
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)

@@ -92,6 +92,15 @@ func _ready() -> void:
 
 func _test_meta_currency_profile() -> void:
 	MetaProgression.reset_profile()
+	var legacy_profile := {
+		"version": MetaProgression.PROFILE_SAVE_VERSION,
+		"gold": 27,
+		"settled_runs": {},
+	}
+	assert(MetaProgression.restore_profile_snapshot(legacy_profile), "早期金币档案缺少成长字段时应安全迁移")
+	assert(MetaProgression.get_gold() == 27, "迁移早期档案时不得丢失永久金币")
+	assert(MetaProgression.get_equipped_talent_ids().is_empty(), "早期档案应为新增天赋字段补空值")
+	MetaProgression.reset_profile()
 	assert(MetaProgression.grant_gold(50) == 50, "永久金币应可安全增加")
 	assert(MetaProgression.spend_gold(18), "余额足够时应可消费永久金币")
 	assert(MetaProgression.get_gold() == 32, "永久金币消费结果错误")
@@ -113,6 +122,9 @@ func _test_meta_currency_profile() -> void:
 	var repeated := MetaProgression.settle_current_run(false)
 	assert(bool(repeated.get("already_settled", false)), "重复进入总结页应识别已结算局")
 	assert(MetaProgression.get_gold() == balance_after_first, "同一局不得重复发放永久金币")
+	var first_instance_id := GameState.run_instance_id
+	GameState.start_run("computer", 7717, 2)
+	assert(GameState.run_instance_id != first_instance_id, "快速重开同专业同种子时也必须生成独立结算标识")
 	MetaProgression.reset_profile()
 
 
@@ -1291,6 +1303,18 @@ func _test_run_save_roundtrip() -> void:
 	assert(GameState.campus_player_position == Vector2(734, 488), "校园位置应进入存档")
 	assert(GameState.run_event_flags == ["study_group", "event:pop_quiz"], "事件链线索与完成标识应进入存档")
 	assert(GameState.run_seed == 424242 and GameState.run_difficulty == 2, "固定种子与挑战难度应进入安全存档")
+	assert(not GameState.run_instance_id.is_empty(), "一局唯一标识应进入安全存档")
+
+	var legacy_snapshot := snapshot.duplicate(true)
+	legacy_snapshot.erase("run_meta_effects")
+	legacy_snapshot.erase("run_meta_talent_ids")
+	legacy_snapshot.erase("run_meta_equipment")
+	legacy_snapshot.erase("run_instance_id")
+	GameState.start_run("computer")
+	assert(GameState.restore_run_save_snapshot(legacy_snapshot), "旧一局存档缺少局外成长字段时应安全恢复")
+	assert(GameState.run_meta_effects.is_empty(), "旧一局存档应回落为空的局外加成")
+	assert(GameState.run_meta_talent_ids.is_empty() and GameState.run_meta_equipment.is_empty(), "旧一局存档应回落为空配置")
+	assert(GameState.run_instance_id.begins_with("legacy-"), "旧一局存档应生成稳定的兼容结算标识")
 
 
 func _test_run_config_ui() -> void:

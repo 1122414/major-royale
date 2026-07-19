@@ -387,11 +387,13 @@ func calculate_run_gold(
 
 
 func settle_current_run(is_clear: bool) -> Dictionary:
-	var run_token := _make_run_token(
-		GameState.run_started_at,
-		GameState.run_seed,
-		GameState.player_major_id,
-	)
+	var run_token := GameState.run_instance_id
+	if run_token.is_empty():
+		run_token = _make_run_token(
+			GameState.run_started_at,
+			GameState.run_seed,
+			GameState.player_major_id,
+		)
 	if settled_runs.has(run_token):
 		var previous: Dictionary = settled_runs[run_token]
 		return {
