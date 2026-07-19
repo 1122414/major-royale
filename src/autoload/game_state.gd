@@ -33,6 +33,14 @@ const SAVED_META_EFFECT_KEYS := [
 	"opening_draw",
 	"opening_shield",
 	"opening_resistance",
+	"stat_学识",
+	"stat_体能",
+	"stat_专注",
+	"stat_表达",
+	"stat_创造",
+	"stat_社交",
+	"stat_抗压",
+	"stat_资源",
 ]
 const RUN_SEED_MODULUS := 2147483647
 const DIFFICULTY_CATALOG := [
@@ -100,6 +108,7 @@ var run_relic_ids: Array[String] = []
 var run_event_flags: Array[String] = []
 var run_meta_effects: Dictionary = {}
 var run_meta_talent_ids: Array[String] = []
+var run_meta_equipment: Dictionary = {}
 var credits: int = 120
 var credit_points: int = 560
 var day_count: int = 1
@@ -176,6 +185,7 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"run_event_flags": run_event_flags.duplicate(),
 		"run_meta_effects": run_meta_effects.duplicate(true),
 		"run_meta_talent_ids": run_meta_talent_ids.duplicate(),
+		"run_meta_equipment": run_meta_equipment.duplicate(),
 		"credits": credits,
 		"credit_points": credit_points,
 		"day_count": day_count,
@@ -281,6 +291,15 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 			var normalized_talent_id := str(talent_id)
 			if MetaProgression.TALENTS.has(normalized_talent_id) and normalized_talent_id not in run_meta_talent_ids:
 				run_meta_talent_ids.append(normalized_talent_id)
+	run_meta_equipment.clear()
+	var saved_equipment = data.get("run_meta_equipment", {})
+	if saved_equipment is Dictionary:
+		for slot_id in MetaProgression.EQUIPMENT_SLOTS:
+			var equipment_id := str(saved_equipment.get(slot_id, ""))
+			if MetaProgression.EQUIPMENT.has(equipment_id):
+				var equipment_slot := str(MetaProgression.EQUIPMENT[equipment_id].get("slot", ""))
+				if equipment_slot == slot_id:
+					run_meta_equipment[slot_id] = equipment_id
 	credits = maxi(0, int(data.get("credits", 0)))
 	credit_points = maxi(0, int(data.get("credit_points", 0)))
 	day_count = maxi(1, int(data.get("day_count", 1)))
@@ -454,6 +473,7 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0) ->
 	run_event_flags.clear()
 	run_meta_effects = MetaProgression.get_combined_effects()
 	run_meta_talent_ids = MetaProgression.get_equipped_talent_ids()
+	run_meta_equipment = MetaProgression.get_equipped_equipment()
 	last_reward_is_elite = false
 	credits = 120 + get_meta_effect("starting_credits")
 	credit_points = 560 + get_meta_effect("starting_credit_points")
@@ -581,7 +601,7 @@ func _init_run_from_major(major_id: String) -> void:
 func get_effective_stat(stat_name: String) -> int:
 	var major: MajorResource = Config.majors[player_major_id]
 	var base: int = int(major.stats.get(stat_name, 5))
-	return base + int(permanent_stats.get(stat_name, 0))
+	return base + int(permanent_stats.get(stat_name, 0)) + get_meta_effect("stat_%s" % stat_name)
 
 
 func get_meta_effect(effect_id: String) -> int:

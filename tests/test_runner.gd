@@ -62,6 +62,7 @@ func _ready() -> void:
 	_test_difficulty_ladder_rules()
 	_test_meta_currency_profile()
 	_test_persistent_talent_loadout()
+	_test_persistent_equipment_loadout()
 	await _test_ai_native_presentation()
 	await _test_defense_window_presentation()
 	print("TEST: 所有战斗逻辑测试通过")
@@ -141,6 +142,37 @@ func _test_persistent_talent_loadout() -> void:
 	MetaProgression.reset_profile()
 	var frozen_battle := Battle.new(GameState.create_battle_player(), Config.enemies["gpa_anxiety"])
 	assert(frozen_battle.player.hand.size() >= Battle.BASE_DRAW + 1, "本局天赋配置应在开局后锁定")
+	MetaProgression.reset_profile()
+
+
+func _test_persistent_equipment_loadout() -> void:
+	MetaProgression.reset_profile()
+	MetaProgression.grant_gold(300)
+	for equipment_id in ["graphing_calculator", "sports_pin", "family_photo", "debate_medal"]:
+		assert(MetaProgression.purchase_equipment(equipment_id), "金币足够时应能永久购买装备：%s" % equipment_id)
+	assert(not MetaProgression.purchase_equipment("sports_pin"), "已拥有装备不得重复购买")
+	assert(not MetaProgression.equip_equipment("portable_charger"), "未拥有装备不得装配")
+	assert(MetaProgression.equip_equipment("graphing_calculator"), "工具槽应能装配图形计算器")
+	assert(MetaProgression.equip_equipment("sports_pin"), "徽章槽应能装配校队纪念章")
+	assert(MetaProgression.equip_equipment("family_photo"), "纪念品槽应能装配合影相框")
+
+	var snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(snapshot), "装备收藏与装配应随档案恢复")
+	assert(MetaProgression.get_owned_equipment_ids().size() == 4, "购买的装备应永久保留")
+	assert(MetaProgression.get_equipped_equipment().size() == 3, "三个不同装备槽应同时生效")
+
+	var computer: MajorResource = Config.majors["computer"]
+	var base_hp := 60 + int(computer.stats.get("体能", 5)) * 3
+	var base_spirit := 100 + int(computer.stats.get("抗压", 5)) * 5
+	GameState.start_run("computer", 718, 0)
+	assert(GameState.run_max_hp == base_hp + 5, "校队纪念章应增加 5 点最大生命")
+	assert(GameState.run_max_spirit == base_spirit + 8, "合影相框应增加 8 点最大精神")
+	assert(GameState.get_effective_stat("学识") == int(computer.stats.get("学识", 5)) + 1, "图形计算器应增加 1 点学识")
+
+	assert(MetaProgression.equip_equipment("debate_medal"), "同槽装备应可自由替换")
+	assert(MetaProgression.get_equipped_equipment().get("badge") == "debate_medal", "替换后徽章槽应指向新装备")
+	assert(GameState.run_max_hp == base_hp + 5, "中途替换装备不得改变已开始的一局")
 	MetaProgression.reset_profile()
 
 

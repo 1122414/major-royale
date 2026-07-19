@@ -48,6 +48,7 @@ func _build_summary(is_clear: bool, settlement: Dictionary = {}) -> String:
 	var RelicCat = preload("res://src/logic/relic.gd")
 	lines.append(RelicCat.format_list(GameState.run_relic_ids))
 	lines.append(_format_talents())
+	lines.append(_format_equipment())
 	lines.append("")
 	lines.append("—— 战斗数据 ——")
 	lines.append("胜利场次：%d　　出牌：%d　　造成伤害：%d" % [
@@ -86,6 +87,20 @@ func _format_talents() -> String:
 	for talent_id in GameState.run_meta_talent_ids:
 		names.append(str(MetaProgression.get_talent_info(talent_id).get("name", talent_id)))
 	return "永久天赋：%s" % "、".join(names)
+
+
+func _format_equipment() -> String:
+	if GameState.run_meta_equipment.is_empty():
+		return "永久装备：无"
+	var entries: PackedStringArray = []
+	for slot_id in MetaProgression.EQUIPMENT_SLOTS:
+		if not GameState.run_meta_equipment.has(slot_id):
+			continue
+		var equipment_id := str(GameState.run_meta_equipment[slot_id])
+		var slot_name := str(MetaProgression.EQUIPMENT_SLOTS[slot_id])
+		var equipment_name := str(MetaProgression.get_equipment_info(equipment_id).get("name", equipment_id))
+		entries.append("%s·%s" % [slot_name, equipment_name])
+	return "永久装备：%s" % "　".join(entries)
 
 
 func _on_continue() -> void:

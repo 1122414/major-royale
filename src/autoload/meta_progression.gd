@@ -47,11 +47,83 @@ const TALENTS := {
 		"effects": {"opening_shield": 4},
 	},
 }
+const EQUIPMENT_SLOTS := {
+	"tool": "工具",
+	"badge": "徽章",
+	"keepsake": "纪念品",
+}
+const EQUIPMENT := {
+	"secondhand_laptop": {
+		"name": "二手笔记本",
+		"desc": "每局初始信用点 +30。",
+		"slot": "tool",
+		"cost": 25,
+		"effects": {"starting_credit_points": 30},
+	},
+	"graphing_calculator": {
+		"name": "图形计算器",
+		"desc": "学识永久 +1。",
+		"slot": "tool",
+		"cost": 45,
+		"effects": {"stat_学识": 1},
+	},
+	"portable_charger": {
+		"name": "随身充电宝",
+		"desc": "每场战斗开局获得 3 点护盾。",
+		"slot": "tool",
+		"cost": 35,
+		"effects": {"opening_shield": 3},
+	},
+	"debate_medal": {
+		"name": "辩论赛奖牌",
+		"desc": "表达永久 +1。",
+		"slot": "badge",
+		"cost": 45,
+		"effects": {"stat_表达": 1},
+	},
+	"sports_pin": {
+		"name": "校队纪念章",
+		"desc": "每局最大生命 +5。",
+		"slot": "badge",
+		"cost": 35,
+		"effects": {"max_hp": 5},
+	},
+	"volunteer_badge": {
+		"name": "志愿者徽章",
+		"desc": "社交永久 +1。",
+		"slot": "badge",
+		"cost": 45,
+		"effects": {"stat_社交": 1},
+	},
+	"family_photo": {
+		"name": "合影相框",
+		"desc": "每局最大精神 +8。",
+		"slot": "keepsake",
+		"cost": 35,
+		"effects": {"max_spirit": 8},
+	},
+	"lucky_pen": {
+		"name": "幸运签字笔",
+		"desc": "资源永久 +1。",
+		"slot": "keepsake",
+		"cost": 45,
+		"effects": {"stat_资源": 1},
+	},
+	"campus_map": {
+		"name": "折叠校园图",
+		"desc": "每局初始学分 +15。",
+		"slot": "keepsake",
+		"cost": 30,
+		"effects": {"starting_credits": 15},
+	},
+}
 
 var gold: int = 0
 var settled_runs: Dictionary = {}  ## run_token -> {earned, settled_at}
 var unlocked_talent_ids: Array[String] = []
 var equipped_talent_ids: Array[String] = []
+var owned_equipment_ids: Array[String] = []
+var equipped_equipment: Dictionary = {}  ## slot_id -> equipment_id
 var save_enabled := true
 
 
@@ -146,10 +218,71 @@ func get_equipped_talent_ids() -> Array[String]:
 	return equipped_talent_ids.duplicate()
 
 
+func get_equipment_info(equipment_id: String) -> Dictionary:
+	return (EQUIPMENT.get(equipment_id, {}) as Dictionary).duplicate(true)
+
+
+func get_equipment_ids() -> Array[String]:
+	var output: Array[String] = []
+	for equipment_id in EQUIPMENT:
+		output.append(str(equipment_id))
+	return output
+
+
+func is_equipment_owned(equipment_id: String) -> bool:
+	return equipment_id in owned_equipment_ids
+
+
+func purchase_equipment(equipment_id: String) -> bool:
+	if not EQUIPMENT.has(equipment_id) or is_equipment_owned(equipment_id):
+		return false
+	var cost := maxi(0, int(EQUIPMENT[equipment_id].get("cost", 0)))
+	if not can_afford(cost):
+		return false
+	gold -= cost
+	owned_equipment_ids.append(equipment_id)
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func equip_equipment(equipment_id: String) -> bool:
+	if not is_equipment_owned(equipment_id):
+		return false
+	var slot_id := str(EQUIPMENT[equipment_id].get("slot", ""))
+	if not EQUIPMENT_SLOTS.has(slot_id):
+		return false
+	equipped_equipment[slot_id] = equipment_id
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func unequip_slot(slot_id: String) -> bool:
+	if not equipped_equipment.has(slot_id):
+		return false
+	equipped_equipment.erase(slot_id)
+	save_profile()
+	profile_changed.emit()
+	return true
+
+
+func get_owned_equipment_ids() -> Array[String]:
+	return owned_equipment_ids.duplicate()
+
+
+func get_equipped_equipment() -> Dictionary:
+	return equipped_equipment.duplicate()
+
+
 func get_combined_effects() -> Dictionary:
 	var output := {}
 	for talent_id in equipped_talent_ids:
 		var effects: Dictionary = TALENTS[talent_id].get("effects", {})
+		for effect_id in effects:
+			output[effect_id] = int(output.get(effect_id, 0)) + int(effects[effect_id])
+	for equipment_id in equipped_equipment.values():
+		var effects: Dictionary = EQUIPMENT[equipment_id].get("effects", {})
 		for effect_id in effects:
 			output[effect_id] = int(output.get(effect_id, 0)) + int(effects[effect_id])
 	return output
@@ -214,6 +347,8 @@ func create_profile_snapshot() -> Dictionary:
 		"settled_runs": settled_runs.duplicate(true),
 		"unlocked_talent_ids": unlocked_talent_ids.duplicate(),
 		"equipped_talent_ids": equipped_talent_ids.duplicate(),
+		"owned_equipment_ids": owned_equipment_ids.duplicate(),
+		"equipped_equipment": equipped_equipment.duplicate(),
 	}
 
 
@@ -240,6 +375,14 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 	for talent_id in _sanitize_id_array(data.get("equipped_talent_ids", []), TALENTS):
 		if talent_id in unlocked_talent_ids and equipped_talent_ids.size() < TALENT_SLOT_LIMIT:
 			equipped_talent_ids.append(talent_id)
+	owned_equipment_ids = _sanitize_id_array(data.get("owned_equipment_ids", []), EQUIPMENT)
+	equipped_equipment.clear()
+	var saved_equipment = data.get("equipped_equipment", {})
+	if saved_equipment is Dictionary:
+		for slot_id in EQUIPMENT_SLOTS:
+			var equipment_id := str(saved_equipment.get(slot_id, ""))
+			if equipment_id in owned_equipment_ids and str(EQUIPMENT[equipment_id].get("slot", "")) == slot_id:
+				equipped_equipment[slot_id] = equipment_id
 	_trim_settled_runs()
 	profile_changed.emit()
 	return true
@@ -250,6 +393,8 @@ func reset_profile() -> void:
 	settled_runs.clear()
 	unlocked_talent_ids.clear()
 	equipped_talent_ids.clear()
+	owned_equipment_ids.clear()
+	equipped_equipment.clear()
 	profile_changed.emit()
 
 
