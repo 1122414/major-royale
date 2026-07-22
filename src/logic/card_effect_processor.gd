@@ -24,6 +24,9 @@ func _process_effect(effect: Resource, caster: Character, target: Character, car
 	var actual_target := _resolve_target(effect_target, caster, target)
 	if type == "buff" and effect_target.is_empty():
 		actual_target = caster
+	var world_battle := _get_battle()
+	if world_battle != null and world_battle.process_world_card_effect(card, effect, caster, actual_target):
+		return
 
 	match type:
 		"damage":

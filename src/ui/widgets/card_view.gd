@@ -43,6 +43,7 @@ const MAJOR_NAMES := {
 	"medicine": "医学",
 	"finance": "金融",
 	"arts": "艺术",
+	"qixu": "祈序",
 }
 
 const MAJOR_COLORS := {
@@ -51,6 +52,7 @@ const MAJOR_COLORS := {
 	"medicine": Color("#72E39B"),
 	"finance": Color("#FFD36A"),
 	"arts": Color("#C78BFF"),
+	"qixu": Color("#F4B84A"),
 }
 
 const RARITY_NAMES := {
@@ -71,6 +73,7 @@ const MAJOR_FALLBACK_ART := {
 	"medicine": "triage",
 	"finance": "compound",
 	"arts": "muse",
+	"qixu": "qixu_single_draw",
 }
 
 

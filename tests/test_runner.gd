@@ -16,7 +16,7 @@ func _ready() -> void:
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
 	assert(Config.characters == Config.majors, "角色兼容别名应与专业数据保持一致")
-	assert(Config.majors.size() == 5, "专业数量应为 5")
+	assert(Config.majors.size() == 6, "角色档案应包含五个校园专业与祈序")
 	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
 		assert(Config.majors.has(major_id), "缺少专业: %s" % major_id)
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	assert(computer.stats.has("学识"), "计算机专业缺少学识属性")
 
 	assert(not Config.cards.is_empty(), "卡牌数据未加载")
-	assert(Config.cards.size() == 108, "卡牌数量应为 108")
+	assert(Config.cards.size() == 150, "首轮版本回环内容接入后卡牌数量应为 150")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
 	_test_card_archetype_coverage()
@@ -46,6 +46,7 @@ func _ready() -> void:
 	print("TEST: 校园探索竖切测试通过")
 	print("TEST: 开始完整交付界面回归")
 	await _test_delivery_screen_flow()
+	await _test_version_loop_scene_flow()
 	await _test_settings_overlay_preserves_run_scene()
 	print("TEST: 完整交付界面回归通过")
 
@@ -56,6 +57,7 @@ func _ready() -> void:
 	_test_card_effect_and_cost_feedback()
 	_test_specialization_rules()
 	_test_world_rule_set_hooks()
+	_test_version_loop_act_one_content()
 	_test_event_chains_and_relic_synergies()
 	_test_elite_affix_variety()
 	_test_ai_decision_whitelist()
@@ -105,7 +107,8 @@ func _test_world_package_contract() -> void:
 	assert(Config.get_character_world_id("computer") == "campus", "角色应能反查所属世界")
 	var version_loop: Resource = Config.get_world("version_loop")
 	assert(version_loop != null and version_loop.name == "版本回环", "版本回环世界定义缺失")
-	assert(not version_loop.is_playable(), "二游规则底座尚无角色和地图时不得暴露可启动入口")
+	assert(version_loop.is_playable(), "祈序与第一幕地图接入后版本回环应可启动")
+	assert(version_loop.character_ids == ["qixu"], "第一轮版本回环应只展示已发现的祈序")
 	var version_state: Dictionary = version_loop.sanitize_run_state({
 		"patch_notice_id": "invalid_notice",
 		"maintenance_clock": 99,
@@ -115,6 +118,7 @@ func _test_world_package_contract() -> void:
 	assert(version_state.get("maintenance_clock") == 4, "维护时钟应按世界状态上限截断")
 	assert(version_state.get("compensation_tickets") == 0, "补偿券不得为负数")
 	assert(version_loop.get_rule_catalog_entries("patch_notices").size() == 3, "版本回环首轮应配置三条公告")
+	assert(Config.get_character_world_id("qixu") == "version_loop", "祈序应归属版本回环世界")
 
 
 func _test_meta_currency_profile() -> void:
@@ -297,14 +301,12 @@ func _test_battle_core() -> void:
 func _test_campus_route_coverage() -> void:
 	var routed_ids := CampusRouteScript.all_route_enemy_ids()
 	routed_ids.append(CampusRouteScript.BOSS_ID)
-	assert(routed_ids.size() == Config.enemies.size(), "校园路线应覆盖全部已配置敌人")
+	assert(routed_ids.size() == 10, "校园路线应覆盖全部 10 名校园敌人")
 	var unique_ids := {}
 	for enemy_id in routed_ids:
 		assert(Config.enemies.has(enemy_id), "校园路线引用了不存在的敌人: %s" % enemy_id)
 		assert(not unique_ids.has(enemy_id), "同一敌人不应重复占用多个路线节点: %s" % enemy_id)
 		unique_ids[enemy_id] = true
-	for enemy_id in Config.enemies:
-		assert(enemy_id in routed_ids, "已配置敌人必须存在真实可达路线: %s" % enemy_id)
 
 	var defeated: Array[Dictionary] = []
 	for location_id in CampusRouteScript.LOCATION_ORDER:
@@ -601,6 +603,68 @@ func _test_version_loop_rule_foundation() -> void:
 	GameState.start_run("computer")
 
 
+func _test_version_loop_act_one_content() -> void:
+	var qixu_cards := 0
+	var shared_cards := 0
+	for card in Config.cards.values():
+		if str(card.major_id) == "qixu":
+			qixu_cards += 1
+		elif str(card.world_id) == "version_loop":
+			shared_cards += 1
+	assert(qixu_cards == 30, "祈序第一轮应接入 30 张核心牌")
+	assert(shared_cards == 12, "版本回环第一轮应接入 12 张共享牌")
+	for enemy_id in [
+		"vl_newbie_echo", "vl_stamina_leech", "vl_signin_beast", "vl_resource_sweeper",
+		"vl_notice_copy", "vl_compat_glitch", "vl_pipeline_overload", "vl_probability_calibrator",
+	]:
+		assert(Config.enemies.has(enemy_id), "第一幕缺少敌人：%s" % enemy_id)
+
+	GameState.start_run("qixu", 9090, 0, "version_loop")
+	assert(GameState.current_world_id == "version_loop" and GameState.player_character_id == "qixu", "祈序应能在版本回环开始一局")
+	assert(GameState.current_screen == GameState.Screen.VERSION_LOOP_EXPLORE, "版本回环开局应进入第一幕地图")
+	assert(GameState.get_character_run_state_value("pity") == 0, "祈序开局保底应清零")
+	assert(GameState.has_relic("blank_lottery_tube"), "祈序应携带空白签筒初始遗物")
+
+	GameState.player_stats["current_enemy_id"] = "vl_newbie_echo"
+	var player := GameState.create_battle_player()
+	var battle := Battle.new(player, Config.enemies["vl_newbie_echo"])
+	GameState.set_character_run_state_value("pity", 6)
+	player.hand = [Config.cards["qixu_single_draw"]]
+	battle.energy = 1
+	var hp_before := battle.enemy.hp
+	assert(battle.play_card(0), "祈序单抽应能结算")
+	assert(GameState.get_character_run_state_value("last_random_outcome") == "hit", "满保底后的随机判定必须出货")
+	assert(GameState.get_character_run_state_value("pity") == 0, "满保底出货后应清零")
+	assert(hp_before - battle.enemy.hp >= 14, "单抽出货应造成高额伤害并计入学识修正")
+
+	var active_player := GameState.create_battle_player()
+	var active_battle := Battle.new(active_player, Config.enemies["vl_newbie_echo"])
+	GameState.set_character_run_state_value("pity", 2)
+	assert(active_battle.use_active_skill(), "祈序拥有至少 2 保底时应能主动校准")
+	assert(GameState.get_character_run_state_value("forced_random_outcome") == "hit", "主动校准应锁定下一次出货")
+	assert(GameState.get_character_run_state_value("pity") == 0, "主动校准应消耗 2 保底")
+
+	GameState.set_character_run_state_value("pity", 4)
+	var snapshot := GameState.create_run_save_snapshot(GameState.Screen.VERSION_LOOP_EXPLORE)
+	assert(GameState.restore_run_save_snapshot(snapshot), "版本回环的角色资源应可随一局存档恢复")
+	assert(GameState.get_character_run_state_value("pity") == 4, "恢复后不得丢失祈序保底")
+	GameState.start_run("computer")
+
+
+func _test_version_loop_scene_flow() -> void:
+	GameState.start_run("qixu", 9191, 0, "version_loop")
+	var packed := load("res://src/ui/screens/version_loop_explore.tscn") as PackedScene
+	assert(packed != null, "版本回环第一幕场景应可加载")
+	var explore := packed.instantiate() as Control
+	add_child(explore)
+	await get_tree().process_frame
+	assert(explore._next_encounter_id() == "vl_newbie_echo", "第一幕应从新手引导残影开始")
+	assert(explore._node_list.get_child_count() == 8, "第一幕应展示 6 普通、1 精英与 1 Boss 节点")
+	explore.queue_free()
+	await get_tree().process_frame
+	GameState.start_run("computer")
+
+
 func _test_scaled_finishers() -> void:
 	GameState.start_run("computer")
 	var computer_player := GameState.create_battle_player()
@@ -696,7 +760,7 @@ func _test_event_chains_and_relic_synergies() -> void:
 
 
 func _test_major_relic_effects() -> void:
-	assert(RelicCatalog.all_ids().size() == 15, "遗物池应包含 10 件通用遗物和 5 件专业遗物")
+	assert(RelicCatalog.all_ids().size() == 16, "遗物池应包含校园遗物与祈序初始遗物")
 	var major_relics := {
 		"computer": "rubber_duck",
 		"law": "red_pen",

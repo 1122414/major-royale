@@ -18,6 +18,8 @@ signal energy_updated
 signal skill_used(skill_name: String)
 signal ai_decision_requested(context: Dictionary)
 signal boss_phase_changed(phase_name: String)
+signal character_resource_updated
+signal world_rule_feedback(text: String)
 
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
@@ -672,6 +674,19 @@ func deal_direct_damage_to_enemy(amount: int) -> int:
 	var actual_damage := enemy.take_damage(amount)
 	GameState.run_damage_dealt += actual_damage
 	return actual_damage
+
+
+func process_world_card_effect(card: Resource, effect: Resource, caster: Character, target: Character) -> bool:
+	return _world_rules.process_card_effect(self, card, effect, caster, target)
+
+
+func notify_character_resource_updated() -> void:
+	character_resource_updated.emit()
+
+
+func notify_world_rule_feedback(text: String) -> void:
+	if not text.is_empty():
+		world_rule_feedback.emit(text)
 
 
 func set_enemy_intent(intent: Dictionary) -> void:

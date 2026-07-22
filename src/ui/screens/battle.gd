@@ -13,6 +13,7 @@ const RelicCatalog := preload("res://src/logic/relic.gd")
 @onready var player_hp_label: Label = $PlayerPanel/VBoxContainer/PlayerHPLabel
 @onready var player_spirit_label: Label = $PlayerPanel/VBoxContainer/PlayerSpiritLabel
 @onready var energy_label: Label = $PlayerPanel/VBoxContainer/EnergyLabel
+@onready var character_resource_label: Label = $PlayerPanel/VBoxContainer/CharacterResourceLabel
 @onready var player_status_container: VBoxContainer = $BuffPanel/BuffCol/PlayerStatusContainer
 @onready var hand_container: HBoxContainer = $HandContainer
 @onready var end_turn_button: Button = $ActionPanel/VBox/EndTurnButton
@@ -80,6 +81,8 @@ func _ready() -> void:
 	_battle.skill_used.connect(_on_skill_used)
 	_battle.ai_decision_requested.connect(_on_ai_decision_requested)
 	_battle.boss_phase_changed.connect(_on_boss_phase_changed)
+	_battle.character_resource_updated.connect(_request_ui_update)
+	_battle.world_rule_feedback.connect(_on_world_rule_feedback)
 
 	AIClient.decision_received.connect(_on_ai_decision_received)
 	AIClient.decision_failed.connect(_on_ai_decision_failed)
@@ -155,6 +158,8 @@ func _disconnect_battle_signals() -> void:
 		[_battle.skill_used, _on_skill_used],
 		[_battle.ai_decision_requested, _on_ai_decision_requested],
 		[_battle.boss_phase_changed, _on_boss_phase_changed],
+		[_battle.character_resource_updated, _request_ui_update],
+		[_battle.world_rule_feedback, _on_world_rule_feedback],
 	]
 	for connection in connections:
 		if connection[0].is_connected(connection[1]):
@@ -257,7 +262,11 @@ func _refresh_ai_actions(selected_id: String) -> void:
 func _setup_battle_art(enemy_id: String) -> void:
 	var bg: TextureRect = $PixelBackground
 	if bg and bg.has_method("_ready"):
-		if enemy_id == "employment_pressure":
+		if GameState.current_world_id == "version_loop":
+			bg.texture_path = "res://assets/sprites/bg/version_loop_warmup.png"
+			if ResourceLoader.exists(bg.texture_path):
+				bg.texture = load(bg.texture_path)
+		elif enemy_id == "employment_pressure":
 			bg.texture_path = "res://assets/sprites/bg/battle_finale.png"
 			if ResourceLoader.exists(bg.texture_path):
 				bg.texture = load(bg.texture_path)
@@ -276,6 +285,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"medicine": player_path = "res://assets/sprites/chars/player_med.png"
 		"finance": player_path = "res://assets/sprites/chars/player_finance.png"
 		"arts": player_path = "res://assets/sprites/chars/player_arts.png"
+		"qixu": player_path = "res://assets/sprites/chars/player_qixu.png"
 	var enemy_paths := {
 		"gpa_anxiety": "res://assets/sprites/chars/enemy_anxiety.png",
 		"seat_grabber": "res://assets/sprites/chars/enemy_seat_grabber.png",
@@ -287,8 +297,9 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"ai_interviewer": "res://assets/sprites/chars/enemy_ai.png",
 		"paper_reviewer": "res://assets/sprites/chars/enemy_reviewer.png",
 		"employment_pressure": "res://assets/sprites/chars/enemy_boss.png",
+		"vl_probability_calibrator": "res://assets/sprites/chars/enemy_probability_calibrator.png",
 	}
-	var enemy_path: String = enemy_paths.get(enemy_id, "res://assets/sprites/chars/enemy_anxiety.png")
+	var enemy_path: String = enemy_paths.get(enemy_id, "res://assets/sprites/chars/enemy_ai.png" if GameState.current_world_id == "version_loop" else "res://assets/sprites/chars/enemy_anxiety.png")
 	battle_stage.setup_art(player_path, enemy_path)
 	if _is_ai_battle and ResourceLoader.exists(enemy_path):
 		ai_profile_portrait.texture = load(enemy_path)
@@ -340,8 +351,22 @@ func _update_ui() -> void:
 	player_hp_label.text = "♥ 生命 %d/%d　护盾 %d" % [_battle.player.hp, _battle.player.max_hp, _battle.player.shield]
 	player_spirit_label.text = "◆ 精神 %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
 	energy_label.text = "⚡ 能量 %d/%d" % [_battle.energy, _battle.max_energy]
-	turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
-	pressure_label.text = "压力等级 %d" % maxi(1, GameState.run_progress + 1)
+	if GameState.current_world_id == "version_loop":
+		battle_title.text = "版本回环 · 新服预热"
+		player_title.text = "%s · 概率校准师" % Config.characters[GameState.player_character_id].name
+		turn_label.text = "第一幕　第 %d 回合" % _battle.turn_count
+		var maintenance := int(GameState.get_world_run_state_value("maintenance_clock", 0))
+		pressure_label.text = "维护 %s" % ("●".repeat(maintenance) + "○".repeat(4 - maintenance))
+		character_resource_label.visible = true
+		var pity := int(GameState.get_character_run_state_value("pity", 0))
+		var last_result := str(GameState.get_character_run_state_value("last_random_outcome", ""))
+		var result_text: String = str({"miss": "歪", "hit": "出货"}.get(last_result, "未结算"))
+		character_resource_label.text = "◉ 保底 %d/6　最近：%s" % [pity, result_text]
+		character_resource_label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD if pity >= 6 else UIColors.BORDER_CYAN_BRIGHT)
+	else:
+		turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
+		pressure_label.text = "压力等级 %d" % maxi(1, GameState.run_progress + 1)
+		character_resource_label.visible = false
 	var deck_total := _battle.player.deck.size()
 	draw_pile_label.text = "抽牌堆 %d" % _battle.player.draw_pile.size()
 	deck_total_label.text = "牌库 %d" % deck_total
@@ -440,7 +465,8 @@ func _on_card_clicked(index: int) -> void:
 		else:
 			_flash_intent()
 		_show_card_feedback(before, after)
-		message_label.text = ""
+		if GameState.current_world_id != "version_loop":
+			message_label.text = ""
 	else:
 		message_label.text = "能量不足或无法出牌"
 
@@ -634,6 +660,11 @@ func _on_turn_changed(is_player_turn: bool) -> void:
 
 func _on_skill_used(skill_name: String) -> void:
 	message_label.text = "使用了 %s" % skill_name
+
+
+func _on_world_rule_feedback(text: String) -> void:
+	message_label.text = text
+	_request_ui_update()
 
 
 func _on_ai_decision_requested(context: Dictionary) -> void:

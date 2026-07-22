@@ -39,12 +39,12 @@ func _on_start_pressed() -> void:
 	AudioManager.play_sfx("click")
 	if GameState.has_run_save() and GameState.resume_saved_run():
 		return
-	GameState.change_screen(GameState.Screen.MAJOR_SELECT)
+	GameState.change_screen(GameState.Screen.WORLD_SELECT)
 
 
 func _on_new_run_pressed() -> void:
 	AudioManager.play_sfx("click")
-	GameState.change_screen(GameState.Screen.MAJOR_SELECT)
+	GameState.change_screen(GameState.Screen.WORLD_SELECT)
 
 
 func _on_settings_pressed() -> void:
@@ -80,13 +80,13 @@ func _refresh_bgm_button(name_str: String = "") -> void:
 
 func _refresh_run_buttons() -> void:
 	var has_save := GameState.has_run_save()
-	start_button.text = "▶  继续校园生存" if has_save else "▶  开始游戏"
-	major_button.text = "🎓  新开一局 / 选择专业" if has_save else "🎓  选择专业"
-	major_button.tooltip_text = "选择专业后会覆盖当前一局进度" if has_save else "选择本局战斗专业"
+	start_button.text = "▶  继续当前生存" if has_save else "▶  进入中枢"
+	major_button.text = "◈  新开一局 / 选择世界" if has_save else "◈  选择世界与角色"
+	major_button.tooltip_text = "选择世界与角色后会覆盖当前一局进度" if has_save else "选择本局世界与战斗角色"
 	footer_tip.text = (
 		"Enter 继续　M 新开一局　S 设置\n进度会在安全节点自动保存"
 		if has_save
-		else "Enter 开始　M 专业　S 设置\n压力圈将在开局后持续收缩"
+		else "Enter 中枢　M 世界　S 设置\n世界规则将在开局后持续生效"
 	)
 
 
@@ -103,8 +103,13 @@ func _refresh_meta_progress() -> void:
 	]
 	if MetaProgression.is_world_unlocked("version_loop"):
 		world_portal.text = "异常下载：版本回环"
-		world_portal_state.text = "正在稳定"
-		world_hint.text = "已取得「筛选许可」。入口正在载入新的世界规则，当前不可进入。"
+		var version_loop: Resource = Config.get_world("version_loop")
+		if version_loop != null and version_loop.is_playable():
+			world_portal_state.text = "入口稳定"
+			world_hint.text = "已取得「筛选许可」。版本公告、维护时钟与祈序档案现已可进入中枢查看。"
+		else:
+			world_portal_state.text = "正在稳定"
+			world_hint.text = "已取得「筛选许可」。入口正在载入新的世界规则，当前不可进入。"
 	else:
 		world_portal.text = "未发现其他世界"
 		world_portal_state.text = "校园入口稳定"

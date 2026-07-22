@@ -12,6 +12,7 @@ const CardEffectScript := preload("res://src/resources/card_effect.gd")
 @export var rarity: String = "common"  ## common, uncommon, rare
 @export var description: String = ""
 @export var major_id: String = ""    ## 空表示通用卡
+@export var world_id: String = ""    ## 空表示校园通用内容；非空时仅在对应世界奖励池出现
 @export var archetype: String = ""   ## 专业内构筑方向
 @export var exhausts: bool = false   ## 本场战斗使用后不进入弃牌堆
 @export var effects: Array[Resource] = []
@@ -26,6 +27,7 @@ static func from_dict(data: Dictionary) -> Resource:
 	card.rarity = data.get("rarity", "common")
 	card.description = data.get("description", "")
 	card.major_id = data.get("major_id", "")
+	card.world_id = data.get("world_id", "")
 	# 所有 0 费牌默认消耗，阻断牌堆耗尽后的无限抽牌、回能或叠盾循环。
 	card.exhausts = bool(data.get("exhaust", card.cost == 0))
 

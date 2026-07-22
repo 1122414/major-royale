@@ -156,6 +156,12 @@ theme_override_colors/font_color = Color(1, 0.827, 0.416, 1)
 theme_override_font_sizes/font_size = 18
 text = "⚡ 能量 3/3"
 
+[node name="CharacterResourceLabel" type="Label" parent="PlayerPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
+theme_override_font_sizes/font_size = 15
+text = "◉ 保底 0/6　最近：未结算"
+
 [node name="EnemyPanel" type="PanelContainer" parent="."]
 layout_mode = 0
 offset_left = 1018.0

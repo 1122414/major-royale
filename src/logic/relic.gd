@@ -83,6 +83,13 @@ const RELICS := {
 		"rarity": "uncommon",
 		"major_id": "arts",
 	},
+	"blank_lottery_tube": {
+		"name": "空白签筒",
+		"desc": "【祈序】每场战斗第一次“歪”时，获得 1 保底与 4 点护盾。",
+		"rarity": "uncommon",
+		"major_id": "qixu",
+		"world_id": "version_loop",
+	},
 }
 
 
@@ -107,6 +114,9 @@ static func random_relic(
 	for id in RELICS.keys():
 		if str(id) in excluded:
 			continue
+		var relic_world_id := str(RELICS[id].get("world_id", "campus"))
+		if relic_world_id != GameState.current_world_id:
+			continue
 		var required_major := str(RELICS[id].get("major_id", ""))
 		if not required_major.is_empty() and required_major != major_id:
 			continue
@@ -121,6 +131,9 @@ static func random_relic(
 	if pool.is_empty() and elite_pool:
 		for id in RELICS.keys():
 			if str(id) in excluded:
+				continue
+			var relic_world_id := str(RELICS[id].get("world_id", "campus"))
+			if relic_world_id != GameState.current_world_id:
 				continue
 			var required_major := str(RELICS[id].get("major_id", ""))
 			if required_major.is_empty() or required_major == major_id:

@@ -27,6 +27,8 @@ func _run_full_game() -> void:
 	await get_tree().process_frame
 	menu.get_node("MenuSidebar/Margin/VBox/StartButton").pressed.emit()
 
+	var world_select = await _wait_for_scene("WorldSelectScreen")
+	world_select._enter_world("campus")
 	var major_select = await _wait_for_scene("MajorSelectScreen")
 	major_select._preview_major("computer")
 	major_select.get_node("SelectorPanel/Margin/VBox/SelectedInfoPanel/Margin/HBox/StartSelectedButton").pressed.emit()

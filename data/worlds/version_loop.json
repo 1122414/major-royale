@@ -7,11 +7,24 @@
   "rule_set_id": "version_loop",
   "fragment_id": "hot_update_permission",
   "fragment_name": "热更新权限",
-  "availability": "foundation",
-  "selection_scene_path": "",
-  "exploration_scene_path": "",
-  "character_ids": [],
-  "shared_card_ids": [],
+  "availability": "available",
+  "selection_scene_path": "res://src/ui/screens/major_select.tscn",
+  "exploration_scene_path": "res://src/ui/screens/version_loop_explore.tscn",
+  "character_ids": ["qixu"],
+  "shared_card_ids": [
+    "vl_daily_sweep",
+    "vl_clear_cache",
+    "vl_coffee_lifeline",
+    "vl_event_stamina",
+    "vl_overtime",
+    "vl_compensation_mail",
+    "vl_version_adaptation",
+    "vl_hotfix",
+    "vl_rerun",
+    "vl_event_shop",
+    "vl_resource_recycling",
+    "vl_delay_notice"
+  ],
   "run_state_schema": {
     "act_index": {
       "type": "int",
@@ -56,6 +69,10 @@
       "default": 0,
       "min": 0,
       "max": 999
+    },
+    "act_one_complete": {
+      "type": "bool",
+      "default": false
     }
   },
   "rule_catalog": {

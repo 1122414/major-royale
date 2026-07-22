@@ -4,7 +4,9 @@ extends Node
 enum Screen {
 	MENU,
 	MAJOR_SELECT,
+	WORLD_SELECT,
 	CAMPUS_EXPLORE,
+	VERSION_LOOP_EXPLORE,
 	BATTLE,
 	REWARD,
 	SETTINGS,
@@ -14,7 +16,7 @@ enum Screen {
 	META_PROGRESSION,
 }
 
-const RUN_SAVE_VERSION := 2
+const RUN_SAVE_VERSION := 3
 const MIN_SUPPORTED_RUN_SAVE_VERSION := 1
 const DEFAULT_WORLD_ID := "campus"
 const RUN_SAVE_PATH := "user://run_save.json"
@@ -106,6 +108,7 @@ var player_character_id: String:
 var player_stats: Dictionary = {}
 var run_progress: int = 0
 var world_run_state: Dictionary = {}
+var character_run_state: Dictionary = {}
 
 ## 一局持久化状态
 var run_hp: int = 60
@@ -149,6 +152,10 @@ func get_current_world() -> Resource:
 	return Config.get_world(current_world_id)
 
 
+func get_current_character() -> MajorResource:
+	return Config.characters.get(player_character_id) as MajorResource
+
+
 func get_world_run_state_value(state_key: String, default_value: Variant = null) -> Variant:
 	return world_run_state.get(state_key, default_value)
 
@@ -168,6 +175,27 @@ func add_world_run_state_int(state_key: String, amount: int) -> int:
 	if not set_world_run_state_value(state_key, current_value + amount):
 		return current_value
 	return int(get_world_run_state_value(state_key, current_value))
+
+
+func get_character_run_state_value(state_key: String, default_value: Variant = null) -> Variant:
+	return character_run_state.get(state_key, default_value)
+
+
+func set_character_run_state_value(state_key: String, value: Variant) -> bool:
+	var character := get_current_character()
+	if character == null or not character.run_state_schema.has(state_key):
+		return false
+	var next_state := character_run_state.duplicate(true)
+	next_state[state_key] = value
+	character_run_state = character.sanitize_run_state(next_state)
+	return true
+
+
+func add_character_run_state_int(state_key: String, amount: int) -> int:
+	var current_value := int(get_character_run_state_value(state_key, 0))
+	if not set_character_run_state_value(state_key, current_value + amount):
+		return current_value
+	return int(get_character_run_state_value(state_key, current_value))
 
 
 func has_run_save() -> bool:
@@ -213,6 +241,7 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"player_major_id": player_major_id,
 		"player_stats": _serializable_player_stats(),
 		"world_run_state": world_run_state.duplicate(true),
+		"character_run_state": character_run_state.duplicate(true),
 		"run_progress": run_progress,
 		"run_hp": run_hp,
 		"run_max_hp": run_max_hp,
@@ -280,6 +309,8 @@ func is_run_save_snapshot_valid(data: Dictionary) -> bool:
 		return false
 	if data.has("world_run_state") and data.get("world_run_state") is not Dictionary:
 		return false
+	if data.has("character_run_state") and data.get("character_run_state") is not Dictionary:
+		return false
 	var saved_player_stats = data.get("player_stats", {})
 	if saved_player_stats is not Dictionary:
 		return false
@@ -306,6 +337,8 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 	player_character_id = str(data.get("player_character_id", data.get("player_major_id", "")))
 	var world: Resource = Config.get_world(current_world_id)
 	world_run_state = world.sanitize_run_state(data.get("world_run_state", {}))
+	var character := get_current_character()
+	character_run_state = character.sanitize_run_state(data.get("character_run_state", {})) if character != null else {}
 	player_stats = (data.get("player_stats", {}) as Dictionary).duplicate(true)
 	run_progress = maxi(0, int(data.get("run_progress", 0)))
 	run_max_hp = maxi(1, int(data.get("run_max_hp", 60)))
@@ -502,6 +535,7 @@ func _is_run_save_allowed() -> bool:
 func _screen_to_save_name(screen: Screen) -> String:
 	match screen:
 		Screen.CAMPUS_EXPLORE: return "campus_explore"
+		Screen.VERSION_LOOP_EXPLORE: return "version_loop_explore"
 		Screen.BATTLE: return "battle"
 		Screen.REWARD: return "reward"
 		Screen.RESULT: return "result"
@@ -512,6 +546,7 @@ func _screen_to_save_name(screen: Screen) -> String:
 func _save_name_to_screen(screen_name: String) -> Screen:
 	match screen_name:
 		"campus_explore": return Screen.CAMPUS_EXPLORE
+		"version_loop_explore": return Screen.VERSION_LOOP_EXPLORE
 		"battle": return Screen.BATTLE
 		"reward": return Screen.REWARD
 		"result": return Screen.RESULT
@@ -537,6 +572,8 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0, wo
 	player_character_id = major_id
 	player_stats = {}
 	world_run_state = world.create_initial_run_state()
+	var character := get_current_character()
+	character_run_state = character.create_initial_run_state() if character != null else {}
 	run_progress = 0
 	permanent_stats = {}
 	pending_buffs = []
@@ -563,8 +600,14 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0, wo
 	run_seed = _normalize_run_seed(seed_override)
 	run_difficulty = clampi(difficulty, 0, DIFFICULTY_CATALOG.size() - 1)
 	_init_run_from_major(major_id)
-	current_screen = Screen.CAMPUS_EXPLORE
-	save_run_checkpoint(Screen.CAMPUS_EXPLORE)
+	current_screen = get_world_exploration_screen(world_id)
+	save_run_checkpoint(current_screen)
+
+
+func get_world_exploration_screen(world_id: String = current_world_id) -> Screen:
+	match world_id:
+		"version_loop": return Screen.VERSION_LOOP_EXPLORE
+		_: return Screen.CAMPUS_EXPLORE
 
 
 func _normalize_run_seed(seed_override: int) -> int:
@@ -668,6 +711,8 @@ func _init_run_from_major(major_id: String) -> void:
 	deck_card_ids.clear()
 	for card_id in major.starter_deck:
 		deck_card_ids.append(str(card_id))
+	if not major.starter_relic_id.is_empty():
+		add_relic(major.starter_relic_id)
 
 
 func get_effective_stat(stat_name: String) -> int:
@@ -820,7 +865,9 @@ func _screen_to_path(screen: Screen) -> String:
 	match screen:
 		Screen.MENU: return "res://src/ui/screens/menu.tscn"
 		Screen.MAJOR_SELECT: return "res://src/ui/screens/major_select.tscn"
+		Screen.WORLD_SELECT: return "res://src/ui/screens/world_select.tscn"
 		Screen.CAMPUS_EXPLORE: return "res://src/ui/screens/campus_explore.tscn"
+		Screen.VERSION_LOOP_EXPLORE: return "res://src/ui/screens/version_loop_explore.tscn"
 		Screen.BATTLE: return "res://src/ui/screens/battle.tscn"
 		Screen.REWARD: return "res://src/ui/screens/reward.tscn"
 		Screen.SETTINGS: return "res://src/ui/screens/settings.tscn"

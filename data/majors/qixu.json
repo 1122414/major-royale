@@ -1,0 +1,59 @@
+{
+  "id": "qixu",
+  "name": "祈序",
+  "description": "概率校准师。把失败记录为保底，再在关键回合兑现为确定性。",
+  "stats": {
+    "学识": 7,
+    "体能": 5,
+    "专注": 7,
+    "表达": 4,
+    "创造": 6,
+    "社交": 5,
+    "抗压": 6,
+    "资源": 6
+  },
+  "active_skill": {
+    "id": "probability_calibration",
+    "name": "概率校准",
+    "description": "消耗 2 保底：下一次随机判定必定出货。每场战斗限一次。"
+  },
+  "passive_skill": {
+    "id": "failure_record",
+    "name": "失败留档",
+    "description": "每次歪结果都会获得保底；保底达到 6 后，下一次随机必定出货并清零。"
+  },
+  "starter_relic_id": "blank_lottery_tube",
+  "portrait_path": "res://assets/sprites/chars/player_qixu.png",
+  "run_state_schema": {
+    "pity": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 6
+    },
+    "last_random_outcome": {
+      "type": "string",
+      "default": "",
+      "max_length": 12,
+      "allowed_values": ["", "miss", "hit"]
+    },
+    "forced_random_outcome": {
+      "type": "string",
+      "default": "",
+      "max_length": 12,
+      "allowed_values": ["", "hit"]
+    }
+  },
+  "starter_deck": [
+    "qixu_single_draw",
+    "qixu_single_draw",
+    "qixu_single_draw",
+    "qixu_single_draw",
+    "qixu_small_pity",
+    "qixu_small_pity",
+    "qixu_small_pity",
+    "qixu_small_pity",
+    "qixu_pad_pool",
+    "qixu_gold_flash"
+  ]
+}

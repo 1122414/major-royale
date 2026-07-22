@@ -4,7 +4,6 @@ extends Control
 const MAJOR_CARD_SCENE := preload("res://src/ui/widgets/major_card.tscn")
 const StatLex := preload("res://src/logic/stat_lexicon.gd")
 
-const PRESET_ORDER := ["computer", "law", "medicine", "finance", "arts"]
 const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
 const TOTAL_POINTS := 48
 
@@ -27,6 +26,7 @@ const TOTAL_POINTS := 48
 var _cards: Dictionary = {}
 var _selected_id := ""
 var _custom_stats: Dictionary = {}
+var _character_order: Array[String] = []
 
 
 func _ready() -> void:
@@ -37,7 +37,10 @@ func _ready() -> void:
 	custom_button.pressed.connect(_on_custom_pressed)
 	_init_run_config()
 
-	for major_id in PRESET_ORDER:
+	var world: Resource = Config.get_world(GameState.current_world_id)
+	if world != null:
+		_character_order = world.character_ids.duplicate()
+	for major_id in _character_order:
 		if not Config.majors.has(major_id):
 			continue
 		var major: MajorResource = Config.majors[major_id]
@@ -48,10 +51,11 @@ func _ready() -> void:
 		card.selected.connect(_preview_major.bind(major_id))
 		_cards[major_id] = card
 
-	if Config.majors.has("computer"):
-		_preview_major("computer")
+	if not _character_order.is_empty():
+		_preview_major(_character_order[0])
 
 	_init_custom_panel()
+	custom_button.visible = GameState.current_world_id == GameState.DEFAULT_WORLD_ID
 	_set_custom_visible(false)
 	sidebar_start_button.grab_focus()
 
@@ -153,16 +157,18 @@ func _preview_major(major_id: String) -> void:
 		str(major.active_skill.get("description", "")),
 		str(major.passive_skill.get("description", "")),
 	]
-	counter_label.text = "%d / %d" % [PRESET_ORDER.find(major_id) + 1, PRESET_ORDER.size()]
+	counter_label.text = "%d / %d" % [_character_order.find(major_id) + 1, _character_order.size()]
 	footer_desc.tooltip_text = StatLex.all_stats_block()
 
 
 func _select_relative(delta: int) -> void:
-	var index := PRESET_ORDER.find(_selected_id)
+	var index := _character_order.find(_selected_id)
 	if index < 0:
 		index = 0
-	index = wrapi(index + delta, 0, PRESET_ORDER.size())
-	_preview_major(PRESET_ORDER[index])
+	if _character_order.is_empty():
+		return
+	index = wrapi(index + delta, 0, _character_order.size())
+	_preview_major(_character_order[index])
 	AudioManager.play_sfx("click")
 
 
@@ -173,11 +179,13 @@ func _start_selected_major() -> void:
 	if seed < 0:
 		return
 	AudioManager.play_sfx("click")
-	GameState.start_run(_selected_id, seed, _get_selected_difficulty())
-	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
+	GameState.start_run(_selected_id, seed, _get_selected_difficulty(), GameState.current_world_id)
+	GameState.change_screen(GameState.get_world_exploration_screen())
 
 
 func _on_custom_pressed() -> void:
+	if GameState.current_world_id != GameState.DEFAULT_WORLD_ID:
+		return
 	AudioManager.play_sfx("click")
 	_set_custom_visible(true)
 	var name_edit: LineEdit = custom_panel.get_node("Margin/VBox/NameEdit")
@@ -226,8 +234,8 @@ func _on_custom_confirm() -> void:
 	]
 
 	Config.majors[custom_major.id] = custom_major
-	GameState.start_run(custom_major.id, seed, _get_selected_difficulty())
-	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
+	GameState.start_run(custom_major.id, seed, _get_selected_difficulty(), GameState.current_world_id)
+	GameState.change_screen(GameState.get_world_exploration_screen())
 
 
 func _on_back_pressed() -> void:

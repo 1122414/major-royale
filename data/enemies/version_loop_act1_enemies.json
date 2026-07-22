@@ -1,0 +1,48 @@
+{
+  "enemies": [
+    {
+      "id": "vl_newbie_echo", "name": "新手引导残影", "type": "normal", "hp": 30,
+      "specialty": "重复执行基础教程，连续回合倾向同一意图。", "weakness": "改变出牌节奏可打断其模板。", "traits": ["预热区", "重复意图"],
+      "actions": [{"id": "attack", "value": 6, "weight": 3, "description": "提示箭头撞击"}, {"id": "shield", "value": 6, "weight": 1, "description": "重新展示引导"}]
+    },
+    {
+      "id": "vl_stamina_leech", "name": "体力寄生虫", "type": "normal", "hp": 34,
+      "specialty": "用疲劳感拖慢行动。", "weakness": "尽快结束战斗，避免它连续施压。", "traits": ["预热区", "体力"],
+      "actions": [{"id": "attack", "value": 7, "weight": 2, "description": "电池触须抽取"}, {"id": "stack_pressure", "value": 1, "weight": 2, "description": "疲劳提示堆积"}]
+    },
+    {
+      "id": "vl_signin_beast", "name": "签到漏签兽", "type": "normal", "hp": 38,
+      "specialty": "倒计时后会强化一次攻击。", "weakness": "在蓄力前压低它的生命。", "traits": ["预热区", "倒计时"],
+      "actions": [{"id": "charge", "value": 1, "weight": 2, "description": "断裂日历翻页"}, {"id": "attack", "value": 8, "weight": 2, "description": "漏签惩罚"}]
+    },
+    {
+      "id": "vl_resource_sweeper", "name": "资源本扫荡机", "type": "normal", "hp": 42,
+      "specialty": "重复运转并积累护盾。", "weakness": "在护盾成型前连续输出。", "traits": ["预热区", "资源本"],
+      "actions": [{"id": "shield", "value": 9, "weight": 2, "description": "重复关卡闭合"}, {"id": "attack", "value": 7, "weight": 2, "description": "扫荡冲撞"}]
+    },
+    {
+      "id": "vl_notice_copy", "name": "公告复制体", "type": "normal", "hp": 45,
+      "specialty": "把公告代价转化为行动压力。", "weakness": "控制牌可延后其危险回合。", "traits": ["预热区", "公告"],
+      "actions": [{"id": "stack_pressure", "value": 2, "weight": 2, "description": "代价条款生效"}, {"id": "heavy_attack", "value": 11, "weight": 1, "description": "公告盖章"}]
+    },
+    {
+      "id": "vl_compat_glitch", "name": "兼容性小错", "type": "normal", "hp": 48,
+      "specialty": "以错位贴图制造不稳定状态。", "weakness": "护盾和精准反应能安全度过突发攻击。", "traits": ["预热区", "兼容性"],
+      "actions": [{"id": "attack", "value": 8, "weight": 2, "description": "错位碰撞"}, {"id": "counter", "value": 2, "weight": 1, "description": "错误回弹"}, {"id": "stack_pressure", "value": 1, "weight": 1, "description": "兼容性警告"}]
+    },
+    {
+      "id": "vl_pipeline_overload", "name": "流水线过载核", "type": "elite", "hp": 72,
+      "specialty": "高速出牌会让它的下回合攻击更危险。", "weakness": "利用延后与护盾拆解它的过载节奏。", "traits": ["预热区精英", "过载"],
+      "actions": [{"id": "charge", "value": 1, "weight": 2, "description": "温度条升高"}, {"id": "heavy_attack", "value": 14, "weight": 2, "description": "流水线倾泻"}, {"id": "counter", "value": 2, "weight": 1, "description": "热保护反制"}]
+    },
+    {
+      "id": "vl_probability_calibrator", "name": "概率校准器·门神", "type": "boss", "hp": 120,
+      "specialty": "周期性校准概率，并在低生命阶段强迫你处理高波动。", "weakness": "不要把全部资源压在单次结果上；用保底和校准穿过它的门槛。", "traits": ["第一幕 Boss", "概率", "校准"],
+      "phases": [
+        {"name": "低概率标记", "threshold": 0.55, "actions": [{"id": "attack", "value": 9, "weight": 2, "description": "低概率光束"}, {"id": "counter", "value": 2, "weight": 1, "description": "校准反射"}, {"id": "shield", "value": 8, "weight": 1, "description": "伪保底护层"}]},
+        {"name": "伪保底装置", "threshold": 0.0, "actions": [{"id": "heavy_attack", "value": 16, "weight": 2, "description": "门槛压制"}, {"id": "stack_pressure", "value": 2, "weight": 1, "description": "概率告警"}, {"id": "counter", "value": 3, "weight": 1, "description": "装置回弹"}]}
+      ],
+      "actions": [{"id": "attack", "value": 9, "weight": 1, "description": "校准光束"}]
+    }
+  ]
+}

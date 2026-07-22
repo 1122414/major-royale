@@ -21,6 +21,7 @@ const MAJOR_ICONS := {
 	"medicine": "✚",
 	"finance": "¥",
 	"arts": "✦",
+	"qixu": "◉",
 }
 
 const MAJOR_COLORS := {
@@ -29,6 +30,7 @@ const MAJOR_COLORS := {
 	"medicine": Color("#72DB91"),
 	"finance": Color("#E8A838"),
 	"arts": Color("#C985FF"),
+	"qixu": Color("#F4B84A"),
 }
 
 const STAT_ORDER := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
@@ -89,6 +91,7 @@ func _apply_representative_art() -> void:
 		"medicine": "res://assets/sprites/chars/player_med.png",
 		"finance": "res://assets/sprites/chars/player_finance.png",
 		"arts": "res://assets/sprites/chars/player_arts.png",
+		"qixu": "res://assets/sprites/chars/player_qixu.png",
 	}
 	var path: String = paths.get(str(_major.id), "")
 	if ResourceLoader.exists(path):

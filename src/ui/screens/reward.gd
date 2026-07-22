@@ -30,7 +30,7 @@ func _ready() -> void:
 		title_label.text = "精英奖励"
 		info_label.text = "击败精英！可选遗物与更强补给。"
 	else:
-		info_label.text = "选择一项奖励，继续构筑你的校园生存路线。"
+		info_label.text = "选择一项奖励，继续构筑当前世界的生存路线。"
 	_render_rewards()
 	_refresh_run_summary()
 
@@ -186,21 +186,21 @@ func _apply_reward(reward: Dictionary) -> void:
 
 func _finish_choice(msg: String = "已选择奖励") -> void:
 	_chosen = true
-	GameState.save_run_checkpoint(GameState.Screen.CAMPUS_EXPLORE)
+	GameState.save_run_checkpoint(GameState.get_world_exploration_screen())
 	info_label.text = "%s\n点击下方按钮返回地图" % msg
 	for child in rewards_container.get_children():
 		if child is Button:
 			child.disabled = true
 	continue_button.visible = true
 	continue_button.disabled = false
-	continue_button.text = "返回校园 ▶"
+	continue_button.text = "返回地图 ▶"
 	continue_button.grab_focus()
 	_refresh_run_summary()
 
 
 func _return_to_map() -> void:
 	AudioManager.play_sfx("click")
-	GameState.change_screen(GameState.Screen.CAMPUS_EXPLORE)
+	GameState.change_screen(GameState.get_world_exploration_screen())
 
 
 func _on_settings() -> void:

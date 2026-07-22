@@ -30,6 +30,10 @@ func on_card_played(_battle, _card: Resource, _shield_before_card: int) -> void:
 	pass
 
 
+func process_card_effect(_battle, _card: Resource, _effect: Resource, _caster, _target) -> bool:
+	return false
+
+
 func use_active_skill(_battle) -> String:
 	return ""
 

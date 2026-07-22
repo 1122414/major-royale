@@ -11,7 +11,7 @@ func _ready() -> void:
 	var was_ai: bool = GameState.player_stats.get("last_enemy_was_ai", false)
 	var ending_flag: String = str(GameState.player_stats.get("last_ending_flag", ""))
 	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
-	var is_run_end: bool = (not victory) or enemy_id == "employment_pressure"
+	var is_run_end: bool = (not victory) or (enemy_id == "employment_pressure" and GameState.current_world_id == "campus")
 
 	if victory:
 		if enemy_id == "employment_pressure":

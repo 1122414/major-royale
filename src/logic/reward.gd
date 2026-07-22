@@ -128,8 +128,15 @@ static func generate_rewards(major_id: String, rng: RandomNumberGenerator, is_el
 static func _get_card_pool(major_id: String, prefer_rare: bool = false) -> Array:
 	var pool := []
 	var rares := []
+	var current_world_id := GameState.current_world_id
 	for card_id in Config.cards:
 		var card = Config.cards[card_id]
+		var card_world_id := str(card.world_id)
+		if current_world_id == "campus":
+			if not card_world_id.is_empty():
+				continue
+		elif card_world_id != current_world_id:
+			continue
 		if str(card.major_id) != "" and str(card.major_id) != major_id:
 			continue
 		if prefer_rare and str(card.rarity) in ["uncommon", "rare"]:

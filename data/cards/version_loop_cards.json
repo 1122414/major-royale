@@ -1,0 +1,162 @@
+{
+  "cards": [
+    {
+      "id": "qixu_single_draw", "name": "单抽", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "attack", "cost": 1, "rarity": "common",
+      "description": "随机：歪造成 6 点伤害；出货造成 12 点伤害。歪时获得 1 保底。",
+      "effects": [{"type": "random_damage", "value": 6, "params": {"hit_value": 12}}]
+    },
+    {
+      "id": "qixu_ten_pull", "name": "十连", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "attack", "cost": 2, "rarity": "common",
+      "description": "随机：歪造成 12 点伤害；出货造成 20 点伤害。", "effects": [{"type": "random_damage", "value": 12, "params": {"hit_value": 20}}]
+    },
+    {
+      "id": "qixu_missed", "name": "歪了", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "defense", "cost": 1, "rarity": "common",
+      "description": "获得 8 点护盾与 1 保底。", "effects": [{"type": "shield", "value": 8, "target": "self"}, {"type": "pity", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_small_pity", "name": "小保底", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "defense", "cost": 1, "rarity": "common",
+      "description": "获得 6 点护盾；保底不少于 3 时抽 1 张牌。", "effects": [{"type": "shield", "value": 6, "target": "self"}, {"type": "pity_draw", "value": 1, "params": {"threshold": 3}}]
+    },
+    {
+      "id": "qixu_test_pull", "name": "试水", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 0, "rarity": "common", "exhaust": true,
+      "description": "随机：歪时获得 1 保底；出货时获得 1 点能量。", "effects": [{"type": "last_outcome_reward", "value": 1, "params": {"miss_pity": 1, "miss_draw": 0, "hit_energy": 1}}]
+    },
+    {
+      "id": "qixu_inventory_check", "name": "仓检", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "attack", "cost": 1, "rarity": "common",
+      "description": "造成 8 点伤害，抽 1 张牌。", "effects": [{"type": "damage", "value": 8}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_shipwreck", "name": "沉船", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "attack", "cost": 1, "rarity": "common",
+      "description": "消耗 2 保底，造成 14 点伤害；保底不足时仅造成 6 点。", "effects": [{"type": "pity_damage", "value": 14, "params": {"pity_cost": 2, "hit_value": 14, "fallback_value": 6}}]
+    },
+    {
+      "id": "qixu_gold_flash", "name": "出金", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "skill", "cost": 1, "rarity": "common",
+      "description": "抽 1 张牌，获得 1 保底。", "effects": [{"type": "draw", "value": 1, "target": "self"}, {"type": "pity", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_pad_pool", "name": "垫池", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "skill", "cost": 0, "rarity": "common", "exhaust": true,
+      "description": "获得 1 保底；本回合下一次随机判定必定出货。", "effects": [{"type": "pity", "value": 1, "target": "self"}, {"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_golden_light", "name": "金光", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 0, "rarity": "common", "exhaust": true,
+      "description": "下一次随机判定必定出货。", "effects": [{"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_reverse_course", "name": "反向定轨", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "uncommon",
+      "description": "若最近一次结果为歪，获得 2 保底；否则下一次随机必定出货。", "effects": [{"type": "last_outcome_reward", "value": 2, "params": {"miss_pity": 2, "hit_energy": 0}}, {"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_pity_echo", "name": "保底回响", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "defense", "cost": 1, "rarity": "uncommon",
+      "description": "获得 7 点护盾。若保底为 0，再获得 4 点护盾。", "effects": [{"type": "pity_shield", "value": 11, "params": {"pity_cost": 0, "hit_value": 11, "fallback_value": 7}}]
+    },
+    {
+      "id": "qixu_fate_value", "name": "命定值", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "skill", "cost": 1, "rarity": "uncommon",
+      "description": "获得 2 保底。", "effects": [{"type": "pity", "value": 2, "target": "self"}]
+    },
+    {
+      "id": "qixu_early_gold", "name": "提前出金", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "attack", "cost": 1, "rarity": "uncommon",
+      "description": "随机：歪造成 4 点伤害；出货造成 16 点伤害。", "effects": [{"type": "random_damage", "value": 4, "params": {"hit_value": 16}}]
+    },
+    {
+      "id": "qixu_miss_guard", "name": "连歪保护", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "defense", "cost": 1, "rarity": "uncommon",
+      "description": "获得 8 点护盾，并获得 1 保底。", "effects": [{"type": "shield", "value": 8, "target": "self"}, {"type": "pity", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_luck_loan", "name": "欧气借贷", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "skill", "cost": 0, "rarity": "uncommon", "exhaust": true,
+      "description": "下一次随机判定必定出货，抽 1 张牌。", "effects": [{"type": "force_random", "params": {"outcome": "hit"}}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_double_gold", "name": "双黄蛋", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "attack", "cost": 2, "rarity": "uncommon",
+      "description": "随机：歪造成 12 点伤害；出货造成 24 点伤害。", "effects": [{"type": "random_damage", "value": 12, "params": {"hit_value": 24}}]
+    },
+    {
+      "id": "qixu_bottom_fish", "name": "池底捞", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "uncommon",
+      "description": "消耗 4 保底获得 12 点护盾；不足时获得 9 点护盾。", "effects": [{"type": "pity_shield", "value": 12, "params": {"pity_cost": 4, "hit_value": 12, "fallback_value": 9}}]
+    },
+    {
+      "id": "qixu_pity_inherit", "name": "保底继承", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "skill", "cost": 1, "rarity": "uncommon",
+      "description": "上次出货获得 2 保底；上次歪则抽 1 张牌并获得 1 保底。", "effects": [{"type": "last_outcome_reward", "value": 1, "params": {"miss_pity": 1, "miss_draw": 1, "hit_energy": 0}}]
+    },
+    {
+      "id": "qixu_pity_coupon", "name": "保底券", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "uncommon", "exhaust": true,
+      "description": "保底不少于 4 时设为 6；否则获得 2 保底。", "effects": [{"type": "pity_threshold_set", "value": 2, "params": {"threshold": 4, "hit_value": 6}}]
+    },
+    {
+      "id": "qixu_grand_pity", "name": "大保底", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "skill", "cost": 2, "rarity": "rare", "exhaust": true,
+      "description": "将保底设为 6 并抽 1 张牌。", "effects": [{"type": "pity_threshold_set", "value": 6, "params": {"threshold": 0, "hit_value": 6}}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_final_course", "name": "终极定轨", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 2, "rarity": "rare",
+      "description": "下一次随机判定必定出货，并获得 6 点护盾。", "effects": [{"type": "force_random", "params": {"outcome": "hit"}}, {"type": "shield", "value": 6, "target": "self"}]
+    },
+    {
+      "id": "qixu_pseudo_random", "name": "伪随机", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "rare",
+      "description": "下一次随机判定必定出货；获得 1 保底。", "effects": [{"type": "force_random", "params": {"outcome": "hit"}}, {"type": "pity", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "qixu_inventory_counter", "name": "仓检反制", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "rare", "exhaust": true,
+      "description": "抽 2 张牌；下一次随机判定必定出货。", "effects": [{"type": "draw", "value": 2, "target": "self"}, {"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_luck_balance", "name": "欧非守恒", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "finisher", "cost": 2, "rarity": "rare",
+      "description": "消耗 6 保底，造成 26 点伤害；不足时造成 8 点。", "effects": [{"type": "pity_damage", "value": 26, "params": {"pity_cost": 6, "hit_value": 26, "fallback_value": 8}}]
+    },
+    {
+      "id": "qixu_pull_rewind", "name": "抽卡回溯", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 1, "rarity": "rare", "exhaust": true,
+      "description": "抽 2 张牌；下一次随机判定必定出货。", "effects": [{"type": "draw", "value": 2, "target": "self"}, {"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_outside_miracle", "name": "池外奇迹", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "skill", "cost": 2, "rarity": "rare", "exhaust": true,
+      "description": "将保底设为 6，失去 6 点生命。", "effects": [{"type": "pity_threshold_set", "value": 6, "params": {"threshold": 0, "hit_value": 6}}, {"type": "spirit_damage", "value": 6, "target": "self"}]
+    },
+    {
+      "id": "qixu_fate_rewrite", "name": "命运改写", "world_id": "version_loop", "major_id": "qixu", "archetype": "定轨控制", "type": "skill", "cost": 3, "rarity": "rare",
+      "description": "本回合下一次随机判定必定出货，并抽 2 张牌。", "effects": [{"type": "force_random", "params": {"outcome": "hit"}}, {"type": "draw", "value": 2, "target": "self"}]
+    },
+    {
+      "id": "qixu_one_shot", "name": "一发入魂", "world_id": "version_loop", "major_id": "qixu", "archetype": "出货爆发", "type": "finisher", "cost": 2, "rarity": "rare", "exhaust": true,
+      "description": "将保底设为 6；本回合下一次随机必定出货。", "effects": [{"type": "pity_threshold_set", "value": 6, "params": {"threshold": 0, "hit_value": 6}}, {"type": "force_random", "params": {"outcome": "hit"}}]
+    },
+    {
+      "id": "qixu_pity_cycle", "name": "保底轮回", "world_id": "version_loop", "major_id": "qixu", "archetype": "垫池蓄势", "type": "defense", "cost": 2, "rarity": "rare",
+      "description": "获得 14 点护盾与 2 保底。", "effects": [{"type": "shield", "value": 14, "target": "self"}, {"type": "pity", "value": 2, "target": "self"}]
+    },
+
+    {
+      "id": "vl_daily_sweep", "name": "日常扫荡", "world_id": "version_loop", "type": "attack", "cost": 1, "rarity": "common", "description": "造成 7 点伤害。", "effects": [{"type": "damage", "value": 7}]
+    },
+    {
+      "id": "vl_clear_cache", "name": "清缓存", "world_id": "version_loop", "type": "skill", "cost": 1, "rarity": "common", "description": "抽 2 张牌。", "effects": [{"type": "draw", "value": 2, "target": "self"}]
+    },
+    {
+      "id": "vl_coffee_lifeline", "name": "咖啡续命", "world_id": "version_loop", "type": "skill", "cost": 1, "rarity": "common", "description": "移除 1 个负面状态，抽 1 张牌。", "effects": [{"type": "purge", "value": 1, "target": "self"}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "vl_event_stamina", "name": "活动体力", "world_id": "version_loop", "type": "skill", "cost": 0, "rarity": "common", "exhaust": true, "description": "获得 1 点能量，失去 2 点生命。", "effects": [{"type": "energy", "value": 1, "target": "self"}, {"type": "damage", "value": 2, "target": "self"}]
+    },
+    {
+      "id": "vl_overtime", "name": "临时加班", "world_id": "version_loop", "type": "skill", "cost": 0, "rarity": "common", "exhaust": true, "description": "抽 1 张牌，本回合获得 1 点能量。", "effects": [{"type": "draw", "value": 1, "target": "self"}, {"type": "energy", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "vl_compensation_mail", "name": "补偿邮件", "world_id": "version_loop", "type": "defense", "cost": 1, "rarity": "common", "description": "获得 7 点护盾。", "effects": [{"type": "shield", "value": 7, "target": "self"}]
+    },
+    {
+      "id": "vl_version_adaptation", "name": "版本适配", "world_id": "version_loop", "type": "skill", "cost": 1, "rarity": "uncommon", "description": "抽 2 张牌。", "effects": [{"type": "draw", "value": 2, "target": "self"}]
+    },
+    {
+      "id": "vl_hotfix", "name": "热修复", "world_id": "version_loop", "type": "defense", "cost": 1, "rarity": "uncommon", "exhaust": true, "description": "获得 10 点护盾。", "effects": [{"type": "shield", "value": 10, "target": "self"}]
+    },
+    {
+      "id": "vl_rerun", "name": "复刻返场", "world_id": "version_loop", "type": "attack", "cost": 2, "rarity": "uncommon", "description": "造成 13 点伤害。", "effects": [{"type": "damage", "value": 13}]
+    },
+    {
+      "id": "vl_event_shop", "name": "活动商店", "world_id": "version_loop", "type": "skill", "cost": 1, "rarity": "uncommon", "exhaust": true, "description": "获得 8 点护盾并抽 1 张牌。", "effects": [{"type": "shield", "value": 8, "target": "self"}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "vl_resource_recycling", "name": "资源回收", "world_id": "version_loop", "type": "defense", "cost": 1, "rarity": "uncommon", "description": "获得 9 点护盾。", "effects": [{"type": "shield", "value": 9, "target": "self"}]
+    },
+    {
+      "id": "vl_delay_notice", "name": "延期公告", "world_id": "version_loop", "type": "control", "cost": 1, "rarity": "uncommon", "exhaust": true, "description": "使敌人意图延后 1 回合。", "effects": [{"type": "delay", "value": 1, "target": "enemy"}]
+    }
+  ]
+}
