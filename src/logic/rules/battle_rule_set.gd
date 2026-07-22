@@ -42,6 +42,14 @@ func on_player_turn_started(_battle) -> void:
 	pass
 
 
+func on_player_turn_ended(_battle) -> void:
+	pass
+
+
+func resolve_world_choice(_battle, _choice_id: String, _context: Dictionary) -> bool:
+	return false
+
+
 func modify_player_draw(_battle, draw_amount: int, _has_draw_override: bool) -> int:
 	return draw_amount
 

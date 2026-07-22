@@ -1,0 +1,44 @@
+{
+  "id": "feilan",
+  "name": "绯澜",
+  "description": "舆潮主播。把互动聚成热度，在热榜上持续施压，或把声量兑现为一次爆发。",
+  "stats": {
+    "学识": 6,
+    "体能": 5,
+    "专注": 7,
+    "表达": 9,
+    "创造": 8,
+    "社交": 9,
+    "抗压": 5,
+    "资源": 6
+  },
+  "active_skill": {
+    "id": "trend_detonation",
+    "name": "引爆话题",
+    "description": "消耗 5 点热度，对敌人造成 18 点伤害。"
+  },
+  "passive_skill": {
+    "id": "hot_list",
+    "name": "热榜效应",
+    "description": "热度达到 5 时进入热榜；热度会在每回合结束时自然衰减。"
+  },
+  "starter_relic_id": "unextinguished_indicator",
+  "portrait_path": "res://assets/sprites/chars/player_feilan.png",
+  "run_state_schema": {
+    "heat": {"type": "int", "default": 0, "min": 0, "max": 15},
+    "short_comments_played": {"type": "int", "default": 0, "min": 0, "max": 99},
+    "heat_floor": {"type": "int", "default": 0, "min": 0, "max": 3}
+  },
+  "starter_deck": [
+    "feilan_break_defense",
+    "feilan_break_defense",
+    "feilan_break_defense",
+    "feilan_break_defense",
+    "feilan_protect_favorite",
+    "feilan_protect_favorite",
+    "feilan_protect_favorite",
+    "feilan_protect_favorite",
+    "feilan_en_ne",
+    "feilan_forward"
+  ]
+}

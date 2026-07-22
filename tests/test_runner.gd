@@ -16,7 +16,7 @@ func _ready() -> void:
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
 	assert(Config.characters == Config.majors, "角色兼容别名应与专业数据保持一致")
-	assert(Config.majors.size() == 6, "角色档案应包含五个校园专业与祈序")
+	assert(Config.majors.size() == 7, "角色档案应包含五个校园专业、祈序与绯澜")
 	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
 		assert(Config.majors.has(major_id), "缺少专业: %s" % major_id)
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	assert(computer.stats.has("学识"), "计算机专业缺少学识属性")
 
 	assert(not Config.cards.is_empty(), "卡牌数据未加载")
-	assert(Config.cards.size() == 150, "首轮版本回环内容接入后卡牌数量应为 150")
+	assert(Config.cards.size() == 181, "接入绯澜与第二幕后卡牌数量应为 181")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
 	_test_card_archetype_coverage()
@@ -107,8 +107,8 @@ func _test_world_package_contract() -> void:
 	assert(Config.get_character_world_id("computer") == "campus", "角色应能反查所属世界")
 	var version_loop: Resource = Config.get_world("version_loop")
 	assert(version_loop != null and version_loop.name == "版本回环", "版本回环世界定义缺失")
-	assert(version_loop.is_playable(), "祈序与第一幕地图接入后版本回环应可启动")
-	assert(version_loop.character_ids == ["qixu"], "第一轮版本回环应只展示已发现的祈序")
+	assert(version_loop.is_playable(), "版本回环的角色与地图入口应可启动")
+	assert(version_loop.character_ids == ["qixu", "feilan"], "版本回环应声明祈序与绯澜，界面再按发现状态过滤")
 	var version_state: Dictionary = version_loop.sanitize_run_state({
 		"patch_notice_id": "invalid_notice",
 		"maintenance_clock": 99,
@@ -118,7 +118,7 @@ func _test_world_package_contract() -> void:
 	assert(version_state.get("maintenance_clock") == 4, "维护时钟应按世界状态上限截断")
 	assert(version_state.get("compensation_tickets") == 0, "补偿券不得为负数")
 	assert(version_loop.get_rule_catalog_entries("patch_notices").size() == 3, "版本回环首轮应配置三条公告")
-	assert(Config.get_character_world_id("qixu") == "version_loop", "祈序应归属版本回环世界")
+	assert(Config.get_character_world_id("qixu") == "version_loop" and Config.get_character_world_id("feilan") == "version_loop", "祈序与绯澜应归属版本回环世界")
 
 
 func _test_meta_currency_profile() -> void:
@@ -346,6 +346,7 @@ func _test_professional_asset_coverage() -> void:
 		"res://assets/sprites/chars/player_med.png",
 		"res://assets/sprites/chars/player_finance.png",
 		"res://assets/sprites/chars/player_arts.png",
+		"res://assets/sprites/chars/player_feilan.png",
 	]
 	for path in player_paths:
 		assert(ResourceLoader.exists(path), "五专业应具备正式玩家立绘: %s" % path)
@@ -361,6 +362,7 @@ func _test_professional_asset_coverage() -> void:
 		"res://assets/sprites/chars/enemy_ai.png",
 		"res://assets/sprites/chars/enemy_reviewer.png",
 		"res://assets/sprites/chars/enemy_boss.png",
+		"res://assets/sprites/chars/enemy_voice_aggregate.png",
 	]
 	var unique_enemy_paths := {}
 	for path in enemy_paths:
@@ -372,6 +374,7 @@ func _test_professional_asset_coverage() -> void:
 		var path := "res://assets/sprites/cards/%s.png" % card_id
 		assert(ResourceLoader.exists(path), "每张卡牌都应具备独立插画: %s" % path)
 	assert(ResourceLoader.exists("res://assets/sprites/bg/battle_finale.png"), "终局战应具备专属背景")
+	assert(ResourceLoader.exists("res://assets/sprites/bg/version_loop_tide_plaza.png"), "第二幕应具备舆潮广场背景")
 
 	var card_packed := load("res://src/ui/widgets/card_view.tscn") as PackedScene
 	var card_view := card_packed.instantiate() as PanelContainer
@@ -605,19 +608,28 @@ func _test_version_loop_rule_foundation() -> void:
 
 func _test_version_loop_act_one_content() -> void:
 	var qixu_cards := 0
+	var feilan_cards := 0
 	var shared_cards := 0
 	for card in Config.cards.values():
 		if str(card.major_id) == "qixu":
 			qixu_cards += 1
+		elif str(card.major_id) == "feilan":
+			feilan_cards += 1
 		elif str(card.world_id) == "version_loop":
 			shared_cards += 1
 	assert(qixu_cards == 30, "祈序第一轮应接入 30 张核心牌")
-	assert(shared_cards == 12, "版本回环第一轮应接入 12 张共享牌")
+	assert(feilan_cards == 30, "绯澜第二幕应接入 30 张核心牌，其中包含生成短评")
+	assert(shared_cards == 13, "第二幕应扩展到 13 张可见世界共享牌")
 	for enemy_id in [
 		"vl_newbie_echo", "vl_stamina_leech", "vl_signin_beast", "vl_resource_sweeper",
 		"vl_notice_copy", "vl_compat_glitch", "vl_pipeline_overload", "vl_probability_calibrator",
 	]:
 		assert(Config.enemies.has(enemy_id), "第一幕缺少敌人：%s" % enemy_id)
+	for enemy_id in [
+		"vl_outdated_guide", "vl_axis_inspector", "vl_pathing_failure", "vl_rhythm_carrier",
+		"vl_rank_aggregate_beast", "vl_context_stripper", "vl_black_red_symbiote", "vl_voice_aggregate",
+	]:
+		assert(Config.enemies.has(enemy_id), "第二幕缺少敌人：%s" % enemy_id)
 
 	GameState.start_run("qixu", 9090, 0, "version_loop")
 	assert(GameState.current_world_id == "version_loop" and GameState.player_character_id == "qixu", "祈序应能在版本回环开始一局")
@@ -648,6 +660,42 @@ func _test_version_loop_act_one_content() -> void:
 	var snapshot := GameState.create_run_save_snapshot(GameState.Screen.VERSION_LOOP_EXPLORE)
 	assert(GameState.restore_run_save_snapshot(snapshot), "版本回环的角色资源应可随一局存档恢复")
 	assert(GameState.get_character_run_state_value("pity") == 4, "恢复后不得丢失祈序保底")
+
+	MetaProgression.reset_profile()
+	GameState.start_run("qixu", 9091, 0, "version_loop")
+	GameState.player_stats["current_enemy_id"] = "vl_probability_calibrator"
+	var unlock_player := GameState.create_battle_player()
+	var unlock_battle := Battle.new(unlock_player, Config.enemies["vl_probability_calibrator"])
+	unlock_battle.enemy.hp = 1
+	unlock_player.hand = [Config.cards["qixu_single_draw"]]
+	unlock_battle.energy = 1
+	assert(unlock_battle.play_card(0), "击败第一幕 Boss 应触发绯澜档案发现")
+	assert(MetaProgression.is_character_unlocked("feilan"), "概率校准器击败后应永久发现绯澜")
+	var discovered_profile := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(discovered_profile), "角色发现状态应随局外档案恢复")
+	assert(MetaProgression.is_character_unlocked("feilan"), "恢复档案后不得丢失绯澜发现状态")
+
+	GameState.start_run("feilan", 9092, 0, "version_loop")
+	assert(GameState.get_character_run_state_value("heat") == 0, "绯澜开局热度应清零")
+	assert(GameState.has_relic("unextinguished_indicator"), "绯澜应携带未熄指示灯初始遗物")
+	GameState.player_stats["current_enemy_id"] = "vl_outdated_guide"
+	var feilan_player := GameState.create_battle_player()
+	var feilan_battle := Battle.new(feilan_player, Config.enemies["vl_outdated_guide"])
+	feilan_player.hand = [Config.cards["feilan_forward"], Config.cards["feilan_forward"], Config.cards["feilan_forward"], Config.cards["feilan_break_defense"]]
+	feilan_battle.energy = 3
+	assert(feilan_battle.play_card(0) and feilan_battle.play_card(0) and feilan_battle.play_card(0), "绯澜应能通过转发累积热度")
+	assert(GameState.get_character_run_state_value("heat") >= 5, "三次转发应使绯澜登上热榜")
+	var feilan_hp_before := feilan_battle.enemy.hp
+	assert(feilan_battle.play_card(0), "热榜状态下破防应能结算")
+	assert(feilan_hp_before - feilan_battle.enemy.hp >= 15, "热榜破防应使用高额伤害")
+	feilan_player.hand = [Config.cards["feilan_short_comment"]]
+	feilan_battle.energy = 1
+	assert(feilan_battle.play_card(0) and feilan_battle.has_world_choice_pending(), "短评应要求玩家选择伤害或护盾")
+	var shield_before := feilan_player.shield
+	assert(feilan_battle.resolve_world_choice("shield"), "短评护航选项应可结算")
+	assert(feilan_player.shield >= shield_before + 3, "短评护航应提供护盾")
+	assert(feilan_battle.use_active_skill(), "热度足够时绯澜应能引爆话题")
 	GameState.start_run("computer")
 
 
@@ -661,6 +709,15 @@ func _test_version_loop_scene_flow() -> void:
 	assert(explore._next_encounter_id() == "vl_newbie_echo", "第一幕应从新手引导残影开始")
 	assert(explore._node_list.get_child_count() == 8, "第一幕应展示 6 普通、1 精英与 1 Boss 节点")
 	explore.queue_free()
+	await get_tree().process_frame
+	GameState.run_enemies_defeated.append({"id": "vl_probability_calibrator", "name": "概率校准器·门神", "type": "boss"})
+	var act_two_explore := packed.instantiate() as Control
+	add_child(act_two_explore)
+	await get_tree().process_frame
+	assert(int(GameState.get_world_run_state_value("act_index")) == 2, "第一幕 Boss 击败后应推进到第二幕")
+	assert(act_two_explore._next_encounter_id() == "vl_outdated_guide", "第二幕应从过期攻略幽灵开始")
+	assert(act_two_explore._node_list.get_child_count() == 8, "第二幕应展示 6 普通、1 精英与 1 Boss 节点")
+	act_two_explore.queue_free()
 	await get_tree().process_frame
 	GameState.start_run("computer")
 
@@ -760,7 +817,7 @@ func _test_event_chains_and_relic_synergies() -> void:
 
 
 func _test_major_relic_effects() -> void:
-	assert(RelicCatalog.all_ids().size() == 16, "遗物池应包含校园遗物与祈序初始遗物")
+	assert(RelicCatalog.all_ids().size() == 17, "遗物池应包含校园遗物、祈序与绯澜初始遗物")
 	var major_relics := {
 		"computer": "rubber_duck",
 		"law": "red_pen",

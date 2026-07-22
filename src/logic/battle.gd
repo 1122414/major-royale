@@ -20,6 +20,7 @@ signal ai_decision_requested(context: Dictionary)
 signal boss_phase_changed(phase_name: String)
 signal character_resource_updated
 signal world_rule_feedback(text: String)
+signal world_choice_requested(context: Dictionary)
 
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
@@ -88,6 +89,7 @@ var _difficulty_damage_bonus := 0
 var _rng: RandomNumberGenerator
 var _world_rules: RefCounted
 var _battle_finished_notified := false
+var _world_choice_context: Dictionary = {}
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -161,7 +163,7 @@ func play_card(card_index: int) -> bool:
 
 
 func can_play_card(card_index: int) -> bool:
-	if state != BattleState.PLAYER_TURN or _defense_window_open:
+	if state != BattleState.PLAYER_TURN or _defense_window_open or has_world_choice_pending():
 		return false
 	if card_index < 0 or card_index >= player.hand.size():
 		return false
@@ -176,7 +178,7 @@ func get_card_cost(card_index: int) -> int:
 
 
 func use_active_skill() -> bool:
-	if state != BattleState.PLAYER_TURN or _skill_used_this_battle or _defense_window_open:
+	if state != BattleState.PLAYER_TURN or _skill_used_this_battle or _defense_window_open or has_world_choice_pending():
 		return false
 
 	var skill_name: String = str(_world_rules.use_active_skill(self))
@@ -192,9 +194,12 @@ func use_active_skill() -> bool:
 
 
 func end_player_turn() -> void:
-	if state != BattleState.PLAYER_TURN:
+	if state != BattleState.PLAYER_TURN or has_world_choice_pending():
 		return
 
+	_world_rules.on_player_turn_ended(self)
+	if state != BattleState.PLAYER_TURN:
+		return
 	_defense_window_open = false
 	# 肾上腺素是本回合攻击强化，不得跨回合永久累积。
 	player.remove_status("adrenaline")
@@ -678,6 +683,40 @@ func deal_direct_damage_to_enemy(amount: int) -> int:
 
 func process_world_card_effect(card: Resource, effect: Resource, caster: Character, target: Character) -> bool:
 	return _world_rules.process_card_effect(self, card, effect, caster, target)
+
+
+func request_world_choice(context: Dictionary) -> bool:
+	if has_world_choice_pending() or context.is_empty():
+		return false
+	var choices = context.get("choices", [])
+	if choices is not Array or choices.is_empty():
+		return false
+	_world_choice_context = context.duplicate(true)
+	world_choice_requested.emit(_world_choice_context.duplicate(true))
+	return true
+
+
+func has_world_choice_pending() -> bool:
+	return not _world_choice_context.is_empty()
+
+
+func resolve_world_choice(choice_id: String) -> bool:
+	if not has_world_choice_pending():
+		return false
+	var context := _world_choice_context.duplicate(true)
+	var allowed := false
+	for choice in context.get("choices", []):
+		if choice is Dictionary and str(choice.get("id", "")) == choice_id:
+			allowed = true
+			break
+	if not allowed:
+		return false
+	_world_choice_context.clear()
+	var resolved: bool = bool(_world_rules.resolve_world_choice(self, choice_id, context))
+	if resolved:
+		character_resource_updated.emit()
+		hand_updated.emit()
+	return resolved
 
 
 func notify_character_resource_updated() -> void:

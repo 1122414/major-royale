@@ -90,6 +90,13 @@ const RELICS := {
 		"major_id": "qixu",
 		"world_id": "version_loop",
 	},
+	"unextinguished_indicator": {
+		"name": "未熄指示灯",
+		"desc": "【绯澜】每场战斗首次达到 5 热度时，抽 2 张牌。",
+		"rarity": "uncommon",
+		"major_id": "feilan",
+		"world_id": "version_loop",
+	},
 }
 
 

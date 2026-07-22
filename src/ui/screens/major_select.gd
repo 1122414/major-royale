@@ -39,7 +39,9 @@ func _ready() -> void:
 
 	var world: Resource = Config.get_world(GameState.current_world_id)
 	if world != null:
-		_character_order = world.character_ids.duplicate()
+		for character_id in world.character_ids:
+			if MetaProgression.is_character_unlocked(character_id):
+				_character_order.append(character_id)
 	for major_id in _character_order:
 		if not Config.majors.has(major_id):
 			continue

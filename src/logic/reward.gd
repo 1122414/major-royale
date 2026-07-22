@@ -131,6 +131,8 @@ static func _get_card_pool(major_id: String, prefer_rare: bool = false) -> Array
 	var current_world_id := GameState.current_world_id
 	for card_id in Config.cards:
 		var card = Config.cards[card_id]
+		if bool(card.generated):
+			continue
 		var card_world_id := str(card.world_id)
 		if current_world_id == "campus":
 			if not card_world_id.is_empty():

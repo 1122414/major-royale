@@ -157,6 +157,9 @@
     },
     {
       "id": "vl_delay_notice", "name": "延期公告", "world_id": "version_loop", "type": "control", "cost": 1, "rarity": "uncommon", "exhaust": true, "description": "使敌人意图延后 1 回合。", "effects": [{"type": "delay", "value": 1, "target": "enemy"}]
+    },
+    {
+      "id": "vl_account_backup", "name": "账号备份", "world_id": "version_loop", "type": "defense", "cost": 1, "rarity": "rare", "description": "获得 9 点护盾并抽 1 张牌。", "effects": [{"type": "shield", "value": 9, "target": "self"}, {"type": "draw", "value": 1, "target": "self"}]
     }
   ]
 }

@@ -61,6 +61,7 @@ var _defense_elapsed := 0.0
 var _defense_lane := 1
 var _ui_update_queued := false
 var _last_ai_actions_selected := "__uninitialized__"
+var _world_choice_panel: PanelContainer = null
 
 
 func _ready() -> void:
@@ -83,6 +84,7 @@ func _ready() -> void:
 	_battle.boss_phase_changed.connect(_on_boss_phase_changed)
 	_battle.character_resource_updated.connect(_request_ui_update)
 	_battle.world_rule_feedback.connect(_on_world_rule_feedback)
+	_battle.world_choice_requested.connect(_on_world_choice_requested)
 
 	AIClient.decision_received.connect(_on_ai_decision_received)
 	AIClient.decision_failed.connect(_on_ai_decision_failed)
@@ -160,6 +162,7 @@ func _disconnect_battle_signals() -> void:
 		[_battle.boss_phase_changed, _on_boss_phase_changed],
 		[_battle.character_resource_updated, _request_ui_update],
 		[_battle.world_rule_feedback, _on_world_rule_feedback],
+		[_battle.world_choice_requested, _on_world_choice_requested],
 	]
 	for connection in connections:
 		if connection[0].is_connected(connection[1]):
@@ -263,7 +266,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 	var bg: TextureRect = $PixelBackground
 	if bg and bg.has_method("_ready"):
 		if GameState.current_world_id == "version_loop":
-			bg.texture_path = "res://assets/sprites/bg/version_loop_warmup.png"
+			bg.texture_path = "res://assets/sprites/bg/version_loop_tide_plaza.png" if int(GameState.get_world_run_state_value("act_index", 1)) == 2 else "res://assets/sprites/bg/version_loop_warmup.png"
 			if ResourceLoader.exists(bg.texture_path):
 				bg.texture = load(bg.texture_path)
 		elif enemy_id == "employment_pressure":
@@ -286,6 +289,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"finance": player_path = "res://assets/sprites/chars/player_finance.png"
 		"arts": player_path = "res://assets/sprites/chars/player_arts.png"
 		"qixu": player_path = "res://assets/sprites/chars/player_qixu.png"
+		"feilan": player_path = "res://assets/sprites/chars/player_feilan.png"
 	var enemy_paths := {
 		"gpa_anxiety": "res://assets/sprites/chars/enemy_anxiety.png",
 		"seat_grabber": "res://assets/sprites/chars/enemy_seat_grabber.png",
@@ -298,6 +302,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"paper_reviewer": "res://assets/sprites/chars/enemy_reviewer.png",
 		"employment_pressure": "res://assets/sprites/chars/enemy_boss.png",
 		"vl_probability_calibrator": "res://assets/sprites/chars/enemy_probability_calibrator.png",
+		"vl_voice_aggregate": "res://assets/sprites/chars/enemy_voice_aggregate.png",
 	}
 	var enemy_path: String = enemy_paths.get(enemy_id, "res://assets/sprites/chars/enemy_ai.png" if GameState.current_world_id == "version_loop" else "res://assets/sprites/chars/enemy_anxiety.png")
 	battle_stage.setup_art(player_path, enemy_path)
@@ -352,17 +357,26 @@ func _update_ui() -> void:
 	player_spirit_label.text = "◆ 精神 %d/%d" % [_battle.player.spirit, _battle.player.max_spirit]
 	energy_label.text = "⚡ 能量 %d/%d" % [_battle.energy, _battle.max_energy]
 	if GameState.current_world_id == "version_loop":
-		battle_title.text = "版本回环 · 新服预热"
-		player_title.text = "%s · 概率校准师" % Config.characters[GameState.player_character_id].name
-		turn_label.text = "第一幕　第 %d 回合" % _battle.turn_count
+		var act_index := int(GameState.get_world_run_state_value("act_index", 1))
+		var act_name := "活动高峰" if act_index == 2 else "新服预热"
+		battle_title.text = "版本回环 · %s" % act_name
+		var title := "舆潮主播" if GameState.player_character_id == "feilan" else "概率校准师"
+		player_title.text = "%s · %s" % [Config.characters[GameState.player_character_id].name, title]
+		turn_label.text = "第%d幕　第 %d 回合" % [act_index, _battle.turn_count]
 		var maintenance := int(GameState.get_world_run_state_value("maintenance_clock", 0))
 		pressure_label.text = "维护 %s" % ("●".repeat(maintenance) + "○".repeat(4 - maintenance))
 		character_resource_label.visible = true
-		var pity := int(GameState.get_character_run_state_value("pity", 0))
-		var last_result := str(GameState.get_character_run_state_value("last_random_outcome", ""))
-		var result_text: String = str({"miss": "歪", "hit": "出货"}.get(last_result, "未结算"))
-		character_resource_label.text = "◉ 保底 %d/6　最近：%s" % [pity, result_text]
-		character_resource_label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD if pity >= 6 else UIColors.BORDER_CYAN_BRIGHT)
+		if GameState.player_character_id == "feilan":
+			var heat := int(GameState.get_character_run_state_value("heat", 0))
+			var comments := int(GameState.get_character_run_state_value("short_comments_played", 0))
+			character_resource_label.text = "◉ 热度 %d/10　%s　短评 %d" % [heat, "热榜" if heat >= 5 else "蓄势", comments]
+			character_resource_label.add_theme_color_override("font_color", UIColors.DANGER_RED if heat >= 5 else UIColors.AI_PURPLE)
+		else:
+			var pity := int(GameState.get_character_run_state_value("pity", 0))
+			var last_result := str(GameState.get_character_run_state_value("last_random_outcome", ""))
+			var result_text: String = str({"miss": "歪", "hit": "出货"}.get(last_result, "未结算"))
+			character_resource_label.text = "◉ 保底 %d/6　最近：%s" % [pity, result_text]
+			character_resource_label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD if pity >= 6 else UIColors.BORDER_CYAN_BRIGHT)
 	else:
 		turn_label.text = "第%d天 第%d回合" % [GameState.day_count, _battle.turn_count]
 		pressure_label.text = "压力等级 %d" % maxi(1, GameState.run_progress + 1)
@@ -383,8 +397,8 @@ func _update_ui() -> void:
 
 	_rebuild_hand()
 
-	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active
-	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active
+	end_turn_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active or _battle.has_world_choice_pending()
+	skill_button.disabled = _battle.state != Battle.BattleState.PLAYER_TURN or _defense_active or _battle.has_world_choice_pending()
 
 
 func _rebuild_hand() -> void:
@@ -442,6 +456,65 @@ func _update_status_icons(container: Control, statuses: Dictionary) -> void:
 		var icon: Control = STATUS_ICON_SCENE.instantiate()
 		container.add_child(icon)
 		icon.setup(status_id, statuses[status_id])
+
+
+func _on_world_choice_requested(context: Dictionary) -> void:
+	if _world_choice_panel != null and is_instance_valid(_world_choice_panel):
+		_world_choice_panel.queue_free()
+	_world_choice_panel = PanelContainer.new()
+	_world_choice_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_world_choice_panel.position = Vector2(360, 250)
+	_world_choice_panel.size = Vector2(560, 190)
+	_world_choice_panel.z_index = 20
+	add_child(_world_choice_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	_world_choice_panel.add_child(margin)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	margin.add_child(column)
+	var title := Label.new()
+	title.text = str(context.get("title", "选择效果"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
+	column.add_child(title)
+	var description := Label.new()
+	description.text = str(context.get("description", ""))
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(description)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	column.add_child(row)
+	for choice in context.get("choices", []):
+		if choice is not Dictionary:
+			continue
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(190, 42)
+		button.text = str(choice.get("label", choice.get("id", "确认")))
+		button.tooltip_text = str(choice.get("description", ""))
+		button.pressed.connect(_resolve_world_choice.bind(str(choice.get("id", ""))))
+		row.add_child(button)
+	if row.get_child_count() > 0:
+		(row.get_child(0) as Control).grab_focus()
+	message_label.text = "等待选择：%s" % str(context.get("title", "效果"))
+	_update_ui()
+
+
+func _resolve_world_choice(choice_id: String) -> void:
+	if choice_id.is_empty() or _battle == null or not _battle.resolve_world_choice(choice_id):
+		return
+	AudioManager.play_sfx("click")
+	if _world_choice_panel != null and is_instance_valid(_world_choice_panel):
+		_world_choice_panel.queue_free()
+	_world_choice_panel = null
+	message_label.text = ""
+	_update_ui()
 
 
 func _on_card_clicked(index: int) -> void:

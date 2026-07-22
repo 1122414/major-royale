@@ -3,7 +3,7 @@ extends Node
 
 signal profile_changed
 
-const PROFILE_SAVE_VERSION := 2
+const PROFILE_SAVE_VERSION := 3
 const MIN_SUPPORTED_PROFILE_SAVE_VERSION := 1
 const PROFILE_SAVE_PATH := "user://meta_progression.json"
 const PROFILE_SAVE_BACKUP_PATH := "user://meta_progression.backup.json"
@@ -11,6 +11,7 @@ const PROFILE_SAVE_TEMP_PATH := "user://meta_progression.tmp.json"
 const MAX_SETTLED_RUNS := 40
 const MAX_RECORDED_WORLD_CLEARS := 40
 const INITIAL_WORLD_ID := "campus"
+const INITIAL_CHARACTER_IDS: Array[String] = ["qixu"]
 const WORLD_PROGRESS_CATALOG := {
 	"campus": {
 		"name": "校园世界",
@@ -23,6 +24,12 @@ const WORLD_PROGRESS_CATALOG := {
 		"fragment_id": "hot_update_permission",
 		"fragment_name": "热更新权限",
 	},
+}
+const CHARACTER_PROGRESS_CATALOG := {
+	"qixu": {"world_id": "version_loop", "name": "祈序"},
+	"feilan": {"world_id": "version_loop", "name": "绯澜"},
+	"xunji": {"world_id": "version_loop", "name": "循迹"},
+	"mimo": {"world_id": "version_loop", "name": "弥默"},
 }
 const TALENT_SLOT_LIMIT := 2
 const TALENTS := {
@@ -174,6 +181,7 @@ var unlocked_world_ids: Array[String] = [INITIAL_WORLD_ID]
 var collected_fragment_ids: Array[String] = []
 var world_clear_counts: Dictionary = {}  ## world_id -> count
 var recorded_world_clears: Dictionary = {}  ## run_token -> world_id
+var unlocked_character_ids: Array[String] = INITIAL_CHARACTER_IDS.duplicate()
 var unlocked_talent_ids: Array[String] = []
 var equipped_talent_ids: Array[String] = []
 var owned_equipment_ids: Array[String] = []
@@ -204,6 +212,30 @@ func get_world_progress_info(world_id: String) -> Dictionary:
 
 func get_world_clear_count(world_id: String) -> int:
 	return maxi(0, int(world_clear_counts.get(world_id, 0)))
+
+
+func is_character_unlocked(character_id: String) -> bool:
+	if not CHARACTER_PROGRESS_CATALOG.has(character_id):
+		return true
+	return character_id in unlocked_character_ids
+
+
+func get_unlocked_character_ids(world_id: String = "") -> Array[String]:
+	var output: Array[String] = []
+	for character_id in unlocked_character_ids:
+		var info: Dictionary = CHARACTER_PROGRESS_CATALOG.get(character_id, {})
+		if world_id.is_empty() or str(info.get("world_id", "")) == world_id:
+			output.append(character_id)
+	return output
+
+
+func discover_character(character_id: String) -> bool:
+	if not CHARACTER_PROGRESS_CATALOG.has(character_id) or character_id in unlocked_character_ids:
+		return false
+	unlocked_character_ids.append(character_id)
+	save_profile()
+	profile_changed.emit()
+	return true
 
 
 func has_fragment(fragment_id: String) -> bool:
@@ -519,6 +551,7 @@ func create_profile_snapshot() -> Dictionary:
 		"collected_fragment_ids": collected_fragment_ids.duplicate(),
 		"world_clear_counts": world_clear_counts.duplicate(),
 		"recorded_world_clears": recorded_world_clears.duplicate(),
+		"unlocked_character_ids": unlocked_character_ids.duplicate(),
 		"unlocked_talent_ids": unlocked_talent_ids.duplicate(),
 		"equipped_talent_ids": equipped_talent_ids.duplicate(),
 		"owned_equipment_ids": owned_equipment_ids.duplicate(),
@@ -552,6 +585,10 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 	collected_fragment_ids = _sanitize_fragment_id_array(data.get("collected_fragment_ids", []))
 	world_clear_counts = _sanitize_world_clear_counts(data.get("world_clear_counts", {}))
 	recorded_world_clears = _sanitize_recorded_world_clears(data.get("recorded_world_clears", {}))
+	unlocked_character_ids = _sanitize_id_array(data.get("unlocked_character_ids", INITIAL_CHARACTER_IDS), CHARACTER_PROGRESS_CATALOG)
+	for character_id in INITIAL_CHARACTER_IDS:
+		if character_id not in unlocked_character_ids:
+			unlocked_character_ids.append(character_id)
 	unlocked_talent_ids = _sanitize_id_array(data.get("unlocked_talent_ids", []), TALENTS)
 	equipped_talent_ids.clear()
 	for talent_id in _sanitize_id_array(data.get("equipped_talent_ids", []), TALENTS):
@@ -587,6 +624,7 @@ func reset_profile() -> void:
 	collected_fragment_ids.clear()
 	world_clear_counts.clear()
 	recorded_world_clears.clear()
+	unlocked_character_ids = INITIAL_CHARACTER_IDS.duplicate()
 	unlocked_talent_ids.clear()
 	equipped_talent_ids.clear()
 	owned_equipment_ids.clear()
