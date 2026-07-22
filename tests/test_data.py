@@ -45,7 +45,7 @@ def test_content_baseline():
     assert len(_json_files("majors")) == 9
     assert len(_load_all_cards()) == 342
     assert len(_load_all_enemies()) == 34
-    assert sum(1 for _ in _all_records("events", "events")) == 14
+    assert sum(1 for _ in _all_records("events", "events")) == 19
 
 
 def test_world_packages_reference_existing_content():

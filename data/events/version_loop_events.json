@@ -1,0 +1,113 @@
+{
+  "id": "version_loop_events",
+  "events": [
+    {
+      "id": "vl_maintenance_extension",
+      "name": "维护延期公告",
+      "description": "运营公告称维护将延长。你可以收下补偿，也可以提前进入不稳定的新版本。",
+      "area": "version_loop",
+      "choices": [
+        {
+          "text": "签收补偿（生命 +8，学分 +5）",
+          "effects": [
+            {"type": "heal", "value": 8},
+            {"type": "credits", "value": 5}
+          ]
+        },
+        {
+          "text": "抢先体验（下场攻击强化，生命 -4）",
+          "effects": [
+            {"type": "status", "status_id": "adrenaline", "status_stacks": 2},
+            {"type": "damage", "value": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vl_rerun_vote",
+      "name": "复刻投票",
+      "description": "旧版本角色的复刻投票正在进行。结果会决定下一批公共资源流向。",
+      "area": "version_loop",
+      "choices": [
+        {
+          "text": "为公共卡池投票（开启共享蓝图）",
+          "effects": [
+            {"type": "set_flag", "flag": "vl_rerun_vote_support", "message": "公共卡池获得支持，共享蓝图或将出现。"},
+            {"type": "credit_points", "value": 12}
+          ]
+        },
+        {
+          "text": "兑换当期资源（学分 +10）",
+          "effects": [
+            {"type": "credits", "value": 10}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vl_comment_archive",
+      "name": "评论区档案",
+      "description": "被折叠的旧评论里保存着实战经验，也藏着会持续消耗精神的争吵。",
+      "area": "version_loop",
+      "choices": [
+        {
+          "text": "整理有效反馈（资源 +1，精神 -4）",
+          "effects": [
+            {"type": "stat_up", "stat": "资源", "value": 1},
+            {"type": "spirit_damage", "value": 4}
+          ]
+        },
+        {
+          "text": "关闭争论线程（下场获得抗性）",
+          "effects": [
+            {"type": "status", "status_id": "resistance", "status_stacks": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vl_resource_refresh",
+      "name": "资源刷新潮",
+      "description": "刷新时段到来，奖励页面与系统报错同时涌入。你只能拿走其中一份收益。",
+      "area": "version_loop",
+      "choices": [
+        {
+          "text": "领取稳定补给（生命 +6，信用点 +8）",
+          "effects": [
+            {"type": "heal", "value": 6},
+            {"type": "credit_points", "value": 8}
+          ]
+        },
+        {
+          "text": "追逐限时奖励（学分 +14，压力圈 +1）",
+          "effects": [
+            {"type": "credits", "value": 14},
+            {"type": "advance_pressure", "value": 1}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vl_shared_blueprint",
+      "name": "共享蓝图",
+      "description": "公共卡池的蓝图被临时公开。它能保护你的构筑，也可能迫使你把资源交给长期运营。",
+      "area": "version_loop",
+      "requires_flags": ["vl_rerun_vote_support"],
+      "priority_flags": ["vl_rerun_vote_support"],
+      "choices": [
+        {
+          "text": "接入护航协议（下场获得 10 点护盾）",
+          "effects": [
+            {"type": "status", "status_id": "shield", "status_stacks": 10}
+          ]
+        },
+        {
+          "text": "捐出维护额度（信用点 +18）",
+          "effects": [
+            {"type": "credit_points", "value": 18}
+          ]
+        }
+      ]
+    }
+  ]
+}

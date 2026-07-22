@@ -42,6 +42,11 @@ var _node_list: VBoxContainer
 var _status_label: Label
 var _notice_label: Label
 var _title_label: Label
+var _world_event_button: Button
+var _event_shade: ColorRect
+var _event_panel: PanelContainer
+var _event_content: VBoxContainer
+var _current_event: EventResource
 
 
 func _ready() -> void:
@@ -118,6 +123,17 @@ func _build_layout() -> void:
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status_label.add_theme_font_size_override("font_size", 15)
 	column.add_child(_status_label)
+	var event_row := HBoxContainer.new()
+	event_row.add_theme_constant_override("separation", 12)
+	column.add_child(event_row)
+	var event_hint := Label.new()
+	event_hint.text = "异闻节点：每幕可解析一次，结算会保留至本局结束。"
+	event_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	event_row.add_child(event_hint)
+	_world_event_button = Button.new()
+	_world_event_button.custom_minimum_size = Vector2(190, 36)
+	_world_event_button.pressed.connect(_open_world_event)
+	event_row.add_child(_world_event_button)
 	var split := HBoxContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.add_theme_constant_override("separation", 18)
@@ -149,6 +165,7 @@ func _build_layout() -> void:
 	guide.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	guide.add_theme_font_size_override("font_size", 16)
 	guide_margin.add_child(guide)
+	_build_world_event_overlay()
 
 
 func _refresh() -> void:
@@ -166,6 +183,9 @@ func _refresh() -> void:
 		"●".repeat(maintenance) + "○".repeat(4 - maintenance), tickets, stamina,
 		"\n%s" % message if not message.is_empty() else "", protocol_text
 	]
+	var event_done := _is_world_event_resolved()
+	_world_event_button.text = "本幕异闻已解析 ✓" if event_done else "解析本幕异闻"
+	_world_event_button.disabled = event_done
 	for child in _node_list.get_children():
 		child.queue_free()
 	var next_id := _next_encounter_id()
@@ -209,6 +229,121 @@ func _start_encounter(encounter_id: String) -> void:
 	GameState.player_stats.erase("version_loop_maintenance_message")
 	GameState.player_stats["current_enemy_id"] = encounter_id
 	GameState.change_screen(GameState.Screen.BATTLE)
+
+
+func _build_world_event_overlay() -> void:
+	_event_shade = ColorRect.new()
+	_event_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_event_shade.color = Color(0.0, 0.02, 0.05, 0.82)
+	_event_shade.visible = false
+	_event_shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_event_shade)
+	_event_panel = PanelContainer.new()
+	_event_panel.position = Vector2(330, 150)
+	_event_panel.size = Vector2(620, 420)
+	_event_shade.add_child(_event_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_right", 26)
+	margin.add_theme_constant_override("margin_bottom", 22)
+	_event_panel.add_child(margin)
+	_event_content = VBoxContainer.new()
+	_event_content.add_theme_constant_override("separation", 14)
+	margin.add_child(_event_content)
+
+
+func _open_world_event() -> void:
+	if _is_world_event_resolved():
+		return
+	AudioManager.play_sfx("click")
+	var rng := GameState.make_run_rng(
+		"version_loop_event:%d" % _get_act_index(),
+		GameState.run_events_resolved + _get_act_index() * 100
+	)
+	_current_event = EventHandler.pick_random_event("version_loop", rng)
+	if _current_event == null:
+		GameState.player_stats["version_loop_event_message"] = "本幕没有可解析的异闻。"
+		_refresh()
+		return
+	_event_shade.visible = true
+	_clear_event_content()
+	_add_event_label("版本异闻 · %s" % _current_event.name, 26, UIColors.BORDER_CYAN_BRIGHT)
+	_add_event_label(_current_event.description, 17, Color.WHITE, true)
+	if _current_event.choices.is_empty():
+		_add_event_choice("确认解析", -1, true)
+	else:
+		for choice_index in _current_event.choices.size():
+			_add_event_choice(str(_current_event.choices[choice_index].get("text", "选择")), choice_index, choice_index == 0)
+
+
+func _resolve_world_event(choice_index: int) -> void:
+	if _current_event == null:
+		return
+	AudioManager.play_sfx("click")
+	var handler := EventHandler.new(GameState.player_stats)
+	var result := handler.apply_event(_current_event, choice_index)
+	GameState.add_event_flag(_world_event_flag_id())
+	GameState.run_events_resolved += 1
+	GameState.player_stats["version_loop_event_message"] = "%s：%s" % [_current_event.name, result]
+	_clear_event_content()
+	_add_event_label("异闻结算", 26, UIColors.ACCENT_GOLD)
+	_add_event_label(result, 17, Color.WHITE, true)
+	var continue_button := Button.new()
+	continue_button.text = "返回版本路线"
+	continue_button.custom_minimum_size = Vector2(0, 48)
+	continue_button.pressed.connect(_close_world_event)
+	_event_content.add_child(continue_button)
+	continue_button.grab_focus()
+	if GameState.run_hp <= 0:
+		GameState.player_stats["last_battle_victory"] = false
+		GameState.player_stats["last_enemy_was_ai"] = false
+		continue_button.text = "查看本局总结"
+		continue_button.pressed.disconnect(_close_world_event)
+		continue_button.pressed.connect(func(): GameState.change_screen(GameState.Screen.RUN_SUMMARY))
+		return
+	GameState.save_run_checkpoint(GameState.Screen.VERSION_LOOP_EXPLORE)
+
+
+func _close_world_event() -> void:
+	_current_event = null
+	_event_shade.visible = false
+	_clear_event_content()
+	_refresh()
+
+
+func _add_event_label(text: String, font_size: int, color: Color, wrap: bool = false) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wrap else TextServer.AUTOWRAP_OFF
+	_event_content.add_child(label)
+
+
+func _add_event_choice(text: String, choice_index: int, focus: bool) -> void:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(0, 54)
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.pressed.connect(_resolve_world_event.bind(choice_index))
+	_event_content.add_child(button)
+	if focus:
+		button.grab_focus()
+
+
+func _clear_event_content() -> void:
+	for child in _event_content.get_children():
+		_event_content.remove_child(child)
+		child.queue_free()
+
+
+func _world_event_flag_id() -> String:
+	return "version_loop_event_act_%d" % _get_act_index()
+
+
+func _is_world_event_resolved() -> bool:
+	return GameState.has_event_flag(_world_event_flag_id())
 
 
 func _next_encounter_id() -> String:

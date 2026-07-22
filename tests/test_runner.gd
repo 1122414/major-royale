@@ -824,6 +824,14 @@ func _test_version_loop_scene_flow() -> void:
 	await get_tree().process_frame
 	assert(explore._next_encounter_id() == "vl_newbie_echo", "第一幕应从新手引导残影开始")
 	assert(explore._node_list.get_child_count() == 8, "第一幕应展示 6 普通、1 精英与 1 Boss 节点")
+	var events_before := GameState.run_events_resolved
+	explore._open_world_event()
+	assert(explore._current_event != null and explore._event_shade.visible, "版本路线应能打开本幕异闻选择")
+	explore._resolve_world_event(0)
+	assert(GameState.run_events_resolved == events_before + 1, "版本异闻结算应计入本局事件次数")
+	assert(GameState.has_event_flag("version_loop_event_act_1"), "版本异闻应按幕写入完成标识")
+	explore._close_world_event()
+	assert(explore._world_event_button.disabled, "同一幕异闻结算后入口应锁定")
 	explore.queue_free()
 	await get_tree().process_frame
 	GameState.run_enemies_defeated.append({"id": "vl_probability_calibrator", "name": "概率校准器·门神", "type": "boss"})
@@ -899,7 +907,7 @@ func _test_scaled_finishers() -> void:
 
 
 func _test_event_chains_and_relic_synergies() -> void:
-	assert(Config.events.size() == 14, "校园事件应扩展为 14 个，包含两条跨区域事件链")
+	assert(Config.events.size() == 19, "事件池应包含 14 个校园事件与 5 个版本回环异闻")
 	GameState.start_run("computer")
 	var handler := EventHandler.new(GameState.player_stats)
 	handler.apply_event(Config.events["pop_quiz"], 0)
@@ -928,6 +936,17 @@ func _test_event_chains_and_relic_synergies() -> void:
 	assert(relay != null and relay.id == "relay_support", "互助线索应优先触发操场接力终章")
 	handler.apply_event(relay)
 	assert(GameState.has_relic("noise_cancelling"), "互助接力终章应发放降噪耳机")
+
+	GameState.start_run("qixu", 9401, 0, "version_loop")
+	handler = EventHandler.new(GameState.player_stats)
+	handler.apply_event(Config.events["vl_rerun_vote"], 0)
+	assert(GameState.has_event_flag("vl_rerun_vote_support"), "复刻投票的公共卡池选择应开启共享蓝图")
+	var version_rng := GameState.make_run_rng("version_loop_event_test", 1)
+	var blueprint := EventHandler.pick_random_event("version_loop", version_rng)
+	assert(blueprint != null and blueprint.id == "vl_shared_blueprint", "共享蓝图应在投票支持后优先出现")
+	handler.apply_event(blueprint, 0)
+	assert(GameState.has_event_flag("event:vl_shared_blueprint"), "版本异闻应复用统一事件去重标识")
+	assert(not GameState.pending_buffs.is_empty(), "共享蓝图应能为下场战斗写入待生效增益")
 
 	_test_major_relic_effects()
 
