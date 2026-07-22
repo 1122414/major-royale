@@ -297,6 +297,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"qixu": player_path = "res://assets/sprites/chars/player_qixu.png"
 		"feilan": player_path = "res://assets/sprites/chars/player_feilan.png"
 		"xunji": player_path = "res://assets/sprites/chars/player_xunji.png"
+		"mimo": player_path = "res://assets/sprites/chars/player_mimo.png"
 	var enemy_paths := {
 		"gpa_anxiety": "res://assets/sprites/chars/enemy_anxiety.png",
 		"seat_grabber": "res://assets/sprites/chars/enemy_seat_grabber.png",
@@ -368,7 +369,7 @@ func _update_ui() -> void:
 		var act_index := int(GameState.get_world_run_state_value("act_index", 1))
 		var act_name := "版本坟场" if act_index == 3 else ("活动高峰" if act_index == 2 else "新服预热")
 		battle_title.text = "版本回环 · %s" % act_name
-		var title := "流程代行员" if GameState.player_character_id == "xunji" else ("舆潮主播" if GameState.player_character_id == "feilan" else "概率校准师")
+		var title := "模因回收员" if GameState.player_character_id == "mimo" else ("流程代行员" if GameState.player_character_id == "xunji" else ("舆潮主播" if GameState.player_character_id == "feilan" else "概率校准师"))
 		player_title.text = "%s · %s" % [Config.characters[GameState.player_character_id].name, title]
 		turn_label.text = "第%d幕　第 %d 回合" % [act_index, _battle.turn_count]
 		var maintenance := int(GameState.get_world_run_state_value("maintenance_clock", 0))
@@ -384,6 +385,11 @@ func _update_ui() -> void:
 			var sequence := str(GameState.get_character_run_state_value("recent_sequence", ""))
 			character_resource_label.text = "◉ 脚本：%s　牌序：%s" % [script_label, sequence if not sequence.is_empty() else "—"]
 			character_resource_label.add_theme_color_override("font_color", UIColors.BORDER_CYAN_BRIGHT)
+		elif GameState.player_character_id == "mimo":
+			var shards := int(GameState.get_character_run_state_value("meme_shards", 0))
+			var meme_tag := str(GameState.get_character_run_state_value("meme_tag", "空白"))
+			character_resource_label.text = "◉ 模因片 %d/12　标签：%s" % [shards, meme_tag]
+			character_resource_label.add_theme_color_override("font_color", UIColors.AI_PURPLE)
 		else:
 			var pity := int(GameState.get_character_run_state_value("pity", 0))
 			var last_result := str(GameState.get_character_run_state_value("last_random_outcome", ""))

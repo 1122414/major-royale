@@ -28,6 +28,7 @@ const SAVED_PLAYER_STAT_KEYS := [
 	"last_battle_victory",
 	"last_enemy_was_ai",
 	"last_ending_flag",
+	"version_loop_ending_protocol",
 ]
 const STAT_NAMES := ["学识", "体能", "专注", "表达", "创造", "社交", "抗压", "资源"]
 const SAVED_META_EFFECT_KEYS := [

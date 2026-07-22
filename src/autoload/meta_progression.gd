@@ -3,7 +3,7 @@ extends Node
 
 signal profile_changed
 
-const PROFILE_SAVE_VERSION := 3
+const PROFILE_SAVE_VERSION := 4
 const MIN_SUPPORTED_PROFILE_SAVE_VERSION := 1
 const PROFILE_SAVE_PATH := "user://meta_progression.json"
 const PROFILE_SAVE_BACKUP_PATH := "user://meta_progression.backup.json"
@@ -30,6 +30,23 @@ const CHARACTER_PROGRESS_CATALOG := {
 	"feilan": {"world_id": "version_loop", "name": "绯澜"},
 	"xunji": {"world_id": "version_loop", "name": "循迹"},
 	"mimo": {"world_id": "version_loop", "name": "弥默"},
+}
+const VERSION_LOOP_CORE_CHARACTER_IDS: Array[String] = ["qixu", "feilan", "xunji"]
+const WORLD_ENDING_PROTOCOLS := {
+	"version_loop": {
+		"stable_operation": {
+			"name": "继续运营",
+			"description": "世界保持稳定，但仍受中枢管理；未来破壁会优先读取稳定接口。",
+		},
+		"permanent_archive": {
+			"name": "永久归档",
+			"description": "保留旧版本记忆；未来破壁可读取归档与回滚接口。",
+		},
+		"open_protocol": {
+			"name": "开放协议",
+			"description": "向其他世界公开版本规则；未来破壁可读取开放接口与不稳定度。",
+		},
+	},
 }
 const TALENT_SLOT_LIMIT := 2
 const TALENTS := {
@@ -181,6 +198,8 @@ var unlocked_world_ids: Array[String] = [INITIAL_WORLD_ID]
 var collected_fragment_ids: Array[String] = []
 var world_clear_counts: Dictionary = {}  ## world_id -> count
 var recorded_world_clears: Dictionary = {}  ## run_token -> world_id
+var world_character_clear_ids: Dictionary = {}  ## world_id -> Array[character_id]
+var world_ending_protocols: Dictionary = {}  ## world_id -> protocol_id
 var unlocked_character_ids: Array[String] = INITIAL_CHARACTER_IDS.duplicate()
 var unlocked_talent_ids: Array[String] = []
 var equipped_talent_ids: Array[String] = []
@@ -212,6 +231,43 @@ func get_world_progress_info(world_id: String) -> Dictionary:
 
 func get_world_clear_count(world_id: String) -> int:
 	return maxi(0, int(world_clear_counts.get(world_id, 0)))
+
+
+func get_world_character_clear_ids(world_id: String) -> Array[String]:
+	var output: Array[String] = []
+	var saved_ids = world_character_clear_ids.get(world_id, [])
+	if saved_ids is not Array:
+		return output
+	for character_id in saved_ids:
+		var normalized_id := str(character_id)
+		if CHARACTER_PROGRESS_CATALOG.has(normalized_id) and normalized_id not in output:
+			output.append(normalized_id)
+	return output
+
+
+func has_character_cleared_world(world_id: String, character_id: String) -> bool:
+	return character_id in get_world_character_clear_ids(world_id)
+
+
+func get_world_ending_protocol(world_id: String) -> String:
+	return str(world_ending_protocols.get(world_id, ""))
+
+
+func get_world_ending_info(world_id: String) -> Dictionary:
+	var protocol_id := get_world_ending_protocol(world_id)
+	var world_protocols = WORLD_ENDING_PROTOCOLS.get(world_id, {}) as Dictionary
+	var info: Dictionary = world_protocols.get(protocol_id, {})
+	return info.duplicate(true)
+
+
+func set_world_ending_protocol(world_id: String, protocol_id: String) -> bool:
+	var world_protocols = WORLD_ENDING_PROTOCOLS.get(world_id, {}) as Dictionary
+	if not world_protocols.has(protocol_id):
+		return false
+	world_ending_protocols[world_id] = protocol_id
+	save_profile()
+	profile_changed.emit()
+	return true
 
 
 func is_character_unlocked(character_id: String) -> bool:
@@ -259,6 +315,7 @@ func record_world_clear(world_id: String = GameState.current_world_id) -> Dictio
 			"already_recorded": true,
 			"new_fragment": false,
 			"unlocked_world_id": "",
+			"new_character_id": "",
 		}
 
 	var fragment_id := str(world_info.get("fragment_id", ""))
@@ -272,6 +329,11 @@ func record_world_clear(world_id: String = GameState.current_world_id) -> Dictio
 		unlocked_world_id = unlock_world_id
 	world_clear_counts[world_id] = get_world_clear_count(world_id) + 1
 	recorded_world_clears[run_token] = world_id
+	var newly_recorded_character_id := _record_character_world_clear(world_id, GameState.player_character_id)
+	var newly_unlocked_character_id := ""
+	if world_id == "version_loop" and _has_completed_version_loop_core_characters():
+		if discover_character("mimo"):
+			newly_unlocked_character_id = "mimo"
 	_trim_recorded_world_clears()
 	save_profile()
 	profile_changed.emit()
@@ -282,8 +344,30 @@ func record_world_clear(world_id: String = GameState.current_world_id) -> Dictio
 		"fragment_name": str(world_info.get("fragment_name", fragment_id)),
 		"new_fragment": new_fragment,
 		"unlocked_world_id": unlocked_world_id,
+		"cleared_character_id": newly_recorded_character_id,
+		"new_character_id": newly_unlocked_character_id,
 		"already_recorded": false,
 	}
+
+
+func _record_character_world_clear(world_id: String, character_id: String) -> String:
+	var character_info = CHARACTER_PROGRESS_CATALOG.get(character_id, {}) as Dictionary
+	if str(character_info.get("world_id", "")) != world_id:
+		return ""
+	var recorded_ids := get_world_character_clear_ids(world_id)
+	if character_id in recorded_ids:
+		return ""
+	recorded_ids.append(character_id)
+	world_character_clear_ids[world_id] = recorded_ids
+	return character_id
+
+
+func _has_completed_version_loop_core_characters() -> bool:
+	var cleared_ids := get_world_character_clear_ids("version_loop")
+	for character_id in VERSION_LOOP_CORE_CHARACTER_IDS:
+		if character_id not in cleared_ids:
+			return false
+	return true
 
 
 func grant_gold(amount: int) -> int:
@@ -551,6 +635,8 @@ func create_profile_snapshot() -> Dictionary:
 		"collected_fragment_ids": collected_fragment_ids.duplicate(),
 		"world_clear_counts": world_clear_counts.duplicate(),
 		"recorded_world_clears": recorded_world_clears.duplicate(),
+		"world_character_clear_ids": world_character_clear_ids.duplicate(true),
+		"world_ending_protocols": world_ending_protocols.duplicate(true),
 		"unlocked_character_ids": unlocked_character_ids.duplicate(),
 		"unlocked_talent_ids": unlocked_talent_ids.duplicate(),
 		"equipped_talent_ids": equipped_talent_ids.duplicate(),
@@ -585,6 +671,8 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 	collected_fragment_ids = _sanitize_fragment_id_array(data.get("collected_fragment_ids", []))
 	world_clear_counts = _sanitize_world_clear_counts(data.get("world_clear_counts", {}))
 	recorded_world_clears = _sanitize_recorded_world_clears(data.get("recorded_world_clears", {}))
+	world_character_clear_ids = _sanitize_world_character_clear_ids(data.get("world_character_clear_ids", {}))
+	world_ending_protocols = _sanitize_world_ending_protocols(data.get("world_ending_protocols", {}))
 	unlocked_character_ids = _sanitize_id_array(data.get("unlocked_character_ids", INITIAL_CHARACTER_IDS), CHARACTER_PROGRESS_CATALOG)
 	for character_id in INITIAL_CHARACTER_IDS:
 		if character_id not in unlocked_character_ids:
@@ -624,6 +712,8 @@ func reset_profile() -> void:
 	collected_fragment_ids.clear()
 	world_clear_counts.clear()
 	recorded_world_clears.clear()
+	world_character_clear_ids.clear()
+	world_ending_protocols.clear()
 	unlocked_character_ids = INITIAL_CHARACTER_IDS.duplicate()
 	unlocked_talent_ids.clear()
 	equipped_talent_ids.clear()
@@ -695,6 +785,37 @@ func _sanitize_recorded_world_clears(value: Variant) -> Dictionary:
 		if token.is_empty() or token.length() > 160 or not WORLD_PROGRESS_CATALOG.has(world_id):
 			continue
 		output[token] = world_id
+	return output
+
+
+func _sanitize_world_character_clear_ids(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for world_id in WORLD_PROGRESS_CATALOG:
+		var raw_ids = value.get(world_id, [])
+		if raw_ids is not Array:
+			continue
+		var valid_ids: Array[String] = []
+		for raw_id in raw_ids:
+			var character_id := str(raw_id)
+			var character_info = CHARACTER_PROGRESS_CATALOG.get(character_id, {}) as Dictionary
+			if str(character_info.get("world_id", "")) == world_id and character_id not in valid_ids:
+				valid_ids.append(character_id)
+		if not valid_ids.is_empty():
+			output[world_id] = valid_ids
+	return output
+
+
+func _sanitize_world_ending_protocols(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for world_id in WORLD_ENDING_PROTOCOLS:
+		var protocol_id := str(value.get(world_id, ""))
+		var world_protocols = WORLD_ENDING_PROTOCOLS.get(world_id, {}) as Dictionary
+		if world_protocols.has(protocol_id):
+			output[world_id] = protocol_id
 	return output
 
 

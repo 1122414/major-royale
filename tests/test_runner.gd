@@ -16,7 +16,7 @@ func _ready() -> void:
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
 	assert(Config.characters == Config.majors, "角色兼容别名应与专业数据保持一致")
-	assert(Config.majors.size() == 8, "角色档案应包含五个校园专业与版本回环三名角色")
+	assert(Config.majors.size() == 9, "角色档案应包含五个校园专业与版本回环四名角色")
 	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
 		assert(Config.majors.has(major_id), "缺少专业: %s" % major_id)
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	assert(computer.stats.has("学识"), "计算机专业缺少学识属性")
 
 	assert(not Config.cards.is_empty(), "卡牌数据未加载")
-	assert(Config.cards.size() == 212, "接入循迹与第三幕后卡牌数量应为 212")
+	assert(Config.cards.size() == 242, "接入弥默与终局内容后卡牌数量应为 242")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
 	_test_card_archetype_coverage()
@@ -59,6 +59,7 @@ func _ready() -> void:
 	_test_world_rule_set_hooks()
 	_test_version_loop_act_one_content()
 	await _test_version_loop_act_three_content()
+	await _test_version_loop_endings_and_mimo()
 	_test_event_chains_and_relic_synergies()
 	_test_elite_affix_variety()
 	_test_ai_decision_whitelist()
@@ -109,7 +110,7 @@ func _test_world_package_contract() -> void:
 	var version_loop: Resource = Config.get_world("version_loop")
 	assert(version_loop != null and version_loop.name == "版本回环", "版本回环世界定义缺失")
 	assert(version_loop.is_playable(), "版本回环的角色与地图入口应可启动")
-	assert(version_loop.character_ids == ["qixu", "feilan", "xunji"], "版本回环应声明三名角色，界面再按发现状态过滤")
+	assert(version_loop.character_ids == ["qixu", "feilan", "xunji", "mimo"], "版本回环应声明四名角色，界面再按发现状态过滤")
 	var version_state: Dictionary = version_loop.sanitize_run_state({
 		"patch_notice_id": "invalid_notice",
 		"maintenance_clock": 99,
@@ -119,7 +120,7 @@ func _test_world_package_contract() -> void:
 	assert(version_state.get("maintenance_clock") == 4, "维护时钟应按世界状态上限截断")
 	assert(version_state.get("compensation_tickets") == 0, "补偿券不得为负数")
 	assert(version_loop.get_rule_catalog_entries("patch_notices").size() == 3, "版本回环首轮应配置三条公告")
-	assert(Config.get_character_world_id("qixu") == "version_loop" and Config.get_character_world_id("xunji") == "version_loop", "祈序、绯澜与循迹应归属版本回环世界")
+	assert(Config.get_character_world_id("qixu") == "version_loop" and Config.get_character_world_id("mimo") == "version_loop", "祈序、绯澜、循迹与弥默应归属版本回环世界")
 
 
 func _test_meta_currency_profile() -> void:
@@ -349,6 +350,7 @@ func _test_professional_asset_coverage() -> void:
 		"res://assets/sprites/chars/player_arts.png",
 		"res://assets/sprites/chars/player_feilan.png",
 		"res://assets/sprites/chars/player_xunji.png",
+		"res://assets/sprites/chars/player_mimo.png",
 	]
 	for path in player_paths:
 		assert(ResourceLoader.exists(path), "五专业应具备正式玩家立绘: %s" % path)
@@ -614,6 +616,7 @@ func _test_version_loop_act_one_content() -> void:
 	var qixu_cards := 0
 	var feilan_cards := 0
 	var xunji_cards := 0
+	var mimo_cards := 0
 	var shared_cards := 0
 	for card in Config.cards.values():
 		if str(card.major_id) == "qixu":
@@ -622,11 +625,14 @@ func _test_version_loop_act_one_content() -> void:
 			feilan_cards += 1
 		elif str(card.major_id) == "xunji":
 			xunji_cards += 1
+		elif str(card.major_id) == "mimo":
+			mimo_cards += 1
 		elif str(card.world_id) == "version_loop":
 			shared_cards += 1
 	assert(qixu_cards == 30, "祈序第一轮应接入 30 张核心牌")
 	assert(feilan_cards == 30, "绯澜第二幕应接入 30 张核心牌，其中包含生成短评")
 	assert(xunji_cards == 30, "循迹第三幕应接入 30 张核心牌，其中包含生成抄本")
+	assert(mimo_cards == 30, "弥默隐藏角色应接入 30 张核心牌")
 	assert(shared_cards == 14, "第三幕应扩展到 14 张可见世界共享牌")
 	for enemy_id in [
 		"vl_newbie_echo", "vl_stamina_leech", "vl_signin_beast", "vl_resource_sweeper",
@@ -758,6 +764,57 @@ func _test_version_loop_act_three_content() -> void:
 	GameState.start_run("computer")
 
 
+func _test_version_loop_endings_and_mimo() -> void:
+	var mimo_cards := 0
+	for card in Config.cards.values():
+		if str(card.major_id) == "mimo":
+			mimo_cards += 1
+	assert(mimo_cards == 30, "弥默隐藏角色应接入 30 张核心牌")
+
+	MetaProgression.reset_profile()
+	for major_id in ["qixu", "feilan", "xunji"]:
+		GameState.start_run(major_id, 9300 + ["qixu", "feilan", "xunji"].find(major_id), 0, "version_loop")
+		MetaProgression.record_world_clear("version_loop")
+	assert(MetaProgression.get_world_character_clear_ids("version_loop") == ["qixu", "feilan", "xunji"], "三名标准角色通关应进入世界名册")
+	assert(MetaProgression.is_character_unlocked("mimo"), "三名标准角色各通关一次后应永久解锁弥默")
+	var profile_snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(profile_snapshot), "角色通关名册应随局外档案恢复")
+	assert(MetaProgression.has_character_cleared_world("version_loop", "xunji"), "恢复后不得丢失角色通关记录")
+	assert(MetaProgression.set_world_ending_protocol("version_loop", "permanent_archive"), "版本回环应接受永久归档协议")
+	assert(MetaProgression.get_world_ending_protocol("version_loop") == "permanent_archive", "终局协议应永久记录")
+
+	GameState.start_run("mimo", 9310, 0, "version_loop")
+	assert(GameState.get_character_run_state_value("meme_shards") == 0, "弥默开局模因片应归零")
+	assert(GameState.has_relic("discarded_index"), "弥默应携带废弃索引初始遗物")
+	GameState.player_stats["current_enemy_id"] = "vl_meta_executor"
+	var mimo_player := GameState.create_battle_player()
+	var mimo_battle := Battle.new(mimo_player, Config.enemies["vl_meta_executor"])
+	mimo_player.hand = [Config.cards["mimo_clip"], Config.cards["mimo_clip"]]
+	mimo_battle.energy = 1
+	assert(mimo_battle.play_card(0) and mimo_battle.play_card(0), "弥默应能用回收攻击积累模因片")
+	assert(GameState.get_character_run_state_value("meme_shards") >= 3, "废弃索引与两次剪辑应凑齐主动技能资源")
+	assert(GameState.get_character_run_state_value("meme_tag") == "攻击", "剪辑片段应将标签更新为攻击")
+	var hp_before_active := mimo_battle.enemy.hp
+	assert(mimo_battle.use_active_skill(), "攻击标签且模因片足够时应能执行协议拼接")
+	assert(mimo_battle.enemy.hp < hp_before_active, "攻击协议拼接应造成伤害")
+
+	GameState.start_run("qixu", 9320, 0, "version_loop")
+	GameState.player_stats["last_battle_victory"] = true
+	GameState.player_stats["current_enemy_id"] = "vl_zero_maintenance"
+	var result_packed := load("res://src/ui/screens/result.tscn") as PackedScene
+	var result_screen := result_packed.instantiate() as Control
+	add_child(result_screen)
+	await get_tree().process_frame
+	assert(result_screen._protocol_buttons.size() == 3, "零号维护胜利后应展示三项终局协议")
+	result_screen._select_version_loop_protocol("open_protocol")
+	assert(MetaProgression.get_world_ending_protocol("version_loop") == "open_protocol", "终局选择应覆盖为当前可读取协议")
+	assert(result_screen.continue_button.visible, "选择协议后应允许进入通关总结")
+	result_screen.queue_free()
+	await get_tree().process_frame
+	GameState.start_run("computer")
+
+
 func _test_version_loop_scene_flow() -> void:
 	GameState.start_run("qixu", 9191, 0, "version_loop")
 	var packed := load("res://src/ui/screens/version_loop_explore.tscn") as PackedScene
@@ -876,7 +933,7 @@ func _test_event_chains_and_relic_synergies() -> void:
 
 
 func _test_major_relic_effects() -> void:
-	assert(RelicCatalog.all_ids().size() == 18, "遗物池应包含校园遗物与版本回环三名角色初始遗物")
+	assert(RelicCatalog.all_ids().size() == 19, "遗物池应包含校园遗物与版本回环四名角色初始遗物")
 	var major_relics := {
 		"computer": "rubber_duck",
 		"law": "red_pen",

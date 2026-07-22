@@ -160,9 +160,11 @@ func _refresh() -> void:
 	var tickets := int(GameState.get_world_run_state_value("compensation_tickets", 0))
 	var stamina := int(GameState.get_world_run_state_value("activity_stamina", 0))
 	var message := str(GameState.player_stats.get("version_loop_maintenance_message", ""))
-	_status_label.text = "维护时钟：%s　补偿券：%d　活动体力：%d%s" % [
+	var protocol_info := MetaProgression.get_world_ending_info("version_loop")
+	var protocol_text := "\n终局协议：%s" % str(protocol_info.get("name", "未写入")) if not protocol_info.is_empty() else ""
+	_status_label.text = "维护时钟：%s　补偿券：%d　活动体力：%d%s%s" % [
 		"●".repeat(maintenance) + "○".repeat(4 - maintenance), tickets, stamina,
-		"\n%s" % message if not message.is_empty() else ""
+		"\n%s" % message if not message.is_empty() else "", protocol_text
 	]
 	for child in _node_list.get_children():
 		child.queue_free()
@@ -261,4 +263,6 @@ func _get_character_guide() -> String:
 		return "绯澜 · 舆潮主播\n\n核心资源：热度 0—10；达到 5 进入热榜。\n热度会在回合结束时衰减，可用短评在攻击与护航之间选择。\n\n主动：引爆话题\n消耗 5 热度，造成 18 点伤害。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"
 	if GameState.player_character_id == "xunji":
 		return "循迹 · 流程代行员\n\n核心资源：唯一脚本槽与最近三张牌序。\n录制可复演的直接效果；复演不会复制抽牌、能量、生成或再次复演。\n\n主动：执行脚本\n脚本槽不为空时，以 60% 强度复演。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"
+	if GameState.player_character_id == "mimo":
+		return "弥默 · 模因回收员\n\n核心资源：模因片与当前标签。\n回收牌会积累模因片；攻击、防御、流程标签可被拼接为不同效果。\n\n主动：协议拼接\n消耗 3 枚模因片，按标签执行转译。\n\n世界规则\n三名标准角色各通关一次后解锁；终局协议会永久写入中枢。"
 	return "祈序 · 概率校准师\n\n核心资源：保底 0—6\n歪结果会积累保底；达到 6 后，下一次随机必定出货并清零。\n\n主动：概率校准\n消耗 2 保底，锁定下一次出货。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"

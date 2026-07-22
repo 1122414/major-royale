@@ -104,6 +104,13 @@ const RELICS := {
 		"major_id": "xunji",
 		"world_id": "version_loop",
 	},
+	"discarded_index": {
+		"name": "废弃索引",
+		"desc": "【弥默】每场战斗第一次获得模因片时，额外获得 1 枚。",
+		"rarity": "uncommon",
+		"major_id": "mimo",
+		"world_id": "version_loop",
+	},
 }
 
 

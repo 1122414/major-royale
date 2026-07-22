@@ -10,7 +10,7 @@
   "availability": "available",
   "selection_scene_path": "res://src/ui/screens/major_select.tscn",
   "exploration_scene_path": "res://src/ui/screens/version_loop_explore.tscn",
-  "character_ids": ["qixu", "feilan", "xunji"],
+  "character_ids": ["qixu", "feilan", "xunji", "mimo"],
   "shared_card_ids": [
     "vl_daily_sweep",
     "vl_clear_cache",

@@ -8,6 +8,7 @@ const NOTICE_FIXED := "known_issue_fix"
 const QIXU_ID := "qixu"
 const FEILAN_ID := "feilan"
 const XUNJI_ID := "xunji"
+const MIMO_ID := "mimo"
 const PITY_KEY := "pity"
 const LAST_OUTCOME_KEY := "last_random_outcome"
 const FORCED_OUTCOME_KEY := "forced_random_outcome"
@@ -42,6 +43,9 @@ var _xunji_standard_process := false
 var _xunji_energy_save := false
 var _xunji_saved_energy := 0
 var _xunji_replayable_played_this_turn := 0
+var _mimo_index_ready := true
+var _mimo_curation := false
+var _mimo_last_card_tag := "空白"
 
 
 func get_id() -> String:
@@ -67,6 +71,11 @@ func on_battle_started(battle) -> void:
 		GameState.set_character_run_state_value("script_strength", 0)
 		GameState.set_character_run_state_value("recent_sequence", "")
 		_reset_xunji_battle_state()
+	elif battle.player.major_id == MIMO_ID:
+		GameState.set_character_run_state_value("meme_shards", 0)
+		GameState.set_character_run_state_value("meme_tag", "空白")
+		GameState.set_character_run_state_value("recycled_count", 0)
+		_reset_mimo_battle_state()
 	_recent_boss_signatures.clear()
 
 
@@ -110,6 +119,7 @@ func on_card_played(_battle, card: Resource, _shield_before_card: int) -> void:
 		_lightweight_discount_available = false
 	_track_voice_aggregate(_battle, card)
 	_track_xunji_card(_battle, card)
+	_track_mimo_card(_battle, card)
 	if _battle.player.major_id != FEILAN_ID:
 		return
 	match str(card.id):
@@ -135,6 +145,8 @@ func process_card_effect(battle, card: Resource, effect: Resource, caster, _targ
 		return _process_feilan_effect(battle, card, effect, caster)
 	if caster.major_id == XUNJI_ID:
 		return _process_xunji_effect(battle, card, effect, caster)
+	if caster.major_id == MIMO_ID:
+		return _process_mimo_effect(battle, card, effect, caster)
 	if caster.major_id != QIXU_ID:
 		return false
 	match str(effect.type):
@@ -223,6 +235,21 @@ func use_active_skill(battle) -> String:
 		_replay_xunji_script(battle, 60)
 		battle.notify_world_rule_feedback("执行脚本：以 60% 强度复演已录制效果")
 		return "执行脚本"
+	if battle.player.major_id == MIMO_ID and _get_meme_shards() >= 3:
+		_spend_meme_shards(3)
+		match _get_meme_tag():
+			"攻击":
+				_deal_mimo_damage(battle, null, 16)
+				battle.notify_world_rule_feedback("协议拼接：攻击标签造成 16 点伤害")
+			"防御":
+				battle.player.gain_shield(battle.modify_shield_amount(battle.player, battle.player, 11))
+				battle.notify_world_rule_feedback("协议拼接：防御标签获得 11 点护盾")
+			_:
+				battle.player.draw_cards(2, battle.MAX_HAND_SIZE)
+				battle.energy += 1
+				battle.notify_world_rule_feedback("协议拼接：流程标签抽 2 张牌并获得 1 点能量")
+		battle.notify_character_resource_updated()
+		return "协议拼接"
 	return ""
 
 
@@ -321,6 +348,17 @@ func on_player_damaged(battle) -> void:
 
 
 func resolve_world_choice(battle, choice_id: String, context: Dictionary) -> bool:
+	if str(context.get("kind", "")) == "meme_protocol":
+		var protocol_value := maxi(0, int(context.get("value", 0)))
+		if choice_id == "attack":
+			_deal_mimo_damage(battle, null, protocol_value)
+			battle.notify_world_rule_feedback("协议短评已攻击化：造成 %d 点伤害" % protocol_value)
+			return true
+		if choice_id == "shield":
+			battle.player.gain_shield(battle.modify_shield_amount(battle.player, battle.player, protocol_value))
+			battle.notify_world_rule_feedback("协议短评已防御化：获得 %d 点护盾" % protocol_value)
+			return true
+		return false
 	if str(context.get("kind", "")) != "short_comment":
 		return false
 	var value := maxi(0, int(context.get("value", 3)))
@@ -462,6 +500,118 @@ func _process_xunji_effect(battle, card: Resource, effect: Resource, caster) -> 
 	return false
 
 
+func _process_mimo_effect(battle, card: Resource, effect: Resource, caster) -> bool:
+	match str(effect.type):
+		"collect_meme":
+			_set_meme_tag(str(effect.params.get("tag", _mimo_tag_for_card(card))), battle)
+			_add_meme_shards(battle, int(effect.value))
+			return true
+		"tag_damage":
+			var damage := int(effect.value)
+			var required_tag := str(effect.params.get("tag", ""))
+			if not required_tag.is_empty() and _get_meme_tag() == required_tag:
+				var collect := maxi(0, int(effect.params.get("collect", 0)))
+				if collect > 0:
+					_add_meme_shards(battle, collect)
+				var consume := maxi(0, int(effect.params.get("consume", 0)))
+				if consume > 0 and _get_meme_shards() >= consume:
+					_spend_meme_shards(consume)
+					damage += int(effect.params.get("bonus", 0))
+			if effect.params.has("per_shard"):
+				damage += mini(_get_meme_shards(), maxi(0, int(effect.params.get("max_shards", _get_meme_shards())))) * int(effect.params.get("per_shard", 0))
+			if effect.params.has("per_two_shards"):
+				damage += mini(int(floor(float(_get_meme_shards()) / 2.0)) * int(effect.params.get("per_two_shards", 0)), maxi(0, int(effect.params.get("max_bonus", 999))))
+			_deal_mimo_damage(battle, card, damage)
+			return true
+		"tag_shield":
+			var shield := int(effect.value)
+			var shield_tag := str(effect.params.get("tag", ""))
+			if not shield_tag.is_empty() and _get_meme_tag() == shield_tag:
+				shield += int(effect.params.get("bonus", 0))
+				var shield_consume := maxi(0, int(effect.params.get("consume", 0)))
+				if shield_consume > 0 and _get_meme_shards() >= shield_consume:
+					_spend_meme_shards(shield_consume)
+					caster.draw_cards(maxi(0, int(effect.params.get("draw", 0))), battle.MAX_HAND_SIZE)
+			caster.gain_shield(battle.modify_shield_amount(caster, caster, shield))
+			return true
+		"splice":
+			var splice_cost := maxi(0, int(effect.params.get("cost", 0)))
+			if _get_meme_shards() < splice_cost:
+				battle.notify_world_rule_feedback("模因片不足：拼接取消")
+				return true
+			_spend_meme_shards(splice_cost)
+			if str(effect.params.get("mode", "damage")) == "shield":
+				caster.gain_shield(battle.modify_shield_amount(caster, caster, int(effect.value)))
+			else:
+				_deal_mimo_damage(battle, card, int(effect.value))
+			return true
+		"cycle_meme_tag":
+			var tags := ["攻击", "防御", "流程"]
+			var index := tags.find(_get_meme_tag())
+			_set_meme_tag(str(tags[(index + 1) % tags.size()]), battle)
+			_add_meme_shards(battle, int(effect.value))
+			return true
+		"splice_by_tag":
+			var tag_cost := maxi(0, int(effect.params.get("cost", 0)))
+			if _get_meme_shards() < tag_cost:
+				battle.notify_world_rule_feedback("模因片不足：强化拼接取消")
+				return true
+			_spend_meme_shards(tag_cost)
+			match _get_meme_tag():
+				"攻击": _deal_mimo_damage(battle, card, int(effect.value))
+				"防御": caster.gain_shield(battle.modify_shield_amount(caster, caster, int(effect.value)))
+				_: caster.draw_cards(maxi(0, int(effect.params.get("draw", 0))), battle.MAX_HAND_SIZE)
+			return true
+		"set_tag_from_previous":
+			_set_meme_tag(_mimo_last_card_tag, battle)
+			_add_meme_shards(battle, int(effect.value))
+			return true
+		"tag_energy":
+			if _get_meme_tag() == str(effect.params.get("tag", "")):
+				battle.energy += maxi(0, int(effect.value))
+			return true
+		"forge_meme":
+			var forge_count := mini(_get_meme_shards(), maxi(0, int(effect.params.get("max_cost", 0))))
+			if forge_count <= 0:
+				return true
+			_spend_meme_shards(forge_count)
+			caster.gain_shield(battle.modify_shield_amount(caster, caster, int(effect.value) * forge_count))
+			_deal_mimo_damage(battle, card, int(effect.value) * forge_count)
+			return true
+		"meme_choice":
+			return battle.request_world_choice({
+				"kind": "meme_protocol",
+				"title": "协议短评 · 选择拼接方向",
+				"description": "把收集到的流程转译为攻击或防御。",
+				"value": int(effect.value),
+				"choices": [
+					{"id": "attack", "label": "攻击转译 · 造成 %d 伤害" % int(effect.value)},
+					{"id": "shield", "label": "防御转译 · 获得 %d 护盾" % int(effect.value)},
+				],
+			})
+		"meme_multi_damage":
+			for _i in range(maxi(1, int(effect.params.get("hits", 1)))):
+				_deal_mimo_damage(battle, card, int(effect.value))
+				_add_meme_shards(battle, int(effect.params.get("shards", 0)))
+			return true
+		"fill_meme_shards":
+			_add_meme_shards(battle, maxi(0, int(effect.value) - _get_meme_shards()))
+			return true
+		"empty_shard_damage":
+			_deal_mimo_damage(battle, card, int(effect.value))
+			if _get_meme_shards() == 0:
+				_add_meme_shards(battle, int(effect.params.get("shards", 1)))
+			return true
+		"consume_all_meme_damage":
+			var consumed := _get_meme_shards()
+			_spend_meme_shards(consumed)
+			_deal_mimo_damage(battle, card, int(effect.value) + consumed * int(effect.params.get("per_shard", 0)))
+			return true
+		"enable_meme_bonus":
+			return true
+	return false
+
+
 func _track_xunji_card(battle, card: Resource) -> void:
 	if battle.player.major_id != XUNJI_ID:
 		return
@@ -503,6 +653,14 @@ func _track_xunji_card(battle, card: Resource) -> void:
 		"xunji_perfect_axis": _xunji_perfect_axis = true
 		"xunji_auto_line", "xunji_perpetual_factory": _xunji_energy_save = true
 		"xunji_standard_process": _xunji_standard_process = true
+
+
+func _track_mimo_card(battle, card: Resource) -> void:
+	if battle.player.major_id != MIMO_ID:
+		return
+	_mimo_last_card_tag = _mimo_tag_for_card(card)
+	if str(card.id) == "mimo_curation":
+		_mimo_curation = true
 
 
 func _extract_xunji_replay_payload(card: Resource) -> Dictionary:
@@ -623,6 +781,66 @@ func _reset_xunji_battle_state() -> void:
 	_xunji_energy_save = false
 	_xunji_saved_energy = 0
 	_xunji_replayable_played_this_turn = 0
+
+
+func _reset_mimo_battle_state() -> void:
+	_mimo_index_ready = true
+	_mimo_curation = false
+	_mimo_last_card_tag = "空白"
+
+
+func _add_meme_shards(battle, amount: int) -> int:
+	var granted := maxi(0, amount)
+	if granted <= 0:
+		battle.notify_character_resource_updated()
+		return _get_meme_shards()
+	if _mimo_curation:
+		granted += 1
+	if _mimo_index_ready and GameState.has_relic("discarded_index"):
+		_mimo_index_ready = false
+		granted += 1
+		battle.notify_world_rule_feedback("废弃索引：首次回收额外获得 1 枚模因片")
+	var shards := GameState.add_character_run_state_int("meme_shards", granted)
+	GameState.add_character_run_state_int("recycled_count", granted)
+	battle.notify_character_resource_updated()
+	return shards
+
+
+func _spend_meme_shards(amount: int) -> int:
+	var spent := mini(_get_meme_shards(), maxi(0, amount))
+	if spent > 0:
+		GameState.add_character_run_state_int("meme_shards", -spent)
+	return spent
+
+
+func _set_meme_tag(tag: String, battle) -> void:
+	var normalized := tag if tag in ["攻击", "防御", "流程"] else "流程"
+	GameState.set_character_run_state_value("meme_tag", normalized)
+	battle.notify_character_resource_updated()
+
+
+func _get_meme_shards() -> int:
+	return int(GameState.get_character_run_state_value("meme_shards", 0))
+
+
+func _get_meme_tag() -> String:
+	return str(GameState.get_character_run_state_value("meme_tag", "空白"))
+
+
+func _mimo_tag_for_card(card: Resource) -> String:
+	if card == null:
+		return "流程"
+	match str(card.type):
+		"attack", "finisher": return "攻击"
+		"defense", "heal": return "防御"
+	return "流程"
+
+
+func _deal_mimo_damage(battle, card: Resource, amount: int) -> int:
+	var damage := maxi(0, amount + int(GameState.get_effective_stat("创造") / 3))
+	if card != null:
+		damage = battle.modify_card_damage(card, battle.player, battle.enemy, damage)
+	return battle.deal_direct_damage_to_enemy(damage)
 
 
 func _reset_feilan_battle_flags() -> void:

@@ -11,12 +11,14 @@ const StatLex := preload("res://src/logic/stat_lexicon.gd")
 func _ready() -> void:
 	var victory: bool = GameState.player_stats.get("last_battle_victory", false)
 	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
-	var is_clear: bool = victory and enemy_id == "employment_pressure"
+	var is_campus_clear := enemy_id == "employment_pressure" and GameState.current_world_id == "campus"
+	var is_version_loop_clear := enemy_id == "vl_zero_maintenance" and GameState.current_world_id == "version_loop"
+	var is_clear: bool = victory and (is_campus_clear or is_version_loop_clear)
 	var settlement := MetaProgression.settle_current_run(is_clear)
 	var world_clearance := MetaProgression.record_world_clear() if is_clear else {}
 
 	if is_clear:
-		title_label.text = "通关总结 · 唯一上岸者"
+		title_label.text = "通关总结 · %s" % ("唯一上岸者" if is_campus_clear else "版本回环已稳定")
 		Achievements.try_after_clear()
 		AudioManager.play_bgm_for_phase("victory")
 	elif victory:
@@ -71,7 +73,11 @@ func _build_summary(is_clear: bool, settlement: Dictionary = {}, world_clearance
 		lines.append("%s %d　| %s" % [s, GameState.get_effective_stat(s), StatLex.stat_text(s)])
 	if is_clear:
 		lines.append("")
-		lines.append("你通过了终极答辩。成就已结算，可在主页「成就」查看。")
+		if GameState.current_world_id == "version_loop":
+			var ending_info := MetaProgression.get_world_ending_info("version_loop")
+			lines.append("零号维护已停止。终局协议：%s。" % str(ending_info.get("name", "未选择")))
+		else:
+			lines.append("你通过了终极答辩。成就已结算，可在主页「成就」查看。")
 		lines.append(_format_world_clearance(world_clearance))
 		if GameState.run_difficulty >= GameState.DIFFICULTY_CATALOG.size() - 1:
 			lines.append("最高挑战「唯一席位」已完成。")
@@ -92,7 +98,15 @@ func _format_world_clearance(world_clearance: Dictionary) -> String:
 		if not unlocked_world_id.is_empty():
 			var world_info := MetaProgression.get_world_progress_info(unlocked_world_id)
 			text += " 中枢侦测到「%s」入口，正在稳定。" % str(world_info.get("name", unlocked_world_id))
+		var new_hidden_character_id := str(world_clearance.get("new_character_id", ""))
+		if not new_hidden_character_id.is_empty():
+			var character_info := MetaProgression.CHARACTER_PROGRESS_CATALOG.get(new_hidden_character_id, {}) as Dictionary
+			text += " 隐藏档案「%s」已解锁。" % str(character_info.get("name", new_hidden_character_id))
 		return text
+	var new_character_id := str(world_clearance.get("new_character_id", ""))
+	if not new_character_id.is_empty():
+		var character_info := MetaProgression.CHARACTER_PROGRESS_CATALOG.get(new_character_id, {}) as Dictionary
+		return "世界通关档案已同步；隐藏档案「%s」已解锁。" % str(character_info.get("name", new_character_id))
 	return "世界通关档案已同步；碎片与入口状态保持不变。"
 
 
