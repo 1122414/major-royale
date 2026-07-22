@@ -85,6 +85,7 @@ var _elite_damage_bonus := 0
 var _difficulty_damage_bonus := 0
 var _rng: RandomNumberGenerator
 var _world_rules: RefCounted
+var _battle_finished_notified := false
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -97,6 +98,7 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	var scaled_enemy_hp := maxi(1, int(round(
 		float(p_enemy_resource.hp) * float(difficulty.get("enemy_hp_multiplier", 1.0))
 	)))
+	scaled_enemy_hp = maxi(1, _world_rules.modify_enemy_max_hp(self, p_enemy_resource, scaled_enemy_hp))
 	enemy = Character.new(p_enemy_resource.id, p_enemy_resource.name, scaled_enemy_hp)
 	_difficulty_damage_bonus = maxi(0, int(difficulty.get("enemy_damage_bonus", 0)))
 	var starting_pressure := maxi(0, int(difficulty.get("starting_pressure", 0)))
@@ -680,6 +682,10 @@ func modify_shield_amount(caster: Character, target: Character, amount: int) -> 
 	return _world_rules.modify_shield_amount(self, caster, target, amount)
 
 
+func modify_card_damage(card: Resource, caster: Character, target: Character, amount: int) -> int:
+	return _world_rules.modify_card_damage(self, card, caster, target, amount)
+
+
 func modify_heal_amount(caster: Character, target: Character, amount: int) -> int:
 	return _world_rules.modify_heal_amount(self, caster, target, amount)
 
@@ -722,10 +728,19 @@ func reveal_intent() -> void:
 func _check_end_conditions() -> void:
 	if not enemy.is_alive():
 		state = BattleState.PLAYER_WON
+		_notify_battle_finished(true)
 		battle_ended.emit(true)
 	elif not player.is_alive():
 		state = BattleState.PLAYER_LOST
+		_notify_battle_finished(false)
 		battle_ended.emit(false)
+
+
+func _notify_battle_finished(victory: bool) -> void:
+	if _battle_finished_notified:
+		return
+	_battle_finished_notified = true
+	_world_rules.on_battle_finished(self, victory)
 
 
 func get_reward_card_ids() -> Array[String]:

@@ -11,11 +11,13 @@ extends Resource
 @export var rule_set_id: String = ""
 @export var fragment_id: String = ""
 @export var fragment_name: String = ""
+@export var availability: String = "available"
 @export var selection_scene_path: String = ""
 @export var exploration_scene_path: String = ""
 @export var character_ids: Array[String] = []
 @export var shared_card_ids: Array[String] = []
 @export var run_state_schema: Dictionary = {}
+@export var rule_catalog: Dictionary = {}
 
 
 func load_from_dict(data: Dictionary) -> void:
@@ -27,16 +29,36 @@ func load_from_dict(data: Dictionary) -> void:
 	rule_set_id = str(data.get("rule_set_id", id)).strip_edges()
 	fragment_id = str(data.get("fragment_id", "")).strip_edges()
 	fragment_name = str(data.get("fragment_name", "")).strip_edges()
+	availability = str(data.get("availability", "available")).strip_edges()
+	if availability not in ["available", "foundation"]:
+		availability = "foundation"
 	selection_scene_path = str(data.get("selection_scene_path", "")).strip_edges()
 	exploration_scene_path = str(data.get("exploration_scene_path", "")).strip_edges()
 	character_ids = _to_unique_string_array(data.get("character_ids", []))
 	shared_card_ids = _to_unique_string_array(data.get("shared_card_ids", []))
 	var schema = data.get("run_state_schema", {})
 	run_state_schema = schema.duplicate(true) if schema is Dictionary else {}
+	var catalog = data.get("rule_catalog", {})
+	rule_catalog = catalog.duplicate(true) if catalog is Dictionary else {}
 
 
 func has_character(character_id: String) -> bool:
 	return character_id in character_ids
+
+
+func is_playable() -> bool:
+	return availability == "available" and not character_ids.is_empty() and not selection_scene_path.is_empty() and not exploration_scene_path.is_empty()
+
+
+func get_rule_catalog_entries(catalog_key: String) -> Array[Dictionary]:
+	var source = rule_catalog.get(catalog_key, [])
+	var output: Array[Dictionary] = []
+	if source is not Array:
+		return output
+	for entry in source:
+		if entry is Dictionary:
+			output.append((entry as Dictionary).duplicate(true))
+	return output
 
 
 func create_initial_run_state() -> Dictionary:
@@ -65,7 +87,14 @@ func sanitize_run_state(value: Variant) -> Dictionary:
 			"bool":
 				output[key] = bool(raw_value)
 			"string":
-				output[key] = str(raw_value).strip_edges().left(int(rule.get("max_length", 96)))
+				var normalized := str(raw_value).strip_edges().left(int(rule.get("max_length", 96)))
+				var allowed_values = rule.get("allowed_values", [])
+				if allowed_values is Array and not allowed_values.is_empty():
+					var allowed := _to_unique_string_array(allowed_values)
+					var default_normalized := str(default_value).strip_edges().left(int(rule.get("max_length", 96)))
+					output[key] = normalized if normalized in allowed else default_normalized
+				else:
+					output[key] = normalized
 	return output
 
 

@@ -41,7 +41,7 @@ def _all_records(folder: str, collection_key: str):
 
 
 def test_content_baseline():
-    assert len(_json_files("worlds")) == 1
+    assert len(_json_files("worlds")) == 2
     assert len(_json_files("majors")) == 5
     assert len(_load_all_cards()) == 108
     assert len(_load_all_enemies()) == 10
@@ -61,9 +61,14 @@ def test_world_packages_reference_existing_content():
         assert world_id and world_id not in seen, f"无效或重复的世界 ID: {world_id}"
         seen.add(world_id)
         assert world.get("name"), f"{file} 缺少世界名称"
-        assert world.get("selection_scene_path", "").startswith("res://")
-        assert world.get("exploration_scene_path", "").startswith("res://")
-        assert world.get("character_ids"), f"{world_id} 没有可用角色"
+        availability = world.get("availability", "available")
+        assert availability in {"available", "foundation"}, f"{world_id} 具有未知可用状态"
+        if availability == "available":
+            assert world.get("selection_scene_path", "").startswith("res://")
+            assert world.get("exploration_scene_path", "").startswith("res://")
+            assert world.get("character_ids"), f"{world_id} 没有可用角色"
+        else:
+            assert not world.get("character_ids"), f"{world_id} 规则底座阶段不得暴露未完成角色"
         assert set(world["character_ids"]) <= character_ids, f"{world_id} 引用了未知角色"
         assert set(world.get("shared_card_ids", [])) <= cards.keys(), f"{world_id} 引用了未知共享卡牌"
         assert isinstance(world.get("run_state_schema", {}), dict)

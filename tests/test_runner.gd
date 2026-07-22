@@ -6,6 +6,7 @@ const CardResource := preload("res://src/resources/card_resource.gd")
 const BattleHandLayout := preload("res://src/ui/widgets/battle_hand_layout.gd")
 const RelicCatalog := preload("res://src/logic/relic.gd")
 const CampusRouteScript := preload("res://src/logic/campus_route.gd")
+const VersionLoopWorldState := preload("res://src/logic/rules/version_loop_world_state.gd")
 
 func _ready() -> void:
 	Achievements.save_enabled = false
@@ -94,7 +95,7 @@ func _ready() -> void:
 
 
 func _test_world_package_contract() -> void:
-	assert(Config.worlds.size() == 1 and Config.worlds.has("campus"), "校园应作为首个世界包加载")
+	assert(Config.worlds.size() == 2 and Config.worlds.has("campus"), "校园和版本回环世界包应被加载")
 	var campus: Resource = Config.get_world("campus")
 	assert(campus != null and campus.name == "校园世界", "校园世界定义缺失")
 	assert(campus.character_ids == ["computer", "law", "medicine", "finance", "arts"], "校园角色顺序错误")
@@ -102,6 +103,18 @@ func _test_world_package_contract() -> void:
 	assert(campus.fragment_id == "selection_permission", "校园规则碎片定义错误")
 	assert(campus.create_initial_run_state().is_empty(), "校园首版不应注入额外世界状态")
 	assert(Config.get_character_world_id("computer") == "campus", "角色应能反查所属世界")
+	var version_loop: Resource = Config.get_world("version_loop")
+	assert(version_loop != null and version_loop.name == "版本回环", "版本回环世界定义缺失")
+	assert(not version_loop.is_playable(), "二游规则底座尚无角色和地图时不得暴露可启动入口")
+	var version_state: Dictionary = version_loop.sanitize_run_state({
+		"patch_notice_id": "invalid_notice",
+		"maintenance_clock": 99,
+		"compensation_tickets": -1,
+	})
+	assert(version_state.get("patch_notice_id") == "lightweight_update", "版本公告应拒绝未知状态")
+	assert(version_state.get("maintenance_clock") == 4, "维护时钟应按世界状态上限截断")
+	assert(version_state.get("compensation_tickets") == 0, "补偿券不得为负数")
+	assert(version_loop.get_rule_catalog_entries("patch_notices").size() == 3, "版本回环首轮应配置三条公告")
 
 
 func _test_meta_currency_profile() -> void:
@@ -539,6 +552,53 @@ func _test_world_rule_set_hooks() -> void:
 	law_player.hp = 1
 	law_battle._apply_damage_to_player(99)
 	assert(law_player.hp == 1 and law_player.shield == 10, "法学濒死保护应由校园规则集执行")
+	_test_version_loop_rule_foundation()
+
+
+func _test_version_loop_rule_foundation() -> void:
+	GameState.start_run("computer", 8080)
+	var version_loop: Resource = Config.get_world("version_loop")
+	GameState.current_world_id = "version_loop"
+	GameState.world_run_state = version_loop.create_initial_run_state()
+	var player := GameState.create_battle_player()
+	var lightweight_battle := Battle.new(player, Config.enemies["gpa_anxiety"])
+	assert(lightweight_battle.get_rule_set_id() == "version_loop", "版本回环应加载独立战斗规则集")
+	assert(player.hand.size() == Battle.BASE_DRAW - 1, "轻量化更新应减少起手抽牌")
+	player.hand = [Config.cards["strike"], Config.cards["defend"]]
+	lightweight_battle.energy = 0
+	assert(lightweight_battle.can_play_card(0), "轻量化更新应让每回合第一张 1 费牌免费")
+	assert(lightweight_battle.play_card(0), "免费首张牌应能正常结算")
+	assert(not lightweight_battle.can_play_card(0), "同回合第二张 1 费牌不应继续免费")
+
+	assert(VersionLoopWorldState.select_patch_notice("numeric_inflation"), "版本公告应通过世界状态接口选择")
+	var inflated_player := GameState.create_battle_player()
+	var inflated_battle := Battle.new(inflated_player, Config.enemies["gpa_anxiety"])
+	assert(inflated_battle.enemy.max_hp == 34, "数值膨胀应提高普通敌人最大生命")
+	inflated_player.hand = [Config.cards["bsod_warning"]]
+	inflated_battle.energy = 2
+	var hp_before := inflated_battle.enemy.hp
+	assert(inflated_battle.play_card(0), "高费卡应能在数值膨胀公告下正常结算")
+	assert(hp_before - inflated_battle.enemy.hp == 14, "数值膨胀应为高费伤害牌提供 4 点额外伤害")
+
+	GameState.set_world_run_state_value("patch_notice_id", "known_issue_fix")
+	var fixed_player := GameState.create_battle_player()
+	var fixed_battle := Battle.new(fixed_player, Config.enemies["gpa_anxiety"])
+	assert(fixed_player.has_status("resistance"), "修复已知问题应抵消第一项自身负面")
+	GameState.set_world_run_state_value("maintenance_clock", 3)
+	GameState.set_world_run_state_value("maintenance_due", false)
+	fixed_battle.enemy.hp = 1
+	fixed_player.hand = [Config.cards["strike"]]
+	fixed_battle.energy = 1
+	assert(fixed_battle.play_card(0), "击败敌人应推进版本回环维护时钟")
+	assert(GameState.get_world_run_state_value("maintenance_clock") == 4, "每场胜利应推进维护时钟")
+	assert(bool(GameState.get_world_run_state_value("maintenance_due")), "维护时钟满格后应标记强制维护")
+	var maintenance_reward: Dictionary = VersionLoopWorldState.resolve_forced_maintenance()
+	assert(maintenance_reward.get("compensation_tickets") == 1, "强制维护应发放一张补偿券")
+	assert(GameState.get_world_run_state_value("maintenance_clock") == 0, "强制维护应复位维护时钟")
+	assert(not VersionLoopWorldState.is_maintenance_due(), "强制维护结算后不应继续占用路线")
+	assert(VersionLoopWorldState.spend_compensation_ticket(), "补偿券应能被后续奖励和商店逻辑消费")
+	assert(not VersionLoopWorldState.spend_compensation_ticket(), "补偿券不足时不得透支消费")
+	GameState.start_run("computer")
 
 
 func _test_scaled_finishers() -> void:

@@ -1,0 +1,83 @@
+{
+  "id": "version_loop",
+  "name": "版本回环",
+  "chapter_title": "专业大逃杀·版本回环",
+  "description": "版本公告、维护时钟与补偿机制成为现实规则的循环世界。",
+  "theme_id": "version_loop",
+  "rule_set_id": "version_loop",
+  "fragment_id": "hot_update_permission",
+  "fragment_name": "热更新权限",
+  "availability": "foundation",
+  "selection_scene_path": "",
+  "exploration_scene_path": "",
+  "character_ids": [],
+  "shared_card_ids": [],
+  "run_state_schema": {
+    "act_index": {
+      "type": "int",
+      "default": 1,
+      "min": 1,
+      "max": 3
+    },
+    "patch_notice_id": {
+      "type": "string",
+      "default": "lightweight_update",
+      "max_length": 48,
+      "allowed_values": [
+        "lightweight_update",
+        "numeric_inflation",
+        "known_issue_fix"
+      ]
+    },
+    "maintenance_clock": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 4
+    },
+    "maintenance_due": {
+      "type": "bool",
+      "default": false
+    },
+    "compensation_tickets": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 99
+    },
+    "activity_stamina": {
+      "type": "int",
+      "default": 3,
+      "min": 0,
+      "max": 9
+    },
+    "activity_tokens": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 999
+    }
+  },
+  "rule_catalog": {
+    "patch_notices": [
+      {
+        "id": "lightweight_update",
+        "name": "轻量化更新",
+        "benefit": "每回合第一张 1 费牌费用变为 0。",
+        "drawback": "每回合少抽 1 张起手牌。"
+      },
+      {
+        "id": "numeric_inflation",
+        "name": "数值膨胀",
+        "benefit": "原始费用至少为 2 的牌造成伤害时额外 +4。",
+        "drawback": "普通敌人最大生命 +20%。"
+      },
+      {
+        "id": "known_issue_fix",
+        "name": "修复已知问题",
+        "benefit": "每场战斗第一个自身负面无效。",
+        "drawback": "精英首回合意图隐藏（第五阶段接入精英地图后启用）。"
+      }
+    ]
+  }
+}

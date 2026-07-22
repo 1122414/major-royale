@@ -14,6 +14,14 @@ func on_battle_started(_battle) -> void:
 	pass
 
 
+func on_battle_finished(_battle, _victory: bool) -> void:
+	pass
+
+
+func modify_enemy_max_hp(_battle, _enemy_resource: Resource, base_max_hp: int) -> int:
+	return base_max_hp
+
+
 func get_card_cost(_battle, _card: Resource, base_cost: int) -> int:
 	return base_cost
 
@@ -36,6 +44,10 @@ func modify_player_draw(_battle, draw_amount: int, _has_draw_override: bool) -> 
 
 func modify_pressure_damage_multiplier(_battle, multiplier: float) -> float:
 	return multiplier
+
+
+func modify_card_damage(_battle, _card: Resource, _caster, _target, amount: int) -> int:
+	return amount
 
 
 func modify_shield_amount(_battle, _caster, _target, amount: int) -> int:

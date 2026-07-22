@@ -71,6 +71,8 @@ func _load_world_folder(folder_path: String) -> Dictionary:
 
 func _validate_world_references() -> void:
 	for world in worlds.values():
+		if world.availability == "available" and not world.is_playable():
+			push_error("可用世界缺少角色或场景入口: %s" % world.id)
 		for character_id in world.character_ids:
 			if not characters.has(character_id):
 				push_error("世界 %s 引用了未知角色: %s" % [world.id, character_id])

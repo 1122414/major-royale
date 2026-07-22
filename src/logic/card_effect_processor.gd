@@ -12,13 +12,14 @@ func _init(battle: Battle) -> void:
 
 func process_card(card: Resource, caster: Character, target: Character) -> void:
 	for effect in card.effects:
-		_process_effect(effect, caster, target, str(card.type))
+		_process_effect(effect, caster, target, card)
 
 
-func _process_effect(effect: Resource, caster: Character, target: Character, card_type: String) -> void:
+func _process_effect(effect: Resource, caster: Character, target: Character, card: Resource) -> void:
 	var type: String = effect.type
 	var value: int = effect.value
 	var effect_target: String = effect.target
+	var card_type := str(card.type)
 
 	var actual_target := _resolve_target(effect_target, caster, target)
 	if type == "buff" and effect_target.is_empty():
@@ -36,6 +37,7 @@ func _process_effect(effect: Resource, caster: Character, target: Character, car
 				var er = Config.enemies.get(eid)
 				if er is EnemyResource and (er as EnemyResource).spirit_weak:
 					damage = int(round(float(damage) * 1.3))
+			damage = _modify_card_damage(card, caster, actual_target, damage)
 			var actual_damage := actual_target.take_damage(damage)
 			if caster.is_player:
 				GameState.run_damage_dealt += actual_damage
@@ -83,14 +85,16 @@ func _process_effect(effect: Resource, caster: Character, target: Character, car
 				real_value = int(_get_effect_param(effect, "real_value", value * 2))
 			if caster.is_player:
 				real_value += int(GameState.get_effective_stat("学识") / 3)
+			real_value = _modify_card_damage(card, caster, actual_target, real_value)
 			var actual_damage := actual_target.take_damage(real_value)
 			if caster.is_player:
 				GameState.run_damage_dealt += actual_damage
 		"scaled_damage":
-			_process_scaled_damage(effect, caster, actual_target)
+			_process_scaled_damage(effect, card, caster, actual_target)
 		"damage_per_debuff":
 			var debuff_count := _count_debuffs(actual_target)
 			var total := debuff_count * value
+			total = _modify_card_damage(card, caster, actual_target, total)
 			var actual_damage := actual_target.take_damage(total)
 			if caster.is_player:
 				GameState.run_damage_dealt += actual_damage
@@ -100,7 +104,7 @@ func _process_effect(effect: Resource, caster: Character, target: Character, car
 				battle.delay_enemy(value)
 
 
-func _process_scaled_damage(effect: Resource, caster: Character, target: Character) -> void:
+func _process_scaled_damage(effect: Resource, card: Resource, caster: Character, target: Character) -> void:
 	if target == null:
 		return
 	var battle := _get_battle()
@@ -120,6 +124,7 @@ func _process_scaled_damage(effect: Resource, caster: Character, target: Charact
 	var damage: int = int(effect.value) + source_value * int(_get_effect_param(effect, "per", 1))
 	if caster.is_player:
 		damage += int(GameState.get_effective_stat("学识") / 3)
+	damage = _modify_card_damage(card, caster, target, damage)
 	var actual_damage: int = target.take_damage(maxi(0, damage))
 	if caster.is_player:
 		GameState.run_damage_dealt += actual_damage
@@ -137,6 +142,13 @@ func _process_scaled_damage(effect: Resource, caster: Character, target: Charact
 
 func _get_battle() -> Battle:
 	return _battle_ref.get_ref() as Battle if _battle_ref != null else null
+
+
+func _modify_card_damage(card: Resource, caster: Character, target: Character, amount: int) -> int:
+	var battle := _get_battle()
+	if battle == null:
+		return amount
+	return battle.modify_card_damage(card, caster, target, amount)
 
 
 func _resolve_target(effect_target: String, caster: Character, default_target: Character) -> Character:

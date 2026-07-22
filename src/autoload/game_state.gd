@@ -145,6 +145,31 @@ var _settings_previous_pause_state := false
 var run_save_enabled := true
 
 
+func get_current_world() -> Resource:
+	return Config.get_world(current_world_id)
+
+
+func get_world_run_state_value(state_key: String, default_value: Variant = null) -> Variant:
+	return world_run_state.get(state_key, default_value)
+
+
+func set_world_run_state_value(state_key: String, value: Variant) -> bool:
+	var world := get_current_world()
+	if world == null or not world.run_state_schema.has(state_key):
+		return false
+	var next_state := world_run_state.duplicate(true)
+	next_state[state_key] = value
+	world_run_state = world.sanitize_run_state(next_state)
+	return true
+
+
+func add_world_run_state_int(state_key: String, amount: int) -> int:
+	var current_value := int(get_world_run_state_value(state_key, 0))
+	if not set_world_run_state_value(state_key, current_value + amount):
+		return current_value
+	return int(get_world_run_state_value(state_key, current_value))
+
+
 func has_run_save() -> bool:
 	if not _is_run_save_allowed():
 		return false
@@ -498,6 +523,9 @@ func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0, wo
 	var world: Resource = Config.get_world(world_id)
 	if world == null:
 		push_error("无法开始游戏，未知世界: %s" % world_id)
+		return
+	if not world.is_playable():
+		push_error("无法开始游戏，世界尚未稳定: %s" % world_id)
 		return
 	if major_id.begins_with("custom_") and world_id != DEFAULT_WORLD_ID:
 		push_error("自定义专业当前仅属于校园世界")
