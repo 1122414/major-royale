@@ -3,11 +3,27 @@ extends Node
 
 signal profile_changed
 
-const PROFILE_SAVE_VERSION := 1
+const PROFILE_SAVE_VERSION := 2
+const MIN_SUPPORTED_PROFILE_SAVE_VERSION := 1
 const PROFILE_SAVE_PATH := "user://meta_progression.json"
 const PROFILE_SAVE_BACKUP_PATH := "user://meta_progression.backup.json"
 const PROFILE_SAVE_TEMP_PATH := "user://meta_progression.tmp.json"
 const MAX_SETTLED_RUNS := 40
+const MAX_RECORDED_WORLD_CLEARS := 40
+const INITIAL_WORLD_ID := "campus"
+const WORLD_PROGRESS_CATALOG := {
+	"campus": {
+		"name": "校园世界",
+		"fragment_id": "selection_permission",
+		"fragment_name": "筛选许可",
+		"unlocks_world_id": "version_loop",
+	},
+	"version_loop": {
+		"name": "版本回环",
+		"fragment_id": "hot_update_permission",
+		"fragment_name": "热更新权限",
+	},
+}
 const TALENT_SLOT_LIMIT := 2
 const TALENTS := {
 	"healthy_routine": {
@@ -154,6 +170,10 @@ const UPGRADES := {
 
 var gold: int = 0
 var settled_runs: Dictionary = {}  ## run_token -> {earned, settled_at}
+var unlocked_world_ids: Array[String] = [INITIAL_WORLD_ID]
+var collected_fragment_ids: Array[String] = []
+var world_clear_counts: Dictionary = {}  ## world_id -> count
+var recorded_world_clears: Dictionary = {}  ## run_token -> world_id
 var unlocked_talent_ids: Array[String] = []
 var equipped_talent_ids: Array[String] = []
 var owned_equipment_ids: Array[String] = []
@@ -168,6 +188,70 @@ func _ready() -> void:
 
 func get_gold() -> int:
 	return gold
+
+
+func is_world_unlocked(world_id: String) -> bool:
+	return world_id in unlocked_world_ids
+
+
+func get_unlocked_world_ids() -> Array[String]:
+	return unlocked_world_ids.duplicate()
+
+
+func get_world_progress_info(world_id: String) -> Dictionary:
+	return (WORLD_PROGRESS_CATALOG.get(world_id, {}) as Dictionary).duplicate(true)
+
+
+func get_world_clear_count(world_id: String) -> int:
+	return maxi(0, int(world_clear_counts.get(world_id, 0)))
+
+
+func has_fragment(fragment_id: String) -> bool:
+	return fragment_id in collected_fragment_ids
+
+
+func get_collected_fragment_ids() -> Array[String]:
+	return collected_fragment_ids.duplicate()
+
+
+func record_world_clear(world_id: String = GameState.current_world_id) -> Dictionary:
+	var world_info: Dictionary = WORLD_PROGRESS_CATALOG.get(world_id, {})
+	if world_info.is_empty():
+		return {}
+	var run_token := GameState.run_instance_id
+	if run_token.is_empty():
+		run_token = _make_run_token(GameState.run_started_at, GameState.run_seed, GameState.player_character_id)
+	if recorded_world_clears.has(run_token):
+		return {
+			"world_id": world_id,
+			"already_recorded": true,
+			"new_fragment": false,
+			"unlocked_world_id": "",
+		}
+
+	var fragment_id := str(world_info.get("fragment_id", ""))
+	var new_fragment := not fragment_id.is_empty() and fragment_id not in collected_fragment_ids
+	if new_fragment:
+		collected_fragment_ids.append(fragment_id)
+	var unlock_world_id := str(world_info.get("unlocks_world_id", ""))
+	var unlocked_world_id := ""
+	if not unlock_world_id.is_empty() and unlock_world_id not in unlocked_world_ids:
+		unlocked_world_ids.append(unlock_world_id)
+		unlocked_world_id = unlock_world_id
+	world_clear_counts[world_id] = get_world_clear_count(world_id) + 1
+	recorded_world_clears[run_token] = world_id
+	_trim_recorded_world_clears()
+	save_profile()
+	profile_changed.emit()
+	return {
+		"world_id": world_id,
+		"world_name": str(world_info.get("name", world_id)),
+		"fragment_id": fragment_id,
+		"fragment_name": str(world_info.get("fragment_name", fragment_id)),
+		"new_fragment": new_fragment,
+		"unlocked_world_id": unlocked_world_id,
+		"already_recorded": false,
+	}
 
 
 func grant_gold(amount: int) -> int:
@@ -431,6 +515,10 @@ func create_profile_snapshot() -> Dictionary:
 		"version": PROFILE_SAVE_VERSION,
 		"gold": gold,
 		"settled_runs": settled_runs.duplicate(true),
+		"unlocked_world_ids": unlocked_world_ids.duplicate(),
+		"collected_fragment_ids": collected_fragment_ids.duplicate(),
+		"world_clear_counts": world_clear_counts.duplicate(),
+		"recorded_world_clears": recorded_world_clears.duplicate(),
 		"unlocked_talent_ids": unlocked_talent_ids.duplicate(),
 		"equipped_talent_ids": equipped_talent_ids.duplicate(),
 		"owned_equipment_ids": owned_equipment_ids.duplicate(),
@@ -440,7 +528,8 @@ func create_profile_snapshot() -> Dictionary:
 
 
 func restore_profile_snapshot(data: Dictionary) -> bool:
-	if int(data.get("version", -1)) != PROFILE_SAVE_VERSION:
+	var version := int(data.get("version", -1))
+	if version < MIN_SUPPORTED_PROFILE_SAVE_VERSION or version > PROFILE_SAVE_VERSION:
 		return false
 	var saved_runs = data.get("settled_runs", {})
 	if saved_runs is not Dictionary:
@@ -457,6 +546,12 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 			"earned": clampi(int(entry.get("earned", 0)), 0, 999999),
 			"settled_at": maxi(0, int(entry.get("settled_at", 0))),
 		}
+	unlocked_world_ids = _sanitize_world_id_array(data.get("unlocked_world_ids", [INITIAL_WORLD_ID]))
+	if INITIAL_WORLD_ID not in unlocked_world_ids:
+		unlocked_world_ids.push_front(INITIAL_WORLD_ID)
+	collected_fragment_ids = _sanitize_fragment_id_array(data.get("collected_fragment_ids", []))
+	world_clear_counts = _sanitize_world_clear_counts(data.get("world_clear_counts", {}))
+	recorded_world_clears = _sanitize_recorded_world_clears(data.get("recorded_world_clears", {}))
 	unlocked_talent_ids = _sanitize_id_array(data.get("unlocked_talent_ids", []), TALENTS)
 	equipped_talent_ids.clear()
 	for talent_id in _sanitize_id_array(data.get("equipped_talent_ids", []), TALENTS):
@@ -480,6 +575,7 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 				int(UPGRADES[upgrade_id].get("max_level", 0)),
 			)
 	_trim_settled_runs()
+	_trim_recorded_world_clears()
 	profile_changed.emit()
 	return true
 
@@ -487,6 +583,10 @@ func restore_profile_snapshot(data: Dictionary) -> bool:
 func reset_profile() -> void:
 	gold = 0
 	settled_runs.clear()
+	unlocked_world_ids = [INITIAL_WORLD_ID]
+	collected_fragment_ids.clear()
+	world_clear_counts.clear()
+	recorded_world_clears.clear()
 	unlocked_talent_ids.clear()
 	equipped_talent_ids.clear()
 	owned_equipment_ids.clear()
@@ -524,6 +624,42 @@ func _sanitize_id_array(value: Variant, catalog: Dictionary) -> Array[String]:
 	return output
 
 
+func _sanitize_world_id_array(value: Variant) -> Array[String]:
+	return _sanitize_id_array(value, WORLD_PROGRESS_CATALOG)
+
+
+func _sanitize_fragment_id_array(value: Variant) -> Array[String]:
+	var valid_ids := {}
+	for world_info in WORLD_PROGRESS_CATALOG.values():
+		var fragment_id := str((world_info as Dictionary).get("fragment_id", ""))
+		if not fragment_id.is_empty():
+			valid_ids[fragment_id] = true
+	return _sanitize_id_array(value, valid_ids)
+
+
+func _sanitize_world_clear_counts(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for world_id in WORLD_PROGRESS_CATALOG:
+		if value.has(world_id):
+			output[world_id] = clampi(int(value[world_id]), 0, 999999)
+	return output
+
+
+func _sanitize_recorded_world_clears(value: Variant) -> Dictionary:
+	var output := {}
+	if value is not Dictionary:
+		return output
+	for raw_token in value:
+		var token := str(raw_token).strip_edges()
+		var world_id := str(value[raw_token]).strip_edges()
+		if token.is_empty() or token.length() > 160 or not WORLD_PROGRESS_CATALOG.has(world_id):
+			continue
+		output[token] = world_id
+	return output
+
+
 func _trim_settled_runs() -> void:
 	if settled_runs.size() <= MAX_SETTLED_RUNS:
 		return
@@ -533,6 +669,15 @@ func _trim_settled_runs() -> void:
 	)
 	while settled_runs.size() > MAX_SETTLED_RUNS and not ordered.is_empty():
 		settled_runs.erase(ordered.pop_front())
+
+
+func _trim_recorded_world_clears() -> void:
+	if recorded_world_clears.size() <= MAX_RECORDED_WORLD_CLEARS:
+		return
+	var ordered: Array = recorded_world_clears.keys()
+	ordered.sort()
+	while recorded_world_clears.size() > MAX_RECORDED_WORLD_CLEARS and not ordered.is_empty():
+		recorded_world_clears.erase(ordered.pop_front())
 
 
 func _write_profile_atomically(data: Dictionary) -> bool:

@@ -156,31 +156,31 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.831, 0.878, 1)
 theme_override_font_sizes/font_size = 20
-text = "入场生存档案"
+text = "中枢档案"
 
 [node name="Stats" type="Label" parent="MajorCallout/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "5 个专业　·　108 张卡牌\n教学楼 / 图书馆 / 宿舍 / 食堂 / 操场"
+text = "当前入口：校园世界\n通关记录：0　·　规则碎片：0 / 4"
 autowrap_mode = 3
 
 [node name="Survivors" type="Label" parent="MajorCallout/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.91, 0.659, 0.22, 1)
 theme_override_font_sizes/font_size = 18
-text = "存活人数　48 / 100"
+text = "未发现其他世界"
 
 [node name="Countdown" type="Label" parent="MajorCallout/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.878, 0.271, 0.271, 1)
 theme_override_font_sizes/font_size = 25
-text = "倒计时　15:00"
+text = "校园入口稳定"
 
 [node name="SelectHint" type="Label" parent="MajorCallout/Margin/VBox"]
 layout_mode = 2
 theme_type_variation = &"MutedLabel"
 theme_override_font_sizes/font_size = 12
-text = "先选择专业，再用你的卡组突破答辩。"
+text = "通过终极答辩后，中枢将记录你的第一枚世界规则碎片。"
 
 [node name="SettingsShortcut" type="Button" parent="."]
 layout_mode = 0

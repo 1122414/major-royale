@@ -13,6 +13,7 @@ func _ready() -> void:
 	var enemy_id: String = str(GameState.player_stats.get("current_enemy_id", ""))
 	var is_clear: bool = victory and enemy_id == "employment_pressure"
 	var settlement := MetaProgression.settle_current_run(is_clear)
+	var world_clearance := MetaProgression.record_world_clear() if is_clear else {}
 
 	if is_clear:
 		title_label.text = "通关总结 · 唯一上岸者"
@@ -23,12 +24,12 @@ func _ready() -> void:
 	else:
 		title_label.text = "本局回顾"
 
-	body_label.text = _build_summary(is_clear, settlement)
+	body_label.text = _build_summary(is_clear, settlement, world_clearance)
 	continue_button.pressed.connect(_on_continue)
 	continue_button.grab_focus()
 
 
-func _build_summary(is_clear: bool, settlement: Dictionary = {}) -> String:
+func _build_summary(is_clear: bool, settlement: Dictionary = {}, world_clearance: Dictionary = {}) -> String:
 	var major_name := GameState.player_major_id
 	if Config.majors.has(major_name):
 		major_name = Config.majors[major_name].name
@@ -71,6 +72,7 @@ func _build_summary(is_clear: bool, settlement: Dictionary = {}) -> String:
 	if is_clear:
 		lines.append("")
 		lines.append("你通过了终极答辩。成就已结算，可在主页「成就」查看。")
+		lines.append(_format_world_clearance(world_clearance))
 		if GameState.run_difficulty >= GameState.DIFFICULTY_CATALOG.size() - 1:
 			lines.append("最高挑战「唯一席位」已完成。")
 		else:
@@ -78,6 +80,20 @@ func _build_summary(is_clear: bool, settlement: Dictionary = {}) -> String:
 				GameState.run_difficulty + 1
 			))
 	return "\n".join(lines)
+
+
+func _format_world_clearance(world_clearance: Dictionary) -> String:
+	if world_clearance.is_empty():
+		return "中枢档案同步失败，请在主页查看世界进度。"
+	var fragment_name := str(world_clearance.get("fragment_name", ""))
+	var unlocked_world_id := str(world_clearance.get("unlocked_world_id", ""))
+	if bool(world_clearance.get("new_fragment", false)):
+		var text := "获得世界规则碎片：%s。" % fragment_name
+		if not unlocked_world_id.is_empty():
+			var world_info := MetaProgression.get_world_progress_info(unlocked_world_id)
+			text += " 中枢侦测到「%s」入口，正在稳定。" % str(world_info.get("name", unlocked_world_id))
+		return text
+	return "世界通关档案已同步；碎片与入口状态保持不变。"
 
 
 func _format_talents() -> String:

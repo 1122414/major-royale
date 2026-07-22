@@ -107,13 +107,14 @@ func _test_world_package_contract() -> void:
 func _test_meta_currency_profile() -> void:
 	MetaProgression.reset_profile()
 	var legacy_profile := {
-		"version": MetaProgression.PROFILE_SAVE_VERSION,
+		"version": 1,
 		"gold": 27,
 		"settled_runs": {},
 	}
 	assert(MetaProgression.restore_profile_snapshot(legacy_profile), "早期金币档案缺少成长字段时应安全迁移")
 	assert(MetaProgression.get_gold() == 27, "迁移早期档案时不得丢失永久金币")
 	assert(MetaProgression.get_equipped_talent_ids().is_empty(), "早期档案应为新增天赋字段补空值")
+	assert(MetaProgression.is_world_unlocked("campus"), "V1档案迁移后校园世界必须默认开放")
 	MetaProgression.reset_profile()
 	assert(MetaProgression.grant_gold(50) == 50, "永久金币应可安全增加")
 	assert(MetaProgression.spend_gold(18), "余额足够时应可消费永久金币")
@@ -139,6 +140,21 @@ func _test_meta_currency_profile() -> void:
 	var first_instance_id := GameState.run_instance_id
 	GameState.start_run("computer", 7717, 2)
 	assert(GameState.run_instance_id != first_instance_id, "快速重开同专业同种子时也必须生成独立结算标识")
+
+	GameState.start_run("computer", 7718, 0)
+	GameState.run_started_at = 10002
+	var clearance := MetaProgression.record_world_clear("campus")
+	assert(bool(clearance.get("new_fragment", false)), "首次校园通关应获得筛选许可")
+	assert(MetaProgression.has_fragment("selection_permission"), "筛选许可应写入局外档案")
+	assert(MetaProgression.is_world_unlocked("version_loop"), "首次校园通关应发现版本回环入口")
+	assert(MetaProgression.get_world_clear_count("campus") == 1, "校园通关次数应累计")
+	var repeated_clearance := MetaProgression.record_world_clear("campus")
+	assert(bool(repeated_clearance.get("already_recorded", false)), "同一局重复结算不得重复记录世界通关")
+	assert(MetaProgression.get_world_clear_count("campus") == 1, "重复结算不得增加世界通关次数")
+	var world_snapshot := MetaProgression.create_profile_snapshot()
+	MetaProgression.reset_profile()
+	assert(MetaProgression.restore_profile_snapshot(world_snapshot), "世界碎片和入口状态应随局外档案恢复")
+	assert(MetaProgression.has_fragment("selection_permission") and MetaProgression.is_world_unlocked("version_loop"), "恢复后不得丢失世界解锁")
 	MetaProgression.reset_profile()
 
 
@@ -1179,6 +1195,8 @@ func _test_delivery_screen_flow() -> void:
 	assert(menu.get_node("MenuSidebar/Margin/VBox/StartButton") is Button, "主菜单应提供开始游戏入口")
 	assert(menu.get_node("MenuSidebar/Margin/VBox/AchievementsButton") is Button, "主菜单应提供成就入口")
 	assert(menu.get_node("MenuSidebar/Margin/VBox/ProgressionButton") is Button, "主菜单应提供局外成长入口")
+	assert("校园世界" in menu.get_node("MajorCallout/Margin/VBox/Stats").text, "中枢档案应展示唯一初始世界")
+	assert("未发现其他世界" in menu.get_node("MajorCallout/Margin/VBox/Survivors").text, "首次进入不得展示空世界入口")
 	menu.queue_free()
 	await get_tree().process_frame
 

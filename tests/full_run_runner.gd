@@ -60,6 +60,8 @@ func _run_full_game() -> void:
 	assert(GameState.run_battles_won == 10, "整局应完成五区 9 场资格战与 1 场 Boss 战")
 	assert(GameState.campus_visited_locations.size() == 5, "整局应实际访问五个校园热点")
 	assert(GameState.run_events_resolved == 10, "整局应为每场路线遭遇结算一次热点事件")
+	assert(MetaProgression.has_fragment("selection_permission"), "校园首通应结算筛选许可碎片")
+	assert(MetaProgression.is_world_unlocked("version_loop"), "校园首通应发现版本回环入口")
 	summary.get_node("ContinueButton").pressed.emit()
 	await _wait_for_scene("MenuScreen")
 
