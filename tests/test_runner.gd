@@ -26,7 +26,7 @@ func _ready() -> void:
 	assert(computer.stats.has("学识"), "计算机专业缺少学识属性")
 
 	assert(not Config.cards.is_empty(), "卡牌数据未加载")
-	assert(Config.cards.size() == 242, "接入弥默与终局内容后卡牌数量应为 242")
+	assert(Config.cards.size() == 342, "版本回环成熟卡池接入后卡牌数量应为 342")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
 	_test_card_archetype_coverage()
@@ -629,11 +629,11 @@ func _test_version_loop_act_one_content() -> void:
 			mimo_cards += 1
 		elif str(card.world_id) == "version_loop":
 			shared_cards += 1
-	assert(qixu_cards == 30, "祈序第一轮应接入 30 张核心牌")
-	assert(feilan_cards == 30, "绯澜第二幕应接入 30 张核心牌，其中包含生成短评")
-	assert(xunji_cards == 30, "循迹第三幕应接入 30 张核心牌，其中包含生成抄本")
-	assert(mimo_cards == 30, "弥默隐藏角色应接入 30 张核心牌")
-	assert(shared_cards == 14, "第三幕应扩展到 14 张可见世界共享牌")
+	assert(qixu_cards == 54, "祈序成熟卡池应接入 54 张专属牌")
+	assert(feilan_cards == 54, "绯澜成熟卡池应接入 54 张专属牌")
+	assert(xunji_cards == 54, "循迹成熟卡池应接入 54 张专属牌")
+	assert(mimo_cards == 54, "弥默成熟卡池应接入 54 张专属牌")
+	assert(shared_cards == 18, "版本回环成熟共享池应包含 18 张可见世界共享牌")
 	for enemy_id in [
 		"vl_newbie_echo", "vl_stamina_leech", "vl_signin_beast", "vl_resource_sweeper",
 		"vl_notice_copy", "vl_compat_glitch", "vl_pipeline_overload", "vl_probability_calibrator",
@@ -769,7 +769,7 @@ func _test_version_loop_endings_and_mimo() -> void:
 	for card in Config.cards.values():
 		if str(card.major_id) == "mimo":
 			mimo_cards += 1
-	assert(mimo_cards == 30, "弥默隐藏角色应接入 30 张核心牌")
+	assert(mimo_cards == 54, "弥默隐藏角色应接入 54 张成熟专属牌")
 
 	MetaProgression.reset_profile()
 	for major_id in ["qixu", "feilan", "xunji"]:

@@ -43,7 +43,7 @@ def _all_records(folder: str, collection_key: str):
 def test_content_baseline():
     assert len(_json_files("worlds")) == 2
     assert len(_json_files("majors")) == 9
-    assert len(_load_all_cards()) == 242
+    assert len(_load_all_cards()) == 342
     assert len(_load_all_enemies()) == 34
     assert sum(1 for _ in _all_records("events", "events")) == 14
 
