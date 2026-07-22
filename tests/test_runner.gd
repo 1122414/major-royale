@@ -54,6 +54,7 @@ func _ready() -> void:
 	_test_professional_asset_coverage()
 	_test_card_effect_and_cost_feedback()
 	_test_specialization_rules()
+	_test_world_rule_set_hooks()
 	_test_event_chains_and_relic_synergies()
 	_test_elite_affix_variety()
 	_test_ai_decision_whitelist()
@@ -477,6 +478,51 @@ func _test_specialization_rules() -> void:
 	assert(is_equal_approx(bug_battle.get_bug_failure_chance(), 0.75), "Bug 行动失败率应封顶 75%")
 
 	_test_scaled_finishers()
+
+
+func _test_world_rule_set_hooks() -> void:
+	var active_expectations := {
+		"computer": "code_injection",
+		"law": "objection",
+		"medicine": "emergency_suture",
+		"finance": "leverage",
+		"arts": "inspiration",
+	}
+	for major_id in active_expectations:
+		GameState.start_run(major_id)
+		var player := GameState.create_battle_player()
+		var battle := Battle.new(player, Config.enemies["gpa_anxiety"])
+		assert(battle.get_rule_set_id() == "campus", "校园战斗应加载校园规则集")
+		if major_id == "law":
+			battle.set_enemy_intent({"id": "attack", "value": 8})
+		if major_id == "medicine":
+			player.hp = maxi(1, player.max_hp - 20)
+			player.add_status("bleed", 1)
+			player.add_status("pressure", 1)
+		if major_id == "arts":
+			player.add_status("pressure", 2)
+		var energy_before := battle.energy
+		assert(battle.use_active_skill(), "%s 主动技能应由校园规则集执行" % major_id)
+		assert(not battle.use_active_skill(), "每场战斗主动技能仍应只能使用一次")
+		match major_id:
+			"computer":
+				assert(battle.enemy.get_status_stacks("bug") == 2, "代码注入应添加 2 层 Bug")
+			"law":
+				assert(battle.get_enemy_intent_id() == "stunned" and player.shield == 6, "异议应打断意图并提供护盾")
+			"medicine":
+				assert(not player.has_status("bleed") and not player.has_status("pressure"), "紧急缝合应清除校园身体负面")
+				assert(player.has_status("resistance"), "紧急缝合应提供抗压")
+			"finance":
+				assert(battle.energy == energy_before + 1 and player.has_status("adrenaline"), "杠杆加仓应提供能量与肾上腺素")
+			"arts":
+				assert(player.get_status_stacks("pressure") == 1 and player.shield == 4, "灵感爆发应只减一层压力并提供护盾")
+
+	GameState.start_run("law")
+	var law_player := GameState.create_battle_player()
+	var law_battle := Battle.new(law_player, Config.enemies["gpa_anxiety"])
+	law_player.hp = 1
+	law_battle._apply_damage_to_player(99)
+	assert(law_player.hp == 1 and law_player.shield == 10, "法学濒死保护应由校园规则集执行")
 
 
 func _test_scaled_finishers() -> void:

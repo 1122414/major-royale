@@ -1,6 +1,8 @@
 class_name Battle
 extends RefCounted
 
+const WorldBattleRuleFactory := preload("res://src/logic/rules/world_battle_rule_factory.gd")
+
 ## 战斗状态。
 enum BattleState {
 	PLAYER_TURN,
@@ -68,9 +70,7 @@ var _enemy_intent: Dictionary = {}
 var _enemy_delay: int = 0
 var _reveal_intent: bool = false
 var _skill_used_this_battle: bool = false
-var _law_passive_used: bool = false
 var _boss_current_phase: int = 0
-var _thesis_clip_ready: bool = true
 var _pending_ai_context: Dictionary = {}
 var _ai_request_serial: int = 0
 var _next_hand_limit: int = MAX_HAND_SIZE
@@ -84,11 +84,13 @@ var _elite_affix_id := ""
 var _elite_damage_bonus := 0
 var _difficulty_damage_bonus := 0
 var _rng: RandomNumberGenerator
+var _world_rules: RefCounted
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 	player = p_player
 	enemy_resource = p_enemy_resource
+	_world_rules = WorldBattleRuleFactory.create(_get_current_world_rule_set_id())
 	var encounter_index := GameState.run_battles_won
 	_rng = GameState.make_run_rng("battle:%s" % p_enemy_resource.id, encounter_index)
 	var difficulty := GameState.get_difficulty_info()
@@ -102,12 +104,11 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 		player.add_status("pressure", starting_pressure)
 	_select_and_apply_elite_affix()
 	_effect_processor = CardEffectProcessor.new(self)
-	# 专注≥8：最大能量 +1；精英徽章再 +1
+	# 专注≥8：最大能量 +1；世界规则可追加额外能量。
 	max_energy = BASE_ENERGY + (1 if GameState.get_effective_stat("专注") >= 8 else 0)
-	if GameState.has_relic("elite_badge"):
-		max_energy += 1
+	max_energy += _world_rules.get_starting_energy_bonus(self)
 	energy = max_energy
-	_apply_battle_start_relics()
+	_apply_battle_start_modifiers()
 	if not player.is_alive():
 		state = BattleState.PLAYER_LOST
 		return
@@ -117,16 +118,9 @@ func _init(p_player: Character, p_enemy_resource: Resource) -> void:
 		reveal_intent()
 
 
-func _apply_battle_start_relics() -> void:
+func _apply_battle_start_modifiers() -> void:
 	player.draw_cards(GameState.get_meta_effect("opening_draw"), MAX_HAND_SIZE)
-	if GameState.has_relic("flash_drive"):
-		player.draw_cards(1, MAX_HAND_SIZE)
-	if GameState.has_relic("lucky_eraser"):
-		_remove_body_debuffs(player)
-		for status_id in player.statuses.keys():
-			if Status.is_debuff(status_id):
-				player.remove_status(status_id)
-				break
+	_world_rules.on_battle_started(self)
 
 
 func play_card(card_index: int) -> bool:
@@ -138,8 +132,6 @@ func play_card(card_index: int) -> bool:
 	var shield_before_card := player.shield
 
 	energy -= cost
-	if GameState.has_relic("thesis_clip") and _thesis_clip_ready and card.cost > 0:
-		_thesis_clip_ready = false
 	player.hand.remove_at(card_index)
 	if bool(card.exhausts):
 		player.exhaust_pile.append(card)
@@ -149,26 +141,7 @@ func play_card(card_index: int) -> bool:
 	_turn_card_types.append(str(card.type))
 
 	_effect_processor.process_card(card, player, enemy)
-
-	# 科学计算器：攻击额外伤害
-	if GameState.has_relic("scientific_calculator") and str(card.type) == "attack":
-		GameState.run_damage_dealt += enemy.take_damage(2)
-	if GameState.has_relic("risk_terminal") and str(card.type) == "attack" and shield_before_card >= 10:
-		GameState.run_damage_dealt += enemy.take_damage(4)
-	if GameState.has_relic("red_pen") and str(card.type) == "control":
-		player.gain_shield(3)
-	if GameState.has_relic("rubber_duck") and str(card.type) == "skill" and _turn_card_types.count("skill") == 1:
-		player.draw_cards(1, MAX_HAND_SIZE)
-	if GameState.has_relic("backstage_pass") and str(card.type) == "control" and _turn_card_types.count("control") == 1:
-		energy += 1
-
-	# 医学被动：攻击有概率弱点打击
-	if player.major_id == "medicine" and card.type == "attack" and _rng.randf() < 0.3:
-		GameState.run_damage_dealt += enemy.take_damage(3)
-
-	# 艺术被动：控制牌概率额外抽牌
-	if player.major_id == "arts" and str(card.type) == "control" and _rng.randf() < 0.3:
-		player.draw_cards(1, MAX_HAND_SIZE)
+	_world_rules.on_card_played(self, card, shield_before_card)
 
 	# 敌人反击姿态
 	if card.type == "attack" and enemy.has_status("counter"):
@@ -195,70 +168,23 @@ func get_card_cost(card_index: int) -> int:
 	if card_index < 0 or card_index >= player.hand.size():
 		return 0
 	var card: Resource = player.hand[card_index]
-	var cost: int = card.cost
-	if GameState.has_relic("thesis_clip") and _thesis_clip_ready:
-		cost = maxi(0, cost - 1)
-	return cost
+	return maxi(0, _world_rules.get_card_cost(self, card, card.cost))
 
 
 func use_active_skill() -> bool:
 	if state != BattleState.PLAYER_TURN or _skill_used_this_battle or _defense_window_open:
 		return false
 
-	var major: MajorResource = Config.majors.get(player.major_id)
-	if major == null:
+	var skill_name: String = str(_world_rules.use_active_skill(self))
+	if skill_name.is_empty():
 		return false
 
-	var skill_id: String = major.active_skill.get("id", "")
-	match skill_id:
-		"code_injection":
-			# 计算机：注入 Bug + 抽牌 + 揭示意图（纯增益向控场）
-			enemy.add_status("bug", 2)
-			player.draw_cards(1, MAX_HAND_SIZE)
-			reveal_intent()
-			skill_used.emit("代码注入")
-		"objection":
-			# 法学：打断行动 + 护盾 + 举证失败
-			_enemy_intent = {"id": "stunned", "description": "被异议打断，本回合无法行动。", "value": 0}
-			enemy.add_status("举证失败", 1)
-			player.gain_shield(6)
-			skill_used.emit("异议！")
-		"emergency_suture":
-			# 医学：强力治疗 + 清负面 + 抗压
-			player.heal(15)
-			_remove_body_debuffs(player)
-			player.add_status("resistance", 1)
-			skill_used.emit("紧急缝合")
-		"leverage":
-			# 金融：临时能量 + 肾上腺素（不再上压力）
-			energy += 1
-			player.add_status("adrenaline", 1)
-			player.gain_shield(3)
-			skill_used.emit("杠杆加仓")
-		"inspiration":
-			# 艺术：抽牌 + 清压力 + 小护盾
-			player.draw_cards(2, MAX_HAND_SIZE)
-			if player.has_status("pressure"):
-				var stacks := player.get_status_stacks("pressure")
-				player.remove_status("pressure")
-				if stacks > 1:
-					player.add_status("pressure", stacks - 1)
-			player.gain_shield(4)
-			skill_used.emit("灵感爆发")
-		_:
-			return false
-
 	_skill_used_this_battle = true
+	skill_used.emit(skill_name)
 	energy_updated.emit()
 	hand_updated.emit()
 	_check_end_conditions()
 	return true
-
-
-func _remove_body_debuffs(character: Character) -> void:
-	var body_debuffs := ["bleed", "pressure"]
-	for status_id in body_debuffs:
-		character.remove_status(status_id)
 
 
 func end_player_turn() -> void:
@@ -475,18 +401,12 @@ func _apply_damage_to_player(damage: int) -> void:
 	var is_boss := enemy_id == "employment_pressure"
 	if not is_boss:
 		var mult := 1.0 + mini(0.4, float(GameState.run_progress) * 0.05)
-		if GameState.has_relic("noise_cancelling"):
-			mult = 1.0 + (mult - 1.0) * 0.5
+		mult = _world_rules.modify_pressure_damage_multiplier(self, mult)
 		damage = int(round(float(damage) * mult))
 
 	damage = maxi(0, int(round(float(damage) * _incoming_damage_multiplier)))
 	player.take_damage(damage)
-
-	# 法学被动：首次致命伤保留 1 点生命
-	if player.major_id == "law" and not _law_passive_used and player.hp <= 0:
-		player.hp = 1
-		player.gain_shield(10)
-		_law_passive_used = true
+	_world_rules.on_player_damaged(self)
 
 	# 敌人反击
 	if player.has_status("counter"):
@@ -511,7 +431,6 @@ func _start_player_turn() -> void:
 	# 首回合保留事件或奖励带入的开场护盾，此后护盾按回合正常清空。
 	if turn_count > 1:
 		player.reset_shield()
-	_thesis_clip_ready = true
 
 	if player.has_status("bleed"):
 		var bleed_damage := player.get_status_stacks("bleed") * int(Status.STATUS_DATABASE["bleed"].get("tick_damage", 3))
@@ -521,17 +440,12 @@ func _start_player_turn() -> void:
 		if state != BattleState.PLAYER_TURN:
 			return
 
-	if GameState.has_relic("coffee_thermos"):
-		player.gain_shield(2)
-	if turn_count == 1 and GameState.has_relic("sticky_notes"):
-		player.gain_shield(5)
+	_world_rules.on_player_turn_started(self)
 
-	# 计算机被动：生命低于 40% 时额外抽 1 张（不再扣精神）
 	var has_draw_override := _next_draw_override >= 0
 	var draw_amount := _next_draw_override if has_draw_override else BASE_DRAW
 	_next_draw_override = -1
-	if not has_draw_override and player.major_id == "computer" and player.hp < player.max_hp * 0.4:
-		draw_amount += 1
+	draw_amount = _world_rules.modify_player_draw(self, draw_amount, has_draw_override)
 
 	# 压力影响：每 4 层压力少抽 1 张
 	var pressure := player.get_status_stacks("pressure")
@@ -652,7 +566,7 @@ func _build_ai_context() -> Dictionary:
 
 	return {
 		"enemy": enemy_resource.name,
-		"player_major": Config.majors[player.major_id].name if Config.majors.has(player.major_id) else player.major_id,
+		"player_major": Config.characters[player.major_id].name if Config.characters.has(player.major_id) else player.major_id,
 		"player_hp": player.hp,
 		"player_spirit": player.spirit,
 		"visible_player_status": visible_status,
@@ -736,6 +650,47 @@ func get_elite_affix_text() -> String:
 		return ""
 	var info: Dictionary = ELITE_AFFIXES.get(_elite_affix_id, {})
 	return "%s：%s" % [info.get("name", _elite_affix_id), info.get("description", "")]
+
+
+func get_rule_set_id() -> String:
+	return _world_rules.get_id() if _world_rules != null else "default"
+
+
+func get_turn_card_type_count(card_type: String) -> int:
+	return _turn_card_types.count(card_type)
+
+
+func roll_chance(chance: float) -> bool:
+	return _rng.randf() < clampf(chance, 0.0, 1.0)
+
+
+func deal_direct_damage_to_enemy(amount: int) -> int:
+	if enemy == null or amount <= 0:
+		return 0
+	var actual_damage := enemy.take_damage(amount)
+	GameState.run_damage_dealt += actual_damage
+	return actual_damage
+
+
+func set_enemy_intent(intent: Dictionary) -> void:
+	_enemy_intent = intent.duplicate(true)
+
+
+func modify_shield_amount(caster: Character, target: Character, amount: int) -> int:
+	return _world_rules.modify_shield_amount(self, caster, target, amount)
+
+
+func modify_heal_amount(caster: Character, target: Character, amount: int) -> int:
+	return _world_rules.modify_heal_amount(self, caster, target, amount)
+
+
+func after_heal(caster: Character, target: Character, actual_healed: int, requested_heal: int) -> void:
+	_world_rules.after_heal(self, caster, target, actual_healed, requested_heal)
+
+
+func _get_current_world_rule_set_id() -> String:
+	var world: Resource = Config.get_world(GameState.current_world_id)
+	return str(world.rule_set_id) if world != null else ""
 
 
 func _select_and_apply_elite_affix() -> void:
