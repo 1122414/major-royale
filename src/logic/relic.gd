@@ -97,6 +97,13 @@ const RELICS := {
 		"major_id": "feilan",
 		"world_id": "version_loop",
 	},
+	"unsaved_macro": {
+		"name": "未保存的宏",
+		"desc": "【循迹】每场战斗第一次录制脚本时，立即以 40% 强度复演一次。",
+		"rarity": "uncommon",
+		"major_id": "xunji",
+		"world_id": "version_loop",
+	},
 }
 
 

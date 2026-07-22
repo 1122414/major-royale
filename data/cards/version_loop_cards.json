@@ -160,6 +160,9 @@
     },
     {
       "id": "vl_account_backup", "name": "账号备份", "world_id": "version_loop", "type": "defense", "cost": 1, "rarity": "rare", "description": "获得 9 点护盾并抽 1 张牌。", "effects": [{"type": "shield", "value": 9, "target": "self"}, {"type": "draw", "value": 1, "target": "self"}]
+    },
+    {
+      "id": "vl_preload_version", "name": "版本预下载", "world_id": "version_loop", "type": "skill", "cost": 2, "rarity": "rare", "description": "抽 3 张牌，本回合获得 1 点能量。", "effects": [{"type": "draw", "value": 3, "target": "self"}, {"type": "energy", "value": 1, "target": "self"}]
     }
   ]
 }

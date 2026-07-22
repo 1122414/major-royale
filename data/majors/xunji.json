@@ -1,0 +1,44 @@
+{
+  "id": "xunji",
+  "name": "循迹",
+  "description": "流程代行员。录制一张可复演的直接效果，再通过牌序与自动化把它转化成稳定流程。",
+  "stats": {
+    "学识": 8,
+    "体能": 5,
+    "专注": 9,
+    "表达": 5,
+    "创造": 7,
+    "社交": 4,
+    "抗压": 7,
+    "资源": 8
+  },
+  "active_skill": {
+    "id": "execute_script",
+    "name": "执行脚本",
+    "description": "脚本槽不为空时，以 60% 强度复演已录制的直接效果。"
+  },
+  "passive_skill": {
+    "id": "sequence_trace",
+    "name": "牌序追踪",
+    "description": "记录最近三张牌的类型；特定序列会触发脚本流组件。"
+  },
+  "starter_relic_id": "unsaved_macro",
+  "portrait_path": "res://assets/sprites/chars/player_xunji.png",
+  "run_state_schema": {
+    "script_label": {"type": "string", "default": "空脚本", "max_length": 40},
+    "script_strength": {"type": "int", "default": 0, "min": 0, "max": 100},
+    "recent_sequence": {"type": "string", "default": "", "max_length": 48}
+  },
+  "starter_deck": [
+    "xunji_copy_solution",
+    "xunji_copy_solution",
+    "xunji_copy_solution",
+    "xunji_copy_solution",
+    "xunji_align_axis",
+    "xunji_align_axis",
+    "xunji_align_axis",
+    "xunji_align_axis",
+    "xunji_record",
+    "xunji_copy_homework"
+  ]
+}

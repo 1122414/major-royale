@@ -10,7 +10,7 @@
   "availability": "available",
   "selection_scene_path": "res://src/ui/screens/major_select.tscn",
   "exploration_scene_path": "res://src/ui/screens/version_loop_explore.tscn",
-  "character_ids": ["qixu", "feilan"],
+  "character_ids": ["qixu", "feilan", "xunji"],
   "shared_card_ids": [
     "vl_daily_sweep",
     "vl_clear_cache",
@@ -24,7 +24,8 @@
     "vl_event_shop",
     "vl_resource_recycling",
     "vl_delay_notice",
-    "vl_account_backup"
+    "vl_account_backup",
+    "vl_preload_version"
   ],
   "run_state_schema": {
     "act_index": {
@@ -76,6 +77,10 @@
       "default": false
     },
     "act_two_complete": {
+      "type": "bool",
+      "default": false
+    },
+    "act_three_complete": {
       "type": "bool",
       "default": false
     }

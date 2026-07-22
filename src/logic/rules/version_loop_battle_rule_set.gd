@@ -7,6 +7,7 @@ const NOTICE_NUMERIC := "numeric_inflation"
 const NOTICE_FIXED := "known_issue_fix"
 const QIXU_ID := "qixu"
 const FEILAN_ID := "feilan"
+const XUNJI_ID := "xunji"
 const PITY_KEY := "pity"
 const LAST_OUTCOME_KEY := "last_random_outcome"
 const FORCED_OUTCOME_KEY := "forced_random_outcome"
@@ -27,6 +28,20 @@ var _feilan_heat_refund := false
 var _feilan_heat_refund_used := false
 var _feilan_comeback_attacks := 0
 var _recent_boss_signatures: Array[String] = []
+var _xunji_script: Dictionary = {}
+var _xunji_last_payload: Dictionary = {}
+var _xunji_recent_types: Array[String] = []
+var _xunji_record_armed := false
+var _xunji_macro_ready := true
+var _xunji_repeat_draw := false
+var _xunji_repeat_draw_used := false
+var _xunji_third_replay := false
+var _xunji_third_replay_used := false
+var _xunji_perfect_axis := false
+var _xunji_standard_process := false
+var _xunji_energy_save := false
+var _xunji_saved_energy := 0
+var _xunji_replayable_played_this_turn := 0
 
 
 func get_id() -> String:
@@ -47,6 +62,11 @@ func on_battle_started(battle) -> void:
 		GameState.set_character_run_state_value("short_comments_played", 0)
 		GameState.set_character_run_state_value("heat_floor", 0)
 		_reset_feilan_battle_flags()
+	elif battle.player.major_id == XUNJI_ID:
+		GameState.set_character_run_state_value("script_label", "空脚本")
+		GameState.set_character_run_state_value("script_strength", 0)
+		GameState.set_character_run_state_value("recent_sequence", "")
+		_reset_xunji_battle_state()
 	_recent_boss_signatures.clear()
 
 
@@ -56,6 +76,9 @@ func on_battle_finished(_battle, victory: bool) -> void:
 	if str(_battle.enemy_resource.id) == "vl_probability_calibrator":
 		if MetaProgression.discover_character(FEILAN_ID):
 			_battle.notify_world_rule_feedback("绯澜档案已发现：下一局可选择舆潮主播")
+	if str(_battle.enemy_resource.id) == "vl_zero_maintenance":
+		if MetaProgression.discover_character(XUNJI_ID):
+			_battle.notify_world_rule_feedback("循迹档案已发现：下一局可选择流程代行员")
 	var maintenance_clock := GameState.add_world_run_state_int("maintenance_clock", 1)
 	if maintenance_clock >= 4:
 		GameState.set_world_run_state_value("maintenance_due", true)
@@ -86,6 +109,7 @@ func on_card_played(_battle, card: Resource, _shield_before_card: int) -> void:
 	if _get_notice_id() == NOTICE_LIGHTWEIGHT and int(card.cost) == 1:
 		_lightweight_discount_available = false
 	_track_voice_aggregate(_battle, card)
+	_track_xunji_card(_battle, card)
 	if _battle.player.major_id != FEILAN_ID:
 		return
 	match str(card.id):
@@ -109,6 +133,8 @@ func process_card_effect(battle, card: Resource, effect: Resource, caster, _targ
 		return false
 	if caster.major_id == FEILAN_ID:
 		return _process_feilan_effect(battle, card, effect, caster)
+	if caster.major_id == XUNJI_ID:
+		return _process_xunji_effect(battle, card, effect, caster)
 	if caster.major_id != QIXU_ID:
 		return false
 	match str(effect.type):
@@ -193,6 +219,10 @@ func use_active_skill(battle) -> String:
 		_deal_feilan_damage(battle, null, 18)
 		battle.notify_world_rule_feedback("引爆话题：消耗 5 热度，造成 18 点伤害")
 		return "引爆话题"
+	if battle.player.major_id == XUNJI_ID and not _xunji_script.is_empty():
+		_replay_xunji_script(battle, 60)
+		battle.notify_world_rule_feedback("执行脚本：以 60% 强度复演已录制效果")
+		return "执行脚本"
 	return ""
 
 
@@ -239,6 +269,17 @@ func on_player_turn_started(battle) -> void:
 	_feilan_heat_guard_used = false
 	_feilan_damage_heat_used = false
 	_feilan_heat_refund_used = false
+	_xunji_repeat_draw_used = false
+	_xunji_third_replay_used = false
+	_xunji_replayable_played_this_turn = 0
+	if battle.player.major_id == XUNJI_ID and _xunji_saved_energy > 0:
+		battle.energy += _xunji_saved_energy
+		battle.notify_world_rule_feedback("永动工厂返还 %d 点已保存能量" % _xunji_saved_energy)
+		_xunji_saved_energy = 0
+	if str(battle.enemy_resource.id) == "vl_zero_maintenance" and battle.turn_count > 1 and battle.turn_count % 3 == 0:
+		battle.player.add_status("pressure", 1)
+		battle.enemy.gain_shield(8)
+		battle.notify_world_rule_feedback("零号维护执行回滚：获得 8 护盾，玩家承受 1 层压力")
 	if battle.player.major_id != FEILAN_ID:
 		return
 	if _feilan_global_hot_list and _get_heat() >= 5:
@@ -266,6 +307,10 @@ func on_player_turn_ended(battle) -> void:
 		else:
 			battle.enemy.add_status("charged", 1)
 			battle.notify_world_rule_feedback("热门话题未完成：众声聚合体获得声量")
+	if battle.player.major_id == XUNJI_ID and _xunji_energy_save:
+		_xunji_saved_energy = mini(2, battle.energy)
+		if _xunji_saved_energy > 0:
+			battle.notify_world_rule_feedback("自动产线保存 %d 点剩余能量" % _xunji_saved_energy)
 
 
 func on_player_damaged(battle) -> void:
@@ -376,6 +421,208 @@ func _process_feilan_effect(battle, card: Resource, effect: Resource, caster) ->
 			_set_heat(battle, int(effect.value))
 			return true
 	return false
+
+
+func _process_xunji_effect(battle, card: Resource, effect: Resource, caster) -> bool:
+	match str(effect.type):
+		"arm_record":
+			_xunji_record_armed = true
+			battle.notify_world_rule_feedback("录制已就绪：下一张可复演牌将覆盖脚本槽")
+			return true
+		"repeat_script":
+			if _xunji_script.is_empty() and bool(effect.params.get("record_previous", false)) and not _xunji_last_payload.is_empty():
+				_set_xunji_script(_xunji_last_payload, battle)
+			_replay_xunji_script(battle, int(effect.value))
+			return true
+		"same_type_damage":
+			var damage := int(effect.value)
+			if _get_xunji_previous_type() == str(card.type):
+				damage += int(effect.params.get("bonus", effect.value))
+			_deal_xunji_damage(battle, card, damage)
+			return true
+		"high_hp_damage":
+			var high_value := int(effect.params.get("high_value", effect.value))
+			_deal_xunji_damage(battle, card, high_value if battle.enemy.hp * 2 > battle.enemy.max_hp else int(effect.value))
+			return true
+		"generate_copybook":
+			_generate_xunji_copybooks(caster, int(effect.value), battle)
+			return true
+		"scaled_type_damage":
+			var type_count := _get_xunji_type_count_with_current(str(card.type))
+			type_count = mini(type_count, maxi(1, int(effect.params.get("max_types", 3))))
+			_deal_xunji_damage(battle, card, int(effect.value) * type_count)
+			return true
+		"same_type_stacks_damage":
+			var hits := mini(_get_xunji_same_type_chain_with_current(str(card.type)), maxi(1, int(effect.params.get("max_hits", 6))))
+			for _i in range(hits):
+				_deal_xunji_damage(battle, card, int(effect.value))
+			return true
+		"enable_repeat_draw", "enable_third_replay", "enable_perfect_axis", "enable_energy_save", "enable_standard_process":
+			return true
+	return false
+
+
+func _track_xunji_card(battle, card: Resource) -> void:
+	if battle.player.major_id != XUNJI_ID:
+		return
+	var previous_type := _get_xunji_previous_type()
+	var payload := _extract_xunji_replay_payload(card)
+	if _xunji_record_armed and str(card.id) != "xunji_record" and not payload.is_empty():
+		_xunji_record_armed = false
+		_set_xunji_script(payload, battle)
+		if _xunji_macro_ready and GameState.has_relic("unsaved_macro"):
+			_xunji_macro_ready = false
+			_replay_xunji_script(battle, 40)
+			battle.notify_world_rule_feedback("未保存的宏：首次录制立即以 40% 强度复演")
+	if not payload.is_empty():
+		_xunji_last_payload = payload.duplicate(true)
+		_xunji_replayable_played_this_turn += 1
+	if _xunji_repeat_draw and not _xunji_repeat_draw_used and not previous_type.is_empty() and previous_type == str(card.type):
+		_xunji_repeat_draw_used = true
+		battle.player.draw_cards(1, battle.MAX_HAND_SIZE)
+		battle.notify_world_rule_feedback("复读机：连续同类型牌，抽 1 张")
+	_xunji_recent_types.append(str(card.type))
+	if _xunji_recent_types.size() > 3:
+		_xunji_recent_types.pop_front()
+	_update_xunji_sequence_state(battle)
+	if _xunji_third_replay and not _xunji_third_replay_used and _xunji_replayable_played_this_turn >= 3:
+		_xunji_third_replay_used = true
+		_replay_xunji_script(battle, 50)
+		battle.notify_world_rule_feedback("无限复读：第 3 张可复演牌触发脚本复演")
+	if _is_xunji_perfect_axis():
+		if _xunji_perfect_axis:
+			battle.energy += 1
+			battle.player.draw_cards(1, battle.MAX_HAND_SIZE)
+			battle.notify_world_rule_feedback("完美轴：攻击—技能—攻击，获得 1 能量并抽 1 张")
+		if _xunji_standard_process:
+			_replay_xunji_script(battle, 35)
+			battle.notify_world_rule_feedback("标准流程：完成牌序，按 35% 强度复演脚本")
+	match str(card.id):
+		"xunji_parrot": _xunji_repeat_draw = true
+		"xunji_infinite_repeat": _xunji_third_replay = true
+		"xunji_perfect_axis": _xunji_perfect_axis = true
+		"xunji_auto_line", "xunji_perpetual_factory": _xunji_energy_save = true
+		"xunji_standard_process": _xunji_standard_process = true
+
+
+func _extract_xunji_replay_payload(card: Resource) -> Dictionary:
+	if card == null or str(card.id) == "xunji_record":
+		return {}
+	for effect in card.effects:
+		match str(effect.type):
+			"damage":
+				return {"kind": "damage", "value": int(effect.value), "label": card.name}
+			"shield":
+				return {"kind": "shield", "value": int(effect.value), "label": card.name}
+			"heal":
+				return {"kind": "heal", "value": int(effect.value), "label": card.name}
+			"status", "debuff":
+				return {
+					"kind": "status",
+					"status_id": str(effect.status_id),
+					"stacks": int(effect.status_stacks),
+					"target": str(effect.target),
+					"label": card.name,
+				}
+	return {}
+
+
+func _set_xunji_script(payload: Dictionary, battle) -> void:
+	_xunji_script = payload.duplicate(true)
+	GameState.set_character_run_state_value("script_label", str(payload.get("label", "脚本")))
+	GameState.set_character_run_state_value("script_strength", 100)
+	battle.notify_character_resource_updated()
+	battle.notify_world_rule_feedback("脚本已录制：%s" % str(payload.get("label", "直接效果")))
+
+
+func _replay_xunji_script(battle, percent: int) -> void:
+	if _xunji_script.is_empty():
+		battle.notify_world_rule_feedback("脚本槽为空：无法复演")
+		return
+	var strength := clampi(percent, 1, 100)
+	var value := maxi(1, int(round(float(_xunji_script.get("value", 0)) * float(strength) / 100.0)))
+	match str(_xunji_script.get("kind", "")):
+		"damage":
+			battle.deal_direct_damage_to_enemy(value + int(GameState.get_effective_stat("学识") / 3))
+		"shield":
+			battle.player.gain_shield(battle.modify_shield_amount(battle.player, battle.player, value))
+		"heal":
+			battle.player.heal(value)
+		"status":
+			var target = battle.player if str(_xunji_script.get("target", "enemy")) == "self" else battle.enemy
+			target.add_status(str(_xunji_script.get("status_id", "")), maxi(1, int(round(float(_xunji_script.get("stacks", 1)) * float(strength) / 100.0))))
+	battle.notify_character_resource_updated()
+
+
+func _generate_xunji_copybooks(caster, count: int, battle) -> void:
+	var copybook: Resource = Config.cards.get("xunji_copybook")
+	if copybook == null:
+		return
+	for _i in range(maxi(0, count)):
+		if caster.hand.size() >= battle.MAX_HAND_SIZE:
+			break
+		caster.hand.append(copybook)
+	battle.notify_character_resource_updated()
+
+
+func _deal_xunji_damage(battle, card: Resource, amount: int) -> int:
+	var damage := maxi(0, amount + int(GameState.get_effective_stat("学识") / 3))
+	if card != null:
+		damage = battle.modify_card_damage(card, battle.player, battle.enemy, damage)
+	return battle.deal_direct_damage_to_enemy(damage)
+
+
+func _get_xunji_previous_type() -> String:
+	return _xunji_recent_types.back() if not _xunji_recent_types.is_empty() else ""
+
+
+func _get_xunji_type_count_with_current(current_type: String) -> int:
+	var used := {}
+	for card_type in _xunji_recent_types:
+		used[card_type] = true
+	used[current_type] = true
+	return used.size()
+
+
+func _get_xunji_same_type_chain_with_current(current_type: String) -> int:
+	var count := 1
+	for index in range(_xunji_recent_types.size() - 1, -1, -1):
+		if _xunji_recent_types[index] != current_type:
+			break
+		count += 1
+	return count
+
+
+func _is_xunji_perfect_axis() -> bool:
+	if _xunji_recent_types.size() != 3:
+		return false
+	return _xunji_recent_types == ["attack", "skill", "attack"] or _xunji_recent_types == ["skill", "attack", "skill"]
+
+
+func _update_xunji_sequence_state(battle) -> void:
+	var labels: Array[String] = []
+	var label_map := {"attack": "攻", "skill": "技", "defense": "防", "control": "控", "finisher": "终", "heal": "疗"}
+	for card_type in _xunji_recent_types:
+		labels.append(str(label_map.get(card_type, card_type)))
+	GameState.set_character_run_state_value("recent_sequence", "—".join(labels))
+	battle.notify_character_resource_updated()
+
+
+func _reset_xunji_battle_state() -> void:
+	_xunji_script.clear()
+	_xunji_last_payload.clear()
+	_xunji_recent_types.clear()
+	_xunji_record_armed = false
+	_xunji_macro_ready = true
+	_xunji_repeat_draw = false
+	_xunji_repeat_draw_used = false
+	_xunji_third_replay = false
+	_xunji_third_replay_used = false
+	_xunji_perfect_axis = false
+	_xunji_standard_process = false
+	_xunji_energy_save = false
+	_xunji_saved_energy = 0
+	_xunji_replayable_played_this_turn = 0
 
 
 func _reset_feilan_battle_flags() -> void:

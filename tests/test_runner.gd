@@ -16,7 +16,7 @@ func _ready() -> void:
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
 	assert(Config.characters == Config.majors, "角色兼容别名应与专业数据保持一致")
-	assert(Config.majors.size() == 7, "角色档案应包含五个校园专业、祈序与绯澜")
+	assert(Config.majors.size() == 8, "角色档案应包含五个校园专业与版本回环三名角色")
 	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
 		assert(Config.majors.has(major_id), "缺少专业: %s" % major_id)
 
@@ -26,7 +26,7 @@ func _ready() -> void:
 	assert(computer.stats.has("学识"), "计算机专业缺少学识属性")
 
 	assert(not Config.cards.is_empty(), "卡牌数据未加载")
-	assert(Config.cards.size() == 181, "接入绯澜与第二幕后卡牌数量应为 181")
+	assert(Config.cards.size() == 212, "接入循迹与第三幕后卡牌数量应为 212")
 	assert(Config.cards.has("strike"), "缺少通用攻击牌")
 	assert(Config.cards.has("bug_generate"), "缺少计算机专属卡")
 	_test_card_archetype_coverage()
@@ -58,6 +58,7 @@ func _ready() -> void:
 	_test_specialization_rules()
 	_test_world_rule_set_hooks()
 	_test_version_loop_act_one_content()
+	await _test_version_loop_act_three_content()
 	_test_event_chains_and_relic_synergies()
 	_test_elite_affix_variety()
 	_test_ai_decision_whitelist()
@@ -108,7 +109,7 @@ func _test_world_package_contract() -> void:
 	var version_loop: Resource = Config.get_world("version_loop")
 	assert(version_loop != null and version_loop.name == "版本回环", "版本回环世界定义缺失")
 	assert(version_loop.is_playable(), "版本回环的角色与地图入口应可启动")
-	assert(version_loop.character_ids == ["qixu", "feilan"], "版本回环应声明祈序与绯澜，界面再按发现状态过滤")
+	assert(version_loop.character_ids == ["qixu", "feilan", "xunji"], "版本回环应声明三名角色，界面再按发现状态过滤")
 	var version_state: Dictionary = version_loop.sanitize_run_state({
 		"patch_notice_id": "invalid_notice",
 		"maintenance_clock": 99,
@@ -118,7 +119,7 @@ func _test_world_package_contract() -> void:
 	assert(version_state.get("maintenance_clock") == 4, "维护时钟应按世界状态上限截断")
 	assert(version_state.get("compensation_tickets") == 0, "补偿券不得为负数")
 	assert(version_loop.get_rule_catalog_entries("patch_notices").size() == 3, "版本回环首轮应配置三条公告")
-	assert(Config.get_character_world_id("qixu") == "version_loop" and Config.get_character_world_id("feilan") == "version_loop", "祈序与绯澜应归属版本回环世界")
+	assert(Config.get_character_world_id("qixu") == "version_loop" and Config.get_character_world_id("xunji") == "version_loop", "祈序、绯澜与循迹应归属版本回环世界")
 
 
 func _test_meta_currency_profile() -> void:
@@ -347,6 +348,7 @@ func _test_professional_asset_coverage() -> void:
 		"res://assets/sprites/chars/player_finance.png",
 		"res://assets/sprites/chars/player_arts.png",
 		"res://assets/sprites/chars/player_feilan.png",
+		"res://assets/sprites/chars/player_xunji.png",
 	]
 	for path in player_paths:
 		assert(ResourceLoader.exists(path), "五专业应具备正式玩家立绘: %s" % path)
@@ -363,6 +365,7 @@ func _test_professional_asset_coverage() -> void:
 		"res://assets/sprites/chars/enemy_reviewer.png",
 		"res://assets/sprites/chars/enemy_boss.png",
 		"res://assets/sprites/chars/enemy_voice_aggregate.png",
+		"res://assets/sprites/chars/enemy_zero_maintenance.png",
 	]
 	var unique_enemy_paths := {}
 	for path in enemy_paths:
@@ -375,6 +378,7 @@ func _test_professional_asset_coverage() -> void:
 		assert(ResourceLoader.exists(path), "每张卡牌都应具备独立插画: %s" % path)
 	assert(ResourceLoader.exists("res://assets/sprites/bg/battle_finale.png"), "终局战应具备专属背景")
 	assert(ResourceLoader.exists("res://assets/sprites/bg/version_loop_tide_plaza.png"), "第二幕应具备舆潮广场背景")
+	assert(ResourceLoader.exists("res://assets/sprites/bg/version_loop_graveyard.png"), "第三幕应具备版本坟场背景")
 
 	var card_packed := load("res://src/ui/widgets/card_view.tscn") as PackedScene
 	var card_view := card_packed.instantiate() as PanelContainer
@@ -609,17 +613,21 @@ func _test_version_loop_rule_foundation() -> void:
 func _test_version_loop_act_one_content() -> void:
 	var qixu_cards := 0
 	var feilan_cards := 0
+	var xunji_cards := 0
 	var shared_cards := 0
 	for card in Config.cards.values():
 		if str(card.major_id) == "qixu":
 			qixu_cards += 1
 		elif str(card.major_id) == "feilan":
 			feilan_cards += 1
+		elif str(card.major_id) == "xunji":
+			xunji_cards += 1
 		elif str(card.world_id) == "version_loop":
 			shared_cards += 1
 	assert(qixu_cards == 30, "祈序第一轮应接入 30 张核心牌")
 	assert(feilan_cards == 30, "绯澜第二幕应接入 30 张核心牌，其中包含生成短评")
-	assert(shared_cards == 13, "第二幕应扩展到 13 张可见世界共享牌")
+	assert(xunji_cards == 30, "循迹第三幕应接入 30 张核心牌，其中包含生成抄本")
+	assert(shared_cards == 14, "第三幕应扩展到 14 张可见世界共享牌")
 	for enemy_id in [
 		"vl_newbie_echo", "vl_stamina_leech", "vl_signin_beast", "vl_resource_sweeper",
 		"vl_notice_copy", "vl_compat_glitch", "vl_pipeline_overload", "vl_probability_calibrator",
@@ -696,6 +704,57 @@ func _test_version_loop_act_one_content() -> void:
 	assert(feilan_battle.resolve_world_choice("shield"), "短评护航选项应可结算")
 	assert(feilan_player.shield >= shield_before + 3, "短评护航应提供护盾")
 	assert(feilan_battle.use_active_skill(), "热度足够时绯澜应能引爆话题")
+	GameState.start_run("computer")
+
+
+func _test_version_loop_act_three_content() -> void:
+	for enemy_id in [
+		"vl_meta_executor", "vl_rollback_wreck", "vl_test_server_leak", "vl_archive_shade",
+		"vl_compat_grave", "vl_deprecated_echo", "vl_version_eater", "vl_zero_maintenance",
+	]:
+		assert(Config.enemies.has(enemy_id), "第三幕缺少敌人：%s" % enemy_id)
+
+	MetaProgression.reset_profile()
+	GameState.start_run("qixu", 9093, 0, "version_loop")
+	GameState.player_stats["current_enemy_id"] = "vl_zero_maintenance"
+	var unlock_player := GameState.create_battle_player()
+	var unlock_battle := Battle.new(unlock_player, Config.enemies["vl_zero_maintenance"])
+	unlock_battle.enemy.hp = 1
+	unlock_player.hand = [Config.cards["qixu_single_draw"]]
+	unlock_battle.energy = 1
+	assert(unlock_battle.play_card(0), "击败第三幕 Boss 应触发循迹档案发现")
+	assert(MetaProgression.is_character_unlocked("xunji"), "零号维护击败后应永久发现循迹")
+
+	GameState.start_run("xunji", 9094, 0, "version_loop")
+	assert(GameState.get_character_run_state_value("script_label") == "空脚本", "循迹开局应没有已录制脚本")
+	assert(GameState.has_relic("unsaved_macro"), "循迹应携带未保存的宏初始遗物")
+	GameState.player_stats["current_enemy_id"] = "vl_meta_executor"
+	var xunji_player := GameState.create_battle_player()
+	var xunji_battle := Battle.new(xunji_player, Config.enemies["vl_meta_executor"])
+	xunji_player.hand = [Config.cards["xunji_record"], Config.cards["xunji_axis_stall"], Config.cards["xunji_copybook"]]
+	xunji_battle.energy = 1
+	var hp_before := xunji_battle.enemy.hp
+	assert(xunji_battle.play_card(0), "循迹应能打出录制")
+	assert(xunji_battle.play_card(0), "循迹应能录制可复演的直接伤害")
+	assert(GameState.get_character_run_state_value("script_label") == "卡轴", "录制后应显示脚本来源")
+	assert(hp_before - xunji_battle.enemy.hp >= 20, "未保存的宏应在首次录制后立刻复演")
+	assert(xunji_battle.play_card(0), "抄本应能复演已录制脚本")
+	var replay_hp_before := xunji_battle.enemy.hp
+	assert(xunji_battle.use_active_skill(), "脚本槽非空时循迹主动技能应可用")
+	assert(xunji_battle.enemy.hp < replay_hp_before, "执行脚本应对录制的伤害产生影响")
+
+	GameState.start_run("qixu", 9193, 0, "version_loop")
+	GameState.run_enemies_defeated.append({"id": "vl_probability_calibrator", "name": "概率校准器·门神", "type": "boss"})
+	GameState.run_enemies_defeated.append({"id": "vl_voice_aggregate", "name": "众声聚合体", "type": "boss"})
+	var packed := load("res://src/ui/screens/version_loop_explore.tscn") as PackedScene
+	var explore := packed.instantiate() as Control
+	add_child(explore)
+	await get_tree().process_frame
+	assert(int(GameState.get_world_run_state_value("act_index")) == 3, "第二幕 Boss 击败后应推进到第三幕")
+	assert(explore._next_encounter_id() == "vl_meta_executor", "第三幕应从退环境执行官开始")
+	assert(explore._node_list.get_child_count() == 8, "第三幕应展示 6 普通、1 精英与 1 Boss 节点")
+	explore.queue_free()
+	await get_tree().process_frame
 	GameState.start_run("computer")
 
 
@@ -817,7 +876,7 @@ func _test_event_chains_and_relic_synergies() -> void:
 
 
 func _test_major_relic_effects() -> void:
-	assert(RelicCatalog.all_ids().size() == 17, "遗物池应包含校园遗物、祈序与绯澜初始遗物")
+	assert(RelicCatalog.all_ids().size() == 18, "遗物池应包含校园遗物与版本回环三名角色初始遗物")
 	var major_relics := {
 		"computer": "rubber_duck",
 		"law": "red_pen",

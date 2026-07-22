@@ -266,7 +266,13 @@ func _setup_battle_art(enemy_id: String) -> void:
 	var bg: TextureRect = $PixelBackground
 	if bg and bg.has_method("_ready"):
 		if GameState.current_world_id == "version_loop":
-			bg.texture_path = "res://assets/sprites/bg/version_loop_tide_plaza.png" if int(GameState.get_world_run_state_value("act_index", 1)) == 2 else "res://assets/sprites/bg/version_loop_warmup.png"
+			var act_index := int(GameState.get_world_run_state_value("act_index", 1))
+			if act_index == 3:
+				bg.texture_path = "res://assets/sprites/bg/version_loop_graveyard.png"
+			elif act_index == 2:
+				bg.texture_path = "res://assets/sprites/bg/version_loop_tide_plaza.png"
+			else:
+				bg.texture_path = "res://assets/sprites/bg/version_loop_warmup.png"
 			if ResourceLoader.exists(bg.texture_path):
 				bg.texture = load(bg.texture_path)
 		elif enemy_id == "employment_pressure":
@@ -290,6 +296,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"arts": player_path = "res://assets/sprites/chars/player_arts.png"
 		"qixu": player_path = "res://assets/sprites/chars/player_qixu.png"
 		"feilan": player_path = "res://assets/sprites/chars/player_feilan.png"
+		"xunji": player_path = "res://assets/sprites/chars/player_xunji.png"
 	var enemy_paths := {
 		"gpa_anxiety": "res://assets/sprites/chars/enemy_anxiety.png",
 		"seat_grabber": "res://assets/sprites/chars/enemy_seat_grabber.png",
@@ -303,6 +310,7 @@ func _setup_battle_art(enemy_id: String) -> void:
 		"employment_pressure": "res://assets/sprites/chars/enemy_boss.png",
 		"vl_probability_calibrator": "res://assets/sprites/chars/enemy_probability_calibrator.png",
 		"vl_voice_aggregate": "res://assets/sprites/chars/enemy_voice_aggregate.png",
+		"vl_zero_maintenance": "res://assets/sprites/chars/enemy_zero_maintenance.png",
 	}
 	var enemy_path: String = enemy_paths.get(enemy_id, "res://assets/sprites/chars/enemy_ai.png" if GameState.current_world_id == "version_loop" else "res://assets/sprites/chars/enemy_anxiety.png")
 	battle_stage.setup_art(player_path, enemy_path)
@@ -358,9 +366,9 @@ func _update_ui() -> void:
 	energy_label.text = "⚡ 能量 %d/%d" % [_battle.energy, _battle.max_energy]
 	if GameState.current_world_id == "version_loop":
 		var act_index := int(GameState.get_world_run_state_value("act_index", 1))
-		var act_name := "活动高峰" if act_index == 2 else "新服预热"
+		var act_name := "版本坟场" if act_index == 3 else ("活动高峰" if act_index == 2 else "新服预热")
 		battle_title.text = "版本回环 · %s" % act_name
-		var title := "舆潮主播" if GameState.player_character_id == "feilan" else "概率校准师"
+		var title := "流程代行员" if GameState.player_character_id == "xunji" else ("舆潮主播" if GameState.player_character_id == "feilan" else "概率校准师")
 		player_title.text = "%s · %s" % [Config.characters[GameState.player_character_id].name, title]
 		turn_label.text = "第%d幕　第 %d 回合" % [act_index, _battle.turn_count]
 		var maintenance := int(GameState.get_world_run_state_value("maintenance_clock", 0))
@@ -371,6 +379,11 @@ func _update_ui() -> void:
 			var comments := int(GameState.get_character_run_state_value("short_comments_played", 0))
 			character_resource_label.text = "◉ 热度 %d/10　%s　短评 %d" % [heat, "热榜" if heat >= 5 else "蓄势", comments]
 			character_resource_label.add_theme_color_override("font_color", UIColors.DANGER_RED if heat >= 5 else UIColors.AI_PURPLE)
+		elif GameState.player_character_id == "xunji":
+			var script_label := str(GameState.get_character_run_state_value("script_label", "空脚本"))
+			var sequence := str(GameState.get_character_run_state_value("recent_sequence", ""))
+			character_resource_label.text = "◉ 脚本：%s　牌序：%s" % [script_label, sequence if not sequence.is_empty() else "—"]
+			character_resource_label.add_theme_color_override("font_color", UIColors.BORDER_CYAN_BRIGHT)
 		else:
 			var pity := int(GameState.get_character_run_state_value("pity", 0))
 			var last_result := str(GameState.get_character_run_state_value("last_random_outcome", ""))

@@ -22,9 +22,20 @@ const ACT_TWO_ENCOUNTERS := [
 	"vl_black_red_symbiote",
 	"vl_voice_aggregate",
 ]
+const ACT_THREE_ENCOUNTERS := [
+	"vl_meta_executor",
+	"vl_rollback_wreck",
+	"vl_test_server_leak",
+	"vl_archive_shade",
+	"vl_compat_grave",
+	"vl_deprecated_echo",
+	"vl_version_eater",
+	"vl_zero_maintenance",
+]
 const ACT_TITLES := {
 	1: "第一幕：新服预热",
 	2: "第二幕：活动高峰",
+	3: "第三幕：版本坟场",
 }
 
 var _node_list: VBoxContainer
@@ -57,7 +68,11 @@ func _build_background() -> void:
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.stretch_mode = TextureRect.STRETCH_SCALE
 	background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var path := "res://assets/sprites/bg/version_loop_tide_plaza.png" if _get_act_index() == 2 else "res://assets/sprites/bg/version_loop_warmup.png"
+	var path := "res://assets/sprites/bg/version_loop_warmup.png"
+	if _get_act_index() == 2:
+		path = "res://assets/sprites/bg/version_loop_tide_plaza.png"
+	elif _get_act_index() == 3:
+		path = "res://assets/sprites/bg/version_loop_graveyard.png"
 	if ResourceLoader.exists(path):
 		background.texture = load(path)
 	background.modulate = Color(0.72, 0.78, 0.86, 1.0)
@@ -163,6 +178,8 @@ func _refresh() -> void:
 			GameState.set_world_run_state_value("act_one_complete", true)
 		elif act_index == 2:
 			GameState.set_world_run_state_value("act_two_complete", true)
+		elif act_index == 3:
+			GameState.set_world_run_state_value("act_three_complete", true)
 		return
 	for encounter_id in _get_current_encounters():
 		_node_list.add_child(_make_encounter_button(encounter_id, encounter_id == next_id))
@@ -216,11 +233,14 @@ func _get_notice_info() -> Dictionary:
 
 
 func _get_current_encounters() -> Array:
-	return ACT_TWO_ENCOUNTERS if _get_act_index() == 2 else ACT_ONE_ENCOUNTERS
+	match _get_act_index():
+		2: return ACT_TWO_ENCOUNTERS
+		3: return ACT_THREE_ENCOUNTERS
+	return ACT_ONE_ENCOUNTERS
 
 
 func _get_act_index() -> int:
-	return clampi(int(GameState.get_world_run_state_value("act_index", 1)), 1, 2)
+	return clampi(int(GameState.get_world_run_state_value("act_index", 1)), 1, 3)
 
 
 func _sync_completed_acts() -> void:
@@ -230,9 +250,15 @@ func _sync_completed_acts() -> void:
 			GameState.set_world_run_state_value("act_index", 2)
 	if _is_defeated("vl_voice_aggregate"):
 		GameState.set_world_run_state_value("act_two_complete", true)
+		if _get_act_index() == 2:
+			GameState.set_world_run_state_value("act_index", 3)
+	if _is_defeated("vl_zero_maintenance"):
+		GameState.set_world_run_state_value("act_three_complete", true)
 
 
 func _get_character_guide() -> String:
 	if GameState.player_character_id == "feilan":
 		return "绯澜 · 舆潮主播\n\n核心资源：热度 0—10；达到 5 进入热榜。\n热度会在回合结束时衰减，可用短评在攻击与护航之间选择。\n\n主动：引爆话题\n消耗 5 热度，造成 18 点伤害。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"
+	if GameState.player_character_id == "xunji":
+		return "循迹 · 流程代行员\n\n核心资源：唯一脚本槽与最近三张牌序。\n录制可复演的直接效果；复演不会复制抽牌、能量、生成或再次复演。\n\n主动：执行脚本\n脚本槽不为空时，以 60% 强度复演。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"
 	return "祈序 · 概率校准师\n\n核心资源：保底 0—6\n歪结果会积累保底；达到 6 后，下一次随机必定出货并清零。\n\n主动：概率校准\n消耗 2 保底，锁定下一次出货。\n\n世界规则\n每次胜利推进 1 格维护时钟。满 4 格触发强制维护，获得补偿券与活动体力。"
