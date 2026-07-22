@@ -1,0 +1,30 @@
+{
+  "id": "campus",
+  "name": "校园世界",
+  "chapter_title": "专业大逃杀·唯一上岸者",
+  "description": "在异化校园中选择专业、积累能力并通过终极答辩，争夺唯一上岸席位。",
+  "theme_id": "campus_selection",
+  "rule_set_id": "campus",
+  "fragment_id": "selection_permission",
+  "fragment_name": "筛选许可",
+  "selection_scene_path": "res://src/ui/screens/major_select.tscn",
+  "exploration_scene_path": "res://src/ui/screens/campus_explore.tscn",
+  "character_ids": [
+    "computer",
+    "law",
+    "medicine",
+    "finance",
+    "arts"
+  ],
+  "shared_card_ids": [
+    "strike",
+    "defend",
+    "draw_card",
+    "deep_breath",
+    "all_nighter_study",
+    "group_project",
+    "coffee_boost",
+    "stretch"
+  ],
+  "run_state_schema": {}
+}

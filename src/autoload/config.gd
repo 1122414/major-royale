@@ -9,6 +9,7 @@ const CardResourceScript := preload("res://src/resources/card_resource.gd")
 const CardEffectScript := preload("res://src/resources/card_effect.gd")
 const EnemyResourceScript := preload("res://src/resources/enemy_resource.gd")
 const EventResourceScript := preload("res://src/resources/event_resource.gd")
+const WorldResourceScript := preload("res://src/resources/world_resource.gd")
 
 var _game_cfg: ConfigFile
 
@@ -20,13 +21,17 @@ var cards: Dictionary = {}
 var enemies: Dictionary = {}
 ## 事件 ID -> EventResource
 var events: Dictionary = {}
+## 世界 ID -> WorldResource
+var worlds: Dictionary = {}
+## 通用命名别名；迁移期间与 majors 指向同一份角色字典。
+var characters: Dictionary = {}
 
 
 func _ready() -> void:
 	_load_game_cfg()
 	_load_all_json_data()
-	print("Config loaded. Majors: %d, Cards: %d, Enemies: %d, Events: %d" % [
-		majors.size(), cards.size(), enemies.size(), events.size()
+	print("Config loaded. Worlds: %d, Characters: %d, Cards: %d, Enemies: %d, Events: %d" % [
+		worlds.size(), characters.size(), cards.size(), enemies.size(), events.size()
 	])
 
 
@@ -43,9 +48,47 @@ func get_game_value(section: String, key: String, default_value: Variant = null)
 
 func _load_all_json_data() -> void:
 	majors = _load_major_folder("%s/majors" % DATA_DIR)
+	characters = majors
 	cards = _load_card_folder("%s/cards" % DATA_DIR)
 	enemies = _load_enemy_folder("%s/enemies" % DATA_DIR)
 	events = _load_event_folder("%s/events" % DATA_DIR)
+	worlds = _load_world_folder("%s/worlds" % DATA_DIR)
+	_validate_world_references()
+
+
+func _load_world_folder(folder_path: String) -> Dictionary:
+	var result := {}
+	for file_name in _list_json_files(folder_path):
+		var data := _load_json_file("%s/%s" % [folder_path, file_name])
+		if data.is_empty():
+			continue
+		var world = WorldResourceScript.new()
+		world.load_from_dict(data)
+		if not world.id.is_empty():
+			result[world.id] = world
+	return result
+
+
+func _validate_world_references() -> void:
+	for world in worlds.values():
+		for character_id in world.character_ids:
+			if not characters.has(character_id):
+				push_error("世界 %s 引用了未知角色: %s" % [world.id, character_id])
+		for card_id in world.shared_card_ids:
+			if not cards.has(card_id):
+				push_error("世界 %s 引用了未知共享卡牌: %s" % [world.id, card_id])
+
+
+func get_world(world_id: String) -> Resource:
+	return worlds.get(world_id) as Resource
+
+
+func get_character_world_id(character_id: String) -> String:
+	for world_id in worlds:
+		var world: Resource = worlds[world_id]
+		if world.has_character(character_id):
+			return str(world_id)
+	return ""
 
 
 func _load_major_folder(folder_path: String) -> Dictionary:

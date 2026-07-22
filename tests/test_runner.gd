@@ -14,6 +14,7 @@ func _ready() -> void:
 	print("TEST: 开始 Godot 数据加载测试")
 
 	assert(not Config.majors.is_empty(), "专业数据未加载")
+	assert(Config.characters == Config.majors, "角色兼容别名应与专业数据保持一致")
 	assert(Config.majors.size() == 5, "专业数量应为 5")
 	for major_id in ["computer", "law", "medicine", "finance", "arts"]:
 		assert(Config.majors.has(major_id), "缺少专业: %s" % major_id)
@@ -33,6 +34,7 @@ func _ready() -> void:
 	assert(Config.enemies.has("gpa_anxiety"), "缺少普通敌人")
 
 	assert(not Config.events.is_empty(), "事件数据未加载")
+	_test_world_package_contract()
 	_test_campus_route_coverage()
 
 	print("TEST: 所有 Godot 数据加载测试通过")
@@ -88,6 +90,17 @@ func _ready() -> void:
 	AudioManager.prepare_shutdown()
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)
+
+
+func _test_world_package_contract() -> void:
+	assert(Config.worlds.size() == 1 and Config.worlds.has("campus"), "校园应作为首个世界包加载")
+	var campus: Resource = Config.get_world("campus")
+	assert(campus != null and campus.name == "校园世界", "校园世界定义缺失")
+	assert(campus.character_ids == ["computer", "law", "medicine", "finance", "arts"], "校园角色顺序错误")
+	assert(campus.shared_card_ids.size() == 8 and "strike" in campus.shared_card_ids, "校园共享卡池定义错误")
+	assert(campus.fragment_id == "selection_permission", "校园规则碎片定义错误")
+	assert(campus.create_initial_run_state().is_empty(), "校园首版不应注入额外世界状态")
+	assert(Config.get_character_world_id("computer") == "campus", "角色应能反查所属世界")
 
 
 func _test_meta_currency_profile() -> void:
@@ -1262,6 +1275,8 @@ func _test_run_state_persistence() -> void:
 
 func _test_run_save_roundtrip() -> void:
 	GameState.start_run("finance", 424242, 2)
+	assert(GameState.current_world_id == "campus", "未显式指定时应进入校园世界")
+	assert(GameState.player_character_id == "finance", "通用角色身份应兼容现有专业身份")
 	GameState.run_hp -= 11
 	GameState.run_progress = 4
 	GameState.day_count = 3
@@ -1281,6 +1296,8 @@ func _test_run_save_roundtrip() -> void:
 	var expected_deck := GameState.deck_card_ids.duplicate()
 	var snapshot := GameState.create_run_save_snapshot(GameState.Screen.BATTLE)
 	assert(GameState.is_run_save_snapshot_valid(snapshot), "完整的一局快照应通过版本与内容校验")
+	assert(snapshot.world_id == "campus" and snapshot.player_character_id == "finance", "存档应记录世界与通用角色身份")
+	assert(snapshot.world_run_state == {}, "存档应为当前世界预留受约束的局内状态")
 	assert(not snapshot.player_stats.has("battle_player"), "存档不得写入运行时战斗对象")
 
 	var future_snapshot := snapshot.duplicate(true)
@@ -1292,9 +1309,13 @@ func _test_run_save_roundtrip() -> void:
 	var broken_enemy_snapshot := snapshot.duplicate(true)
 	broken_enemy_snapshot["player_stats"]["current_enemy_id"] = "missing_enemy"
 	assert(not GameState.is_run_save_snapshot_valid(broken_enemy_snapshot), "战斗检查点引用未知敌人时应安全拒绝")
+	var broken_world_snapshot := snapshot.duplicate(true)
+	broken_world_snapshot["world_id"] = "missing_world"
+	assert(not GameState.is_run_save_snapshot_valid(broken_world_snapshot), "存档引用未知世界时应安全拒绝")
 
 	GameState.start_run("computer")
 	assert(GameState.restore_run_save_snapshot(snapshot), "版本化一局快照应可恢复")
+	assert(GameState.current_world_id == "campus" and GameState.player_character_id == "finance", "恢复后世界与角色身份应保持")
 	assert(GameState.player_major_id == "finance", "恢复后专业应与存档一致")
 	assert(GameState.current_screen == GameState.Screen.BATTLE, "战斗前检查点应恢复为一场全新战斗")
 	assert(GameState.run_hp == expected_hp and GameState.deck_card_ids == expected_deck, "恢复后生命与牌组应保持一致")
@@ -1315,6 +1336,15 @@ func _test_run_save_roundtrip() -> void:
 	assert(GameState.run_meta_effects.is_empty(), "旧一局存档应回落为空的局外加成")
 	assert(GameState.run_meta_talent_ids.is_empty() and GameState.run_meta_equipment.is_empty(), "旧一局存档应回落为空配置")
 	assert(GameState.run_instance_id.begins_with("legacy-"), "旧一局存档应生成稳定的兼容结算标识")
+
+	var version_one_snapshot := snapshot.duplicate(true)
+	version_one_snapshot["version"] = 1
+	version_one_snapshot.erase("world_id")
+	version_one_snapshot.erase("player_character_id")
+	version_one_snapshot.erase("world_run_state")
+	GameState.start_run("computer")
+	assert(GameState.restore_run_save_snapshot(version_one_snapshot), "V1校园存档应迁移到首个世界包")
+	assert(GameState.current_world_id == "campus" and GameState.player_character_id == "finance", "V1存档迁移不得丢失专业身份")
 
 
 func _test_run_config_ui() -> void:

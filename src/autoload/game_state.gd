@@ -14,7 +14,9 @@ enum Screen {
 	META_PROGRESSION,
 }
 
-const RUN_SAVE_VERSION := 1
+const RUN_SAVE_VERSION := 2
+const MIN_SUPPORTED_RUN_SAVE_VERSION := 1
+const DEFAULT_WORLD_ID := "campus"
 const RUN_SAVE_PATH := "user://run_save.json"
 const RUN_SAVE_BACKUP_PATH := "user://run_save.backup.json"
 const RUN_SAVE_TEMP_PATH := "user://run_save.tmp.json"
@@ -94,9 +96,16 @@ const DIFFICULTY_CATALOG := [
 
 var current_screen: Screen = Screen.MENU
 var settings_return_screen: Screen = Screen.MENU
+var current_world_id: String = DEFAULT_WORLD_ID
 var player_major_id: String = ""
+var player_character_id: String:
+	get:
+		return player_major_id
+	set(value):
+		player_major_id = value
 var player_stats: Dictionary = {}
 var run_progress: int = 0
+var world_run_state: Dictionary = {}
 
 ## 一局持久化状态
 var run_hp: int = 60
@@ -174,8 +183,11 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 		"version": RUN_SAVE_VERSION,
 		"saved_at": int(Time.get_unix_time_from_system()),
 		"screen": _screen_to_save_name(target_screen),
+		"world_id": current_world_id,
+		"player_character_id": player_character_id,
 		"player_major_id": player_major_id,
 		"player_stats": _serializable_player_stats(),
+		"world_run_state": world_run_state.duplicate(true),
 		"run_progress": run_progress,
 		"run_hp": run_hp,
 		"run_max_hp": run_max_hp,
@@ -222,17 +234,26 @@ func create_run_save_snapshot(target_screen: Screen) -> Dictionary:
 
 
 func is_run_save_snapshot_valid(data: Dictionary) -> bool:
-	if int(data.get("version", -1)) != RUN_SAVE_VERSION:
+	var version := int(data.get("version", -1))
+	if version < MIN_SUPPORTED_RUN_SAVE_VERSION or version > RUN_SAVE_VERSION:
 		return false
 	var screen_name := str(data.get("screen", ""))
 	if _save_name_to_screen(screen_name) == Screen.MENU:
 		return false
-	var major_id := str(data.get("player_major_id", ""))
+	var world_id := str(data.get("world_id", DEFAULT_WORLD_ID))
+	var world: Resource = Config.get_world(world_id)
+	if world == null:
+		return false
+	var major_id := str(data.get("player_character_id", data.get("player_major_id", "")))
 	if major_id.begins_with("custom_"):
+		if world_id != DEFAULT_WORLD_ID:
+			return false
 		var custom_data = data.get("custom_major")
 		if custom_data is not Dictionary or str(custom_data.get("id", "")) != major_id:
 			return false
-	elif not Config.majors.has(major_id):
+	elif not Config.characters.has(major_id) or not world.has_character(major_id):
+		return false
+	if data.has("world_run_state") and data.get("world_run_state") is not Dictionary:
 		return false
 	var saved_player_stats = data.get("player_stats", {})
 	if saved_player_stats is not Dictionary:
@@ -256,7 +277,10 @@ func restore_run_save_snapshot(data: Dictionary) -> bool:
 	if not is_run_save_snapshot_valid(data):
 		return false
 	_restore_custom_major(data)
-	player_major_id = str(data.get("player_major_id", ""))
+	current_world_id = str(data.get("world_id", DEFAULT_WORLD_ID))
+	player_character_id = str(data.get("player_character_id", data.get("player_major_id", "")))
+	var world: Resource = Config.get_world(current_world_id)
+	world_run_state = world.sanitize_run_state(data.get("world_run_state", {}))
 	player_stats = (data.get("player_stats", {}) as Dictionary).duplicate(true)
 	run_progress = maxi(0, int(data.get("run_progress", 0)))
 	run_max_hp = maxi(1, int(data.get("run_max_hp", 60)))
@@ -470,9 +494,21 @@ func _save_name_to_screen(screen_name: String) -> Screen:
 	return Screen.MENU
 
 
-func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0) -> void:
-	player_major_id = major_id
+func start_run(major_id: String, seed_override: int = 0, difficulty: int = 0, world_id: String = DEFAULT_WORLD_ID) -> void:
+	var world: Resource = Config.get_world(world_id)
+	if world == null:
+		push_error("无法开始游戏，未知世界: %s" % world_id)
+		return
+	if major_id.begins_with("custom_") and world_id != DEFAULT_WORLD_ID:
+		push_error("自定义专业当前仅属于校园世界")
+		return
+	if not major_id.begins_with("custom_") and not world.has_character(major_id):
+		push_error("世界 %s 不包含角色: %s" % [world_id, major_id])
+		return
+	current_world_id = world_id
+	player_character_id = major_id
 	player_stats = {}
+	world_run_state = world.create_initial_run_state()
 	run_progress = 0
 	permanent_stats = {}
 	pending_buffs = []

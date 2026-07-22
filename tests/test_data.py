@@ -41,10 +41,32 @@ def _all_records(folder: str, collection_key: str):
 
 
 def test_content_baseline():
+    assert len(_json_files("worlds")) == 1
     assert len(_json_files("majors")) == 5
     assert len(_load_all_cards()) == 108
     assert len(_load_all_enemies()) == 10
     assert sum(1 for _ in _all_records("events", "events")) == 14
+
+
+def test_world_packages_reference_existing_content():
+    cards = _load_all_cards()
+    character_ids = {
+        json.loads(file.read_text(encoding="utf-8"))["id"]
+        for file in _json_files("majors")
+    }
+    seen = set()
+    for file in _json_files("worlds"):
+        world = json.loads(file.read_text(encoding="utf-8"))
+        world_id = world.get("id", "")
+        assert world_id and world_id not in seen, f"无效或重复的世界 ID: {world_id}"
+        seen.add(world_id)
+        assert world.get("name"), f"{file} 缺少世界名称"
+        assert world.get("selection_scene_path", "").startswith("res://")
+        assert world.get("exploration_scene_path", "").startswith("res://")
+        assert world.get("character_ids"), f"{world_id} 没有可用角色"
+        assert set(world["character_ids"]) <= character_ids, f"{world_id} 引用了未知角色"
+        assert set(world.get("shared_card_ids", [])) <= cards.keys(), f"{world_id} 引用了未知共享卡牌"
+        assert isinstance(world.get("run_state_schema", {}), dict)
 
 
 def test_majors_have_required_fields():
