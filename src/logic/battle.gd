@@ -25,6 +25,26 @@ signal world_choice_requested(context: Dictionary)
 const BASE_DRAW := 5
 const BASE_ENERGY := 3
 const MAX_HAND_SIZE := 10
+const UNANSWERED_ATTACK_MULTIPLIER := 5.0
+const INTENT_RESPONSE_TYPES := {
+	"attack": "defense",
+	"heavy_attack": "defense",
+	"bleed_attack": "defense",
+	"ask_algorithm": "defense",
+	"resume_challenge": "defense",
+	"question_method": "defense",
+	"desk_reject": "defense",
+	"stack_pressure": "control",
+	"ask_ethics": "control",
+	"praise_then_pressure": "control",
+	"reject_core_card": "control",
+	"demand_revision": "control",
+	"hand_limit": "control",
+	"charge": "control",
+	"shield": "attack",
+	"heal": "attack",
+	"silent_observe": "attack",
+}
 const ELITE_AFFIXES := {
 	"iron_wall": {
 		"name": "铁壁开题",
@@ -90,6 +110,7 @@ var _rng: RandomNumberGenerator
 var _world_rules: RefCounted
 var _battle_finished_notified := false
 var _world_choice_context: Dictionary = {}
+var _intent_response_met := false
 
 
 func _init(p_player: Character, p_enemy_resource: Resource) -> void:
@@ -145,6 +166,8 @@ func play_card(card_index: int) -> bool:
 		player.discard_pile.append(card)
 	GameState.run_cards_played += 1
 	_turn_card_types.append(str(card.type))
+	if _is_card_intent_response(card):
+		_intent_response_met = true
 
 	_effect_processor.process_card(card, player, enemy)
 	_world_rules.on_card_played(self, card, shield_before_card)
@@ -325,24 +348,28 @@ func _execute_enemy_turn() -> void:
 			_apply_damage_to_player(damage)
 		"heavy_attack":
 			var damage: int = action.get("value", 10)
+			if enemy.has_status("charged"):
+				damage *= 2
+				enemy.remove_status("charged")
 			if enemy.has_status("举证失败"):
 				damage = maxi(1, damage / 2)
 				enemy.remove_status("举证失败")
 			_apply_damage_to_player(damage)
 		"shield":
-			enemy.gain_shield(action.get("value", 5))
+			enemy.gain_shield(_get_responded_recovery_value(int(action.get("value", 5))))
 		"heal":
-			enemy.heal(action.get("value", 5))
+			enemy.heal(_get_responded_recovery_value(int(action.get("value", 5))))
 		"stack_pressure":
+			var pressure_value := int(action.get("value", 1)) + (1 if _is_unanswered_control() else 0)
 			if _enemy_control_connects():
-				player.add_status("pressure", action.get("value", 1))
+				player.add_status("pressure", pressure_value)
 		"ask_algorithm":
 			if _enemy_control_connects():
-				player.add_status("pressure", 2)
+				player.add_status("pressure", 2 + (1 if _is_unanswered_control() else 0))
 			_apply_damage_to_player(5)
 		"ask_ethics":
 			if _enemy_control_connects():
-				player.add_status("pressure", 1)
+				player.add_status("pressure", 1 + (1 if _is_unanswered_control() else 0))
 		"resume_challenge":
 			if _enemy_control_connects():
 				player.lose_spirit(10)
@@ -350,19 +377,19 @@ func _execute_enemy_turn() -> void:
 		"praise_then_pressure":
 			player.draw_cards(1)
 			if _enemy_control_connects():
-				player.add_status("pressure", 2)
+				player.add_status("pressure", 2 + (1 if _is_unanswered_control() else 0))
 		"silent_observe":
-			enemy.gain_shield(8)
+			enemy.gain_shield(_get_responded_recovery_value(8))
 		"reject_core_card":
 			if _enemy_control_connects():
-				player.add_status("pressure", 2)
+				player.add_status("pressure", 2 + (1 if _is_unanswered_control() else 0))
 		"demand_revision":
 			# 敌方行动发生在玩家弃牌之后，改为限制下一回合抽牌才会真实生效。
 			if _enemy_control_connects():
-				_next_draw_override = 2
+				_next_draw_override = 1 if _is_unanswered_control() else 2
 		"question_method":
 			if _enemy_control_connects():
-				player.add_status("pressure", 2)
+				player.add_status("pressure", 2 + (1 if _is_unanswered_control() else 0))
 			_apply_damage_to_player(3)
 		"accept_minor":
 			enemy.gain_shield(8)
@@ -371,7 +398,10 @@ func _execute_enemy_turn() -> void:
 			_apply_damage_to_player(12)
 			enemy.add_status("vulnerable", 1)
 		"charge":
-			enemy.add_status("charged", maxi(1, int(action.get("value", 1))))
+			if _is_unanswered_control():
+				enemy.add_status("charged", maxi(1, int(action.get("value", 1))))
+			else:
+				enemy.add_status("vulnerable", 1)
 		"counter":
 			enemy.add_status("counter", maxi(1, int(action.get("value", 2))))
 		"defend":
@@ -404,6 +434,12 @@ func _apply_damage_to_player(damage: int) -> void:
 	var enemy_pressure := enemy.get_status_stacks("pressure")
 	if enemy_pressure > 0:
 		damage = int(round(float(damage) * (1.0 - minf(0.5, float(enemy_pressure) * 0.1))))
+	# 玩家压力会让后续失误更危险；否则叠压只影响抽牌，难以形成真实的决策代价。
+	var player_pressure := player.get_status_stacks("pressure")
+	if player_pressure > 0:
+		damage = int(round(float(damage) * (1.0 + minf(0.5, float(player_pressure) * 0.1))))
+	if _is_unanswered_attack() and _defense_outcome == "miss":
+		damage = int(round(float(damage) * UNANSWERED_ATTACK_MULTIPLIER))
 
 	# 压力圈：每点进度 +5% 敌伤，上限 +40%（Boss 不受此加成）
 	var enemy_id := str(GameState.player_stats.get("current_enemy_id", ""))
@@ -437,6 +473,7 @@ func _start_player_turn() -> void:
 	energy = max_energy + _next_energy_bonus
 	_next_energy_bonus = 0
 	_turn_card_types.clear()
+	_intent_response_met = false
 	# 首回合保留事件或奖励带入的开场护盾，此后护盾按回合正常清空。
 	if turn_count > 1:
 		player.reset_shield()
@@ -626,6 +663,55 @@ func get_enemy_intent_text() -> String:
 
 func get_enemy_intent_id() -> String:
 	return str(_enemy_intent.get("id", ""))
+
+
+func get_intent_response_type() -> String:
+	return str(INTENT_RESPONSE_TYPES.get(get_enemy_intent_id(), ""))
+
+
+func is_intent_response_met() -> bool:
+	return get_intent_response_type().is_empty() or _intent_response_met
+
+
+func is_card_recommended(card: Resource) -> bool:
+	if card == null:
+		return false
+	var response_type := get_intent_response_type()
+	if response_type.is_empty():
+		return str(card.type) in ["attack", "finisher"]
+	return str(card.type) == response_type
+
+
+func get_turn_guide() -> String:
+	var response_type := get_intent_response_type()
+	if response_type.is_empty():
+		return "本回合：优先打出红色攻击牌，尽快结束战斗。"
+	var type_name: String = str({"attack": "攻击", "defense": "防御", "control": "控制"}.get(response_type, response_type))
+	if is_intent_response_met():
+		return "本回合应对已完成：可以按你的构筑继续出牌。"
+	if response_type == "defense":
+		return "敌方即将造成伤害：优先打出【%s】牌，否则本次伤害 ×5。" % type_name
+	if response_type == "control":
+		return "敌方正在施压或蓄力：优先打出【%s】牌，可削弱这次意图。" % type_name
+	return "敌方准备回复或设防：优先打出【%s】牌，可削弱这次意图。" % type_name
+
+
+func _is_card_intent_response(card: Resource) -> bool:
+	return card != null and str(card.type) == get_intent_response_type()
+
+
+func _is_unanswered_attack() -> bool:
+	return get_intent_response_type() == "defense" and not _intent_response_met
+
+
+func _is_unanswered_control() -> bool:
+	return get_intent_response_type() == "control" and not _intent_response_met
+
+
+func _get_responded_recovery_value(value: int) -> int:
+	if get_intent_response_type() == "attack" and _intent_response_met:
+		return maxi(1, ceili(float(value) * 0.5))
+	return value
 
 
 func delay_enemy(turns: int) -> void:

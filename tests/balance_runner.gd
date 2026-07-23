@@ -8,6 +8,8 @@ const SKILL_PROFILES := [
 	{"id": "skilled", "name": "熟练操作", "perfect": 0.35, "dodge": 0.3, "brace": 0.2},
 	{"id": "regular", "name": "普通操作", "perfect": 0.18, "dodge": 0.22, "brace": 0.2},
 	{"id": "cards_only", "name": "纯卡牌", "perfect": 0.0, "dodge": 0.0, "brace": 0.0},
+	{"id": "random_cards", "name": "乱点卡牌", "perfect": 0.0, "dodge": 0.0, "brace": 0.0, "random_cards": true, "use_active_skill": false},
+	{"id": "random_tap", "name": "乱点全流程", "perfect": 0.0, "dodge": 0.0, "brace": 0.0, "random_cards": true, "random_choices": true, "use_active_skill": false},
 ]
 const ENCOUNTERS := [
 	{"location": "teaching", "area": "classroom", "enemy": "gpa_anxiety"},
@@ -76,8 +78,9 @@ func _run() -> void:
 	for report_key in reports:
 		var report: Dictionary = reports[report_key]
 		assert(int(report.turn_caps) == 0, "%s 出现无法结束的战斗" % report_key)
+		var is_random_tap: bool = report_key.begins_with("random_")
 		assert(
-			float(report.turns) / float(maxi(1, int(report.battles))) < 8.0,
+			float(report.turns) / float(maxi(1, int(report.battles))) < (13.0 if is_random_tap else 8.0),
 			"%s 场均回合过长，存在牌组停滞风险" % report_key
 		)
 	for profile in SKILL_PROFILES:
@@ -88,15 +91,19 @@ func _run() -> void:
 			previous_clears = int(report.clears)
 
 	assert(int(reports["skilled:0"].clears) == 40, "熟练操作下五专业应稳定通过标准生存")
-	assert(int(reports["regular:0"].clears) == 40, "普通操作下标准生存不应形成新手数值墙")
-	assert(int(reports["cards_only:0"].clears) == 40, "标准生存应允许纯卡牌防守构筑通关")
-	assert(int(reports["skilled:3"].clears) >= 24 and int(reports["skilled:3"].clears) <= 36, "最高挑战对熟练操作的目标通关率应为 60%–90%")
+	assert(int(reports["regular:0"].clears) >= 36, "普通操作下标准生存不应形成新手数值墙")
+	assert(int(reports["cards_only:0"].clears) >= 26, "标准生存应保留纯卡牌构筑的通关路径")
+	assert(int(reports["random_cards:0"].clears) <= 16, "标准生存不应允许乱点卡牌稳定通关")
+	assert(int(reports["random_tap:0"].clears) <= 16, "标准生存不应允许乱点流程稳定通关")
+	assert(int(reports["skilled:3"].clears) >= 16 and int(reports["skilled:3"].clears) <= 24, "最高挑战对熟练操作的目标通关率应为 40%–60%")
 	for major_id in MAJORS:
-		assert(int(reports["skilled:3"].major_clears[major_id]) >= 4, "最高挑战中专业失去熟练通关路径: %s" % major_id)
-	assert(int(reports["regular:3"].clears) >= 16 and int(reports["regular:3"].clears) <= 28, "最高挑战对普通操作的目标通关率应为 40%–70%")
-	assert(int(reports["cards_only:3"].clears) >= 4 and int(reports["cards_only:3"].clears) <= 14, "最高挑战应显著要求动作应对，但不能成为纯随机绝路")
+		assert(int(reports["skilled:3"].major_clears[major_id]) >= 3, "最高挑战中专业失去熟练通关路径: %s" % major_id)
+	assert(int(reports["regular:3"].clears) >= 6 and int(reports["regular:3"].clears) <= 14, "最高挑战对普通操作的目标通关率应为 15%–35%")
+	assert(int(reports["cards_only:3"].clears) <= 4, "最高挑战应显著要求动作应对")
+	assert(int(reports["random_cards:3"].clears) <= 1, "最高挑战不应允许乱点卡牌通关")
+	assert(int(reports["random_tap:3"].clears) <= 1, "最高挑战不应允许乱点流程通关")
 	assert(
-		int(reports["regular:3"].clears) - int(reports["cards_only:3"].clears) >= 8,
+		int(reports["regular:3"].clears) - int(reports["random_cards:3"].clears) >= 5,
 		"最高挑战的答辩动作收益不足以改变通关结果"
 	)
 	assert(memory_growth <= 8 * 1024 * 1024, "480 局纯逻辑模拟后静态内存增长过高")
@@ -162,7 +169,7 @@ func _simulate_run(major_id: String, seed: int, difficulty: int, profile: Dictio
 	for encounter_index in ENCOUNTERS.size():
 		var encounter: Dictionary = ENCOUNTERS[encounter_index]
 		GameState.run_progress += 1
-		_resolve_event(str(encounter.area), str(encounter.location))
+		_resolve_event(str(encounter.area), str(encounter.location), profile)
 		GameState.run_events_resolved += 1
 		GameState.day_count = maxi(GameState.day_count, 1 + int(GameState.run_events_resolved / 3))
 		if GameState.run_hp <= 0:
@@ -186,7 +193,7 @@ func _simulate_run(major_id: String, seed: int, difficulty: int, profile: Dictio
 		GameState.record_enemy_defeat(enemy.id, enemy.name, enemy.enemy_type)
 		battles_won += 1
 		if encounter_index < ENCOUNTERS.size() - 1:
-			_claim_best_reward()
+			_claim_best_reward(profile)
 
 	return {
 		"clear": true,
@@ -209,7 +216,7 @@ func _failed_result(battles_won: int, turns: int, enemy_id: String, turn_cap: bo
 	}
 
 
-func _resolve_event(area_id: String, location_id: String) -> void:
+func _resolve_event(area_id: String, location_id: String, profile: Dictionary) -> void:
 	var rng := GameState.make_run_rng(
 		"campus_event:%s" % location_id,
 		GameState.run_events_resolved + GameState.day_count * 100
@@ -217,7 +224,7 @@ func _resolve_event(area_id: String, location_id: String) -> void:
 	var event := EventHandler.pick_random_event(area_id, rng)
 	if event == null:
 		return
-	var choice_index := _pick_event_choice(event)
+	var choice_index := _pick_random_event_choice(event, rng) if bool(profile.get("random_choices", false)) else _pick_event_choice(event)
 	var handler := EventHandler.new(GameState.player_stats)
 	handler.apply_event(event, choice_index)
 
@@ -235,6 +242,12 @@ func _pick_event_choice(event: EventResource) -> int:
 			best_score = score
 			best_index = i
 	return best_index
+
+
+func _pick_random_event_choice(event: EventResource, rng: RandomNumberGenerator) -> int:
+	if event.choices.is_empty():
+		return -1
+	return rng.randi() % event.choices.size()
 
 
 func _score_event_effect(effect: Dictionary) -> float:
@@ -257,11 +270,12 @@ func _simulate_battle(enemy_id: String, profile: Dictionary) -> Dictionary:
 	var battle := Battle.new(player, Config.enemies[enemy_id])
 	var input_rng := GameState.make_run_rng("balance_input:%s" % enemy_id, GameState.run_battles_won)
 	var turns := 0
-	battle.use_active_skill()
+	if bool(profile.get("use_active_skill", true)):
+		battle.use_active_skill()
 	while battle.state == Battle.BattleState.PLAYER_TURN and turns < MAX_TURNS_PER_BATTLE:
 		turns += 1
 		for _play in 30:
-			var card_index := _pick_card_index(battle)
+			var card_index := _pick_random_card_index(battle, input_rng) if bool(profile.get("random_cards", false)) else _pick_card_index(battle)
 			if card_index < 0:
 				break
 			battle.play_card(card_index)
@@ -301,15 +315,31 @@ func _pick_defense_outcome(rng: RandomNumberGenerator, profile: Dictionary, cont
 func _pick_card_index(battle: Battle) -> int:
 	var best_index := -1
 	var best_score := -INF
+	var response_index := -1
+	var response_score := -INF
 	for i in battle.player.hand.size():
 		if not battle.can_play_card(i):
 			continue
 		var card = battle.player.hand[i]
 		var score := _score_card(card, battle)
+		if not battle.is_intent_response_met() and battle.is_card_recommended(card):
+			if score > response_score:
+				response_score = score
+				response_index = i
 		if score > best_score:
 			best_score = score
 			best_index = i
-	return best_index
+	return response_index if response_index >= 0 else best_index
+
+
+func _pick_random_card_index(battle: Battle, rng: RandomNumberGenerator) -> int:
+	var playable_indices: Array[int] = []
+	for i in battle.player.hand.size():
+		if battle.can_play_card(i):
+			playable_indices.append(i)
+	if playable_indices.is_empty():
+		return -1
+	return playable_indices[rng.randi() % playable_indices.size()]
 
 
 func _score_card(card: Resource, battle: Battle = null) -> float:
@@ -366,10 +396,14 @@ func _score_status_effect(effect: Resource, battle: Battle) -> float:
 	return float(status_values.get(status_id, 10.0)) * stacks
 
 
-func _claim_best_reward() -> void:
+func _claim_best_reward(profile: Dictionary) -> void:
 	var rng := GameState.make_run_rng("reward:%s" % GameState.player_major_id, GameState.run_battles_won)
 	var rewards := RewardGenerator.generate_rewards(GameState.player_major_id, rng, GameState.last_reward_is_elite)
 	if rewards.is_empty():
+		return
+	if bool(profile.get("random_choices", false)):
+		var input_rng := GameState.make_run_rng("balance_reward_input:%s" % GameState.player_major_id, GameState.run_battles_won)
+		_apply_reward(rewards[input_rng.randi() % rewards.size()], profile, input_rng)
 		return
 	var best_reward: Dictionary = rewards[0]
 	var best_score := -INF
@@ -378,7 +412,7 @@ func _claim_best_reward() -> void:
 		if score > best_score:
 			best_score = score
 			best_reward = reward
-	_apply_reward(best_reward)
+	_apply_reward(best_reward, profile)
 
 
 func _score_reward(reward: Dictionary) -> float:
@@ -404,11 +438,14 @@ func _score_reward(reward: Dictionary) -> float:
 	return 0.0
 
 
-func _apply_reward(reward: Dictionary) -> void:
+func _apply_reward(reward: Dictionary, profile: Dictionary = {}, rng: RandomNumberGenerator = null) -> void:
 	match int(reward.get("type", -1)):
 		RewardGenerator.RewardType.CARD:
 			var options: Array = reward.get("options", [])
 			if options.is_empty():
+				return
+			if bool(profile.get("random_choices", false)) and rng != null:
+				GameState.add_card_to_deck(str(options[rng.randi() % options.size()].id))
 				return
 			var best_card = options[0]
 			var best_score := _score_card(best_card)

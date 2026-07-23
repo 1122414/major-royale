@@ -389,6 +389,9 @@ func _test_professional_asset_coverage() -> void:
 	assert(card_view.focus_mode == Control.FOCUS_ALL, "卡牌应可通过键盘或手柄焦点选中")
 	var icon_texture: TextureRect = card_view.get_node("Margin/VBox/IconTex")
 	assert(icon_texture.texture.resource_path == "res://assets/sprites/cards/trial_delay.png", "卡牌应优先加载与自身 ID 对应的独立插画")
+	card_view.set_recommended(true)
+	var type_label: Label = card_view.get_node("Margin/VBox/TypeLabel")
+	assert(type_label.text.begins_with("★ 优先"), "推荐应对牌应给出醒目的优先标识")
 	var controller_activations: Array[int] = []
 	card_view.card_clicked.connect(func(index: int) -> void: controller_activations.append(index))
 	var accept_event := InputEventAction.new()
@@ -504,11 +507,67 @@ func _test_specialization_rules() -> void:
 	var pressure_player := GameState.create_battle_player()
 	var pressure_battle := Battle.new(pressure_player, Config.enemies["employment_pressure"])
 	pressure_battle.enemy.add_status("pressure", 2)
+	pressure_player.add_status("pressure", 2)
 	pressure_battle._enemy_intent = {"id": "attack", "value": 10}
+	pressure_battle._intent_response_met = true
 	var hp_before_pressure := pressure_player.hp
 	pressure_battle.end_player_turn()
-	assert(hp_before_pressure - pressure_player.hp == 8, "敌人 2 层压力应把直接伤害降低 20%")
+	assert(hp_before_pressure - pressure_player.hp == 10, "敌方减伤与玩家压力加伤应同时结算")
 	assert(pressure_battle.enemy.get_status_stacks("pressure") == 1, "敌人压力应在每个敌方回合后衰减 1 层")
+
+	GameState.start_run("computer")
+	var charged_player := GameState.create_battle_player()
+	var charged_battle := Battle.new(charged_player, Config.enemies["gpa_anxiety"])
+	charged_battle.enemy.add_status("charged", 1)
+	charged_battle._enemy_intent = {"id": "heavy_attack", "value": 10}
+	charged_battle._intent_response_met = true
+	var charged_hp_before := charged_player.hp
+	charged_battle.end_player_turn()
+	assert(charged_hp_before - charged_player.hp == 20, "蓄力应让下一次重击翻倍并消耗蓄力")
+	assert(not charged_battle.enemy.has_status("charged"), "重击结算后必须移除蓄力状态")
+
+	GameState.start_run("computer")
+	var spirit_player := GameState.create_battle_player()
+	var spirit_battle := Battle.new(spirit_player, Config.enemies["ai_interviewer"])
+	spirit_player.spirit = 10
+	spirit_battle._enemy_intent = {"id": "resume_challenge"}
+	spirit_battle.end_player_turn()
+	assert(spirit_player.spirit == 0 and spirit_battle.state == Battle.BattleState.PLAYER_LOST, "精神归零应结束战斗")
+
+	GameState.start_run("computer")
+	var response_player := GameState.create_battle_player()
+	var response_battle := Battle.new(response_player, Config.enemies["gpa_anxiety"])
+	response_battle.set_enemy_intent({"id": "attack", "value": 10})
+	response_player.hand = [Config.cards["defend"], Config.cards["strike"]]
+	response_battle.energy = 2
+	assert(response_battle.get_intent_response_type() == "defense", "攻击意图应明确要求防御应对")
+	assert(response_battle.is_card_recommended(response_player.hand[0]), "防御牌应被标为当前推荐")
+	assert(not response_battle.is_card_recommended(response_player.hand[1]), "未应对攻击意图时不应推荐攻击牌")
+	var response_hp_before := response_player.hp
+	response_battle.end_player_turn()
+	assert(response_hp_before - response_player.hp == 50, "忽略攻击意图应承受五倍伤害")
+
+	GameState.start_run("computer")
+	response_player = GameState.create_battle_player()
+	response_battle = Battle.new(response_player, Config.enemies["gpa_anxiety"])
+	response_battle.set_enemy_intent({"id": "attack", "value": 10})
+	response_player.hand = [Config.cards["defend"]]
+	response_battle.energy = 1
+	assert(response_battle.play_card(0), "防御牌应能完成攻击意图应对")
+	assert(response_battle.is_intent_response_met(), "打出对应类型后应记录本回合应对")
+	response_hp_before = response_player.hp
+	response_battle.end_player_turn()
+	assert(response_hp_before - response_player.hp == 5, "完成应对后只承受原始伤害并由护盾抵消")
+
+	GameState.start_run("computer")
+	response_player = GameState.create_battle_player()
+	response_battle = Battle.new(response_player, Config.enemies["gpa_anxiety"])
+	response_battle.set_enemy_intent({"id": "shield", "value": 10})
+	response_player.hand = [Config.cards["strike"]]
+	response_battle.energy = 1
+	assert(response_battle.play_card(0), "攻击牌应能完成敌方回复意图应对")
+	response_battle.end_player_turn()
+	assert(response_battle.enemy.shield == 5, "攻击应对应将敌方本次护盾减半")
 
 	GameState.start_run("computer")
 	var bug_battle := Battle.new(GameState.create_battle_player(), Config.enemies["employment_pressure"])
@@ -1103,7 +1162,7 @@ func _test_rule_integrity_regressions() -> void:
 	var reviewer_battle := Battle.new(revision_player, Config.enemies["paper_reviewer"])
 	reviewer_battle._enemy_intent = {"id": "demand_revision"}
 	reviewer_battle.end_player_turn()
-	assert(revision_player.hand.size() == 2, "要求大修应把下一回合抽牌限制为 2 张")
+	assert(revision_player.hand.size() == 1, "忽略要求大修时应把下一回合抽牌压至 1 张")
 
 	GameState.start_run("computer")
 	GameState.run_damage_dealt = 0
@@ -1237,10 +1296,12 @@ func _test_difficulty_ladder_rules() -> void:
 	GameState.player_stats["current_enemy_id"] = "gpa_anxiety"
 	var damage_player := GameState.create_battle_player()
 	var damage_battle := Battle.new(damage_player, Config.enemies["gpa_anxiety"])
+	damage_player.shield = 0
+	damage_player.hp = 200
 	damage_battle._enemy_intent = {"id": "attack", "value": 5}
 	var hp_before := damage_player.hp
 	damage_battle.end_player_turn()
-	assert(hp_before - damage_player.hp == 13, "唯一席位应为敌人直接伤害增加 8 点")
+	assert(hp_before - damage_player.hp == 85, "唯一席位中忽略攻击意图会叠加压力与五倍惩罚")
 
 	GameState.start_run("computer", 77, 0)
 	var standard_credits := GameState.credits

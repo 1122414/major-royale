@@ -295,7 +295,7 @@ func _resolve_world_event(choice_index: int) -> void:
 	continue_button.pressed.connect(_close_world_event)
 	_event_content.add_child(continue_button)
 	continue_button.grab_focus()
-	if GameState.run_hp <= 0:
+	if GameState.run_hp <= 0 or GameState.run_spirit <= 0:
 		GameState.player_stats["last_battle_victory"] = false
 		GameState.player_stats["last_enemy_was_ai"] = false
 		continue_button.text = "查看本局总结"

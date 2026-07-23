@@ -114,7 +114,8 @@ func reset_shield() -> void:
 
 
 func is_alive() -> bool:
-	return hp > 0
+	# 敌人只使用生命；玩家生命或精神归零都会失去继续答辩的能力。
+	return hp > 0 and (not is_player or spirit > 0)
 
 
 func set_rng(rng: RandomNumberGenerator) -> void:
