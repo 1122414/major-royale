@@ -413,6 +413,8 @@ func _update_ui() -> void:
 
 	_update_status_icons(enemy_status_container, _battle.enemy.statuses)
 	_update_status_icons(player_status_container, _battle.player.statuses)
+	if not _defense_active and not _battle.has_world_choice_pending():
+		message_label.text = _battle.get_turn_guide()
 
 	_rebuild_hand()
 
@@ -451,6 +453,7 @@ func _rebuild_hand() -> void:
 		card_view.setup(_battle.player.hand[i], i)
 		card_view.set_play_cost(_battle.get_card_cost(i))
 		card_view.set_affordable(_battle.can_play_card(i))
+		card_view.set_recommended(_battle.is_card_recommended(_battle.player.hand[i]))
 		card_view.card_clicked.connect(_on_card_clicked)
 		card_view.card_rejected.connect(_on_card_rejected)
 		hand_container.add_child(card_view)

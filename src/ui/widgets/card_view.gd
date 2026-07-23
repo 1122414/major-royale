@@ -18,6 +18,7 @@ var _card: Resource = null
 var _affordable := true
 var _play_cost := -1
 var _hover_tween: Tween
+var _recommended := false
 
 var _type_colors := {
 	"attack": UIColors.CARD_ATTACK,
@@ -110,12 +111,18 @@ func set_play_cost(value: int) -> void:
 		cost_label.text = str(_play_cost)
 
 
+func set_recommended(value: bool) -> void:
+	_recommended = value
+	if is_node_ready() and _card != null:
+		_refresh()
+
+
 func _refresh() -> void:
 	if _card == null:
 		return
 	name_label.text = _card.name
 	cost_label.text = str(_play_cost if _play_cost >= 0 else _card.cost)
-	type_label.text = "— %s —" % _type_name(_card.type)
+	type_label.text = "★ 优先 · %s" % _type_name(_card.type) if _recommended else "— %s —" % _type_name(_card.type)
 	desc_label.text = _effective_description(_card)
 	var major_id := str(_card.major_id)
 	var major_name := str(MAJOR_NAMES.get(major_id, "通用"))
@@ -159,22 +166,23 @@ func _apply_card_icon(card_id: String, card_type: String, major_id: String) -> v
 
 
 func _apply_frame(accent: Color) -> void:
+	var frame_color := UIColors.ACCENT_GOLD if _recommended else accent
 	var style := StyleBoxFlat.new()
 	style.bg_color = UIColors.PANEL
 	style.set_border_width_all(2)
-	style.border_color = accent
+	style.border_color = frame_color
 	style.set_corner_radius_all(4)
 	style.content_margin_left = 6
 	style.content_margin_right = 6
 	style.content_margin_top = 6
 	style.content_margin_bottom = 6
 	add_theme_stylebox_override("panel", style)
-	type_label.add_theme_color_override("font_color", accent)
-	icon_label.add_theme_color_override("font_color", accent)
+	type_label.add_theme_color_override("font_color", frame_color)
+	icon_label.add_theme_color_override("font_color", frame_color)
 	var cost_style := StyleBoxFlat.new()
 	cost_style.bg_color = Color(0.02, 0.06, 0.08, 0.96)
 	cost_style.set_border_width_all(2)
-	cost_style.border_color = accent
+	cost_style.border_color = frame_color
 	cost_style.set_corner_radius_all(3)
 	$Margin/VBox/TopRow/CostBadge.add_theme_stylebox_override("panel", cost_style)
 
@@ -210,7 +218,7 @@ func _apply_affordability() -> void:
 	if _affordable:
 		modulate = Color.WHITE
 		cost_label.add_theme_color_override("font_color", UIColors.ACCENT_GOLD)
-		tooltip_text = "点击打出"
+		tooltip_text = "优先打出：可应对当前敌方意图" if _recommended else "点击打出"
 	else:
 		modulate = Color(0.52, 0.55, 0.58, 0.88)
 		cost_label.add_theme_color_override("font_color", UIColors.DANGER_RED)
